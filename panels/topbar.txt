@@ -1,0 +1,592 @@
+﻿// ==PREPROCESSOR==
+// @name "top panel"
+// @author "<elia.of.war@gmail.com>"
+// @feature "dragdrop"
+// ==/PREPROCESSOR==
+
+// -----------------------------------------------------------------------------------------
+// ! important
+var DLGC_WANTALLKEYS           = 0x0004;     /* Control wants all keys           */
+window.DlgCode = DLGC_WANTALLKEYS;
+
+
+// ==================== global parameters ==================
+var panel_name = "Top Panel";
+
+var MF_SEPARATOR = 0x00000800;
+var MF_STRING = 0x00000000;
+var MF_GRAYED = 0x00000001;
+var MF_DISABLED = 0x00000002;
+var MF_POPUP = 0x00000010;
+
+var DT_LEFT = 0x00000000;
+var DT_RIGHT = 0x00000002;
+var DT_TOP = 0x00000000;
+var DT_CENTER = 0x00000001;
+var DT_VCENTER = 0x00000004;
+var DT_WORDBREAK = 0x00000010;
+var DT_SINGLELINE = 0x00000020;
+var DT_CALCRECT = 0x00000400;
+var DT_NOPREFIX = 0x00000800;
+var DT_EDITCONTROL = 0x00002000;
+var DT_END_ELLIPSIS = 0x00008000;
+
+var DT_CC = DT_CENTER | DT_VCENTER | DT_CALCRECT;
+
+var IDC_ARROW = 32512;
+var IDC_IBEAM = 32513;
+
+var VK_BACK = 0x08;
+var VK_RETURN = 0x0D;
+var VK_SHIFT = 0x10;
+var VK_CONTROL = 0x11;
+var VK_ALT = 0x12;
+var VK_ESCAPE = 0x1B;
+var VK_PGUP = 0x21;
+var VK_PGDN = 0x22;
+var VK_END = 0x23;
+var VK_HOME = 0x24;
+var VK_LEFT = 0x25;
+var VK_UP = 0x26;
+var VK_RIGHT = 0x27;
+var VK_DOWN = 0x28;
+var VK_INSERT = 0x2D;
+var VK_DELETE = 0x2E;
+var VK_SPACEBAR = 0x20;
+var KMask = {
+    none: 0,
+    ctrl: 1,
+    shift: 2,
+    ctrlshift: 3,
+    ctrlalt: 4,
+    ctrlaltshift: 5,
+    alt: 6
+};
+
+
+var gImagePath = fb.ProfilePath + "Skins\\Bright\\Images\\";
+var gSplitterColor = utils.GetSysColor(15);
+
+var panel = {
+	menu: {
+		visible: window.GetProperty("SYSTEM.Menu.Visible", 1),
+		font: gdi.Font("Tahoma", 12),
+		str: ["File", "Edit", "View", "Playback", "Library", "Help", "Options"],
+	//	str: ["文件", "编辑", "视图", "播放", "媒体库", "帮助", "选项"],
+		y: 0,
+		h: 28
+	},
+	toolbar: {
+		y: 25,
+		h: 40
+	},
+	buttons: [],
+	menus: [],
+	menuImages: [],
+}
+
+var ww, wh;
+var btPlaylist;
+var mbg_id = null;
+var pressedId = null;
+
+var ButtonStates = {
+	normal: 0,
+	hover: 1,
+	down: 2
+}
+
+	
+
+// =================== libs  ==============================
+function RGBA(r, g, b, a) {
+    return ((a << 24) | (r << 16) | (g << 8) | (b));
+}
+
+function RGB(r, g, b) {
+    return (0xFF000000 | (r << 16) | (g << 8) | (b));
+}
+
+
+
+function StringFormat() {
+	var h_align = 0, v_align = 0, trimming = 0, flags = 0;
+	switch (arguments.length)
+	{
+	// fall-thru
+	case 4:
+		flags = arguments[3];
+	case 3:
+		trimming = arguments[2];
+	case 2:
+		v_align = arguments[1];
+	case 1:
+		h_align = arguments[0];
+		break;
+	default:
+		return 0;
+	}
+	return ((h_align << 28) | (v_align << 24) | (trimming << 20) | flags);
+}
+
+// return if mouse cursor in a [x, y, w, h] rectangle
+function trackMouse(mx, my, x, y, w, h) {
+	return (mx > x && mx < x + w && my > y && my < y + h);
+}
+
+// type: 1 - gdi+; 0,default - gdi
+// todo: ...
+function calcStrWidth(str, font, type) {
+	var tmp = gdi.CreateImage(1, 1);
+	var gs = tmp.GetGraphics();
+	var ret = 0;
+
+	switch(type) {
+		case 1: // gdi+
+			ret = gs.MeasureString(str, font, 0, 0, 0, 0).Width;
+			break;
+		case 0: //gdi
+		default:
+			ret = gs.CalcTextWidth(str, font);
+			break;
+	}
+
+	tmp.ReleaseGraphics(gs);
+	tmp.Dispose();
+
+	return Math.ceil(ret);
+}
+
+
+// ------- constructors -------
+
+// button obj v2
+
+function oButton(img, x, y) {
+	// img - [normal, hover, down]
+	this.img = img;
+	this.x = x;
+	this.y = y;
+	this.w = this.img[0].Width;
+	this.h = this.img[0].Height;
+	this.state = 0; // 0: normal, 1: hover, 2: down
+
+	this.updatePosition = function(x, y) {
+		this.x = x;
+		this.y = y;
+		this.w = this.img[0].Width;
+		this.h = this.img[0].Height;
+		this.repaint();
+	}
+
+	this.updateImage = function(img) {
+		this.img = img;
+		this.repaint();
+	}
+
+	this.draw = function(gr, alpha) {
+		this.img[this.state] && gr.DrawImage(this.img[this.state],
+				this.x, this.y, this.w, this.h, 0, 0, this.w, this.h, 0, alpha);
+	}
+
+	this.repaint = function() {
+		window.RepaintRect(this.x - 1, this.y - 1, this.w + 2, this.h + 2);
+	}
+
+	this.checkState = function(event, x, y) {
+		this.isHover = trackMouse(x, y, this.x, this.y, this.w, this.h);
+		this.old = this.state;
+		switch(event) {
+			case "down":
+				if (this.state < 2) { 
+					this.state = this.isHover ? 2 : 0; 
+					//this.isDown = this.isHover ? true : false;
+				}
+				break;
+			case "up":
+				this.state = this.isHover ? 1 : 0;
+				break;
+			case "right":
+				break;
+			case "move":
+				if (this.state < 2) { this.state = this.isHover ? 1 : 0; }
+				break;
+			case "leave":
+				this.state = this.isDown ? 2 : 0;
+				break;
+		}
+		if (this.state !== this.old) { this.repaint(); }
+		return this.state;
+	}
+
+}
+
+
+//  =============== Functions =============================
+
+function initButtons() {
+
+	var gb, i, s, img, tail;
+
+	tail = ["_off.png", "_ov.png", "_on.png"];
+
+	var bgColor = [RGBA(255, 255, 255, 25), RGBA(0, 0, 0, 5), RGBA(0, 0, 0, 55)];
+	var color1 = [RGBA(0, 0, 0, 70), RGBA(0, 0, 0, 70), RGBA(0, 0, 0, 113)];
+	var color2 = [0, 0, RGBA(0, 0, 0, 35)];
+	var color3 = [0, 0, RGBA(0, 0, 0, 17)];
+    var fontColor = [RGB(100, 100, 100), RGB(50, 50, 50), RGB(50, 50, 50)];
+	var r = 4.0;
+
+	btPlaylist = [];
+
+	var font = gdi.Font("Tahoma", 12, 1);
+	var w = calcStrWidth("Playlists", font, 1);
+
+	for (s = 0; s <= 2; s++) {
+		btPlaylist[s] = gdi.CreateImage(w + 20, 24);
+		gb = btPlaylist[s].GetGraphics();
+
+		gb.SetSmoothingMode(2);
+		gb.FillRoundRect(0, 0, 74, 23, r, r, bgColor[s]);
+		// 
+		color3[s] && gb.DrawRoundRect(2, 2, w+20-5, 19, r+2.0-2.0, r-2.0, 1.0, color3[s]);
+		color2[s] && gb.DrawRoundRect(1, 1, w+20-3, 21, r+2.0-1.0, r-1.0, 1.0, color2[s]);
+		color1[s] && gb.DrawRoundRect(0, 0, w+20-1, 23, r+2.0, r, 1.0, color1[s]);
+		gb.SetSmoothingMode(0);
+
+		gb.SetTextRenderingHint(3);
+		gb.DrawString("Playlists", font, RGBA(255, 255, 255, 200), 0+1, 0+1, w+20, 24, StringFormat(1, 1));
+		gb.DrawString("Playlists", font, fontColor[s], 0, 0, w+20, 24, StringFormat(1, 1));
+		gb.SetTextRenderingHint(0);
+
+		btPlaylist[s].ReleaseGraphics(gb);
+		// btPlaylist[s].SaveAs(gImagePath + "bt_playlist_menu" + tail[s]);
+	}
+
+	btLoupe = [];
+
+	panel.buttons.splice(0, panel.buttons.length);
+	for (i = 0; i < 3; i++) {
+		switch(i) {
+			case 0: // playlist button
+				panel.buttons.push(new oButton(btPlaylist, 0, 0));
+				break;
+			case 1: // playlist extra menu
+				//panel.buttons.push(new oButton( 0, 0));
+				break;
+			case 2:
+				break;
+		}
+	}
+
+}
+
+function initMenus() {
+	var i;
+
+	// file, edit, view, playback, library, help, options
+	for (i = 0; i < 7; i++) {
+        panel.menuImages[i] = setMenuButtons(panel.menu.str[i]);
+		panel.menus[i] = new oButton(panel.menuImages[i], 0, 0);
+	}
+}
+
+// return an arry(3)
+function setMenuButtons(label) {
+	var tmp = gdi.CreateImage(200, 40);
+	var gb = tmp.GetGraphics();
+	var w = calcStrWidth(label, panel.menu.font, 1) + 12;
+	var h = 21;
+	var bt =  [];
+
+	var bgColor = [0, RGBA(0, 0, 0, 5), RGBA(0, 0, 0, 155)];
+	var fontColor = [RGB(50, 50, 50), RGB(0, 0, 0), RGB(50, 50, 50)];
+	var color1 = [0, RGBA(0, 0, 0, 70), RGBA(0, 0, 0, 113)];
+	var color2 = [0, 0, RGBA(0, 0, 0, 35)];
+	var color3 = [0, 0, RGBA(0, 0, 0, 17)];
+
+	for (var s = 0; s <= 2; s++) {
+		bt[s] = gdi.CreateImage(w, h);
+		var gb = bt[s].GetGraphics();
+
+		gb.SetSmoothingMode(4);
+		bgColor[s] && gb.FillRoundRect(0, 0, w-1, h-1, 2, 2, bgColor[s]);
+        //
+		color1[s] && gb.DrawRoundRect(0, 0, w-1, h-1, 3, 3,1, color1[s]);
+		color2[s] && gb.DrawRoundRect(1, 1, w-3, h-3, 2, 2,1, color2[s]);
+		color3[s] && gb.DrawRoundRect(2, 2, w-5, h-5, 1, 1,1, color3[s]);
+		gb.SetSmoothingMode(0);
+
+		/*
+		gb.SetTextRenderingHint(4);
+		gb.DrawString(label, panel.menu.font, fontColor[s], 0, 0, w, h, StringFormat(1, 1));
+		gb.SetTextRenderingHint(0);
+		*/
+
+		bt[s].ReleaseGraphics(gb);
+		//bt[s].SaveAs("D:\\menu_" + label + s.toString() + ".png");
+	}
+
+	return bt;
+}
+
+// ---------- update panel size -----------
+
+
+function setMainMenuEntry(entry, x, y) {
+	var menuman = fb.CreateMainMenuManager();
+	var menu = window.CreatePopupMenu();
+	var ret;
+
+	menuman.Init(entry);
+	menuman.BuildMenu(menu, 1, 512);
+
+	ret = menu.TrackPopupMenu(x, y);
+
+	if (ret > 0) { 
+		menuman.ExecuteByID(ret - 1); 
+	}
+
+	menuman.Dispose();
+	menu.Dispose();
+
+
+	if (mbg_id != null) {
+		panel.menus[mbg_id].updateImage(setMenuButtons(panel.menu.str[mbg_id]));
+		mbg_id = null;
+		window.Repaint();
+	}
+}
+
+function setOptionsMenu(x, y) {
+	var idx;
+	var _menu = window.CreatePopupMenu();
+
+    _menu.AppendMenuItem(MF_STRING, 1, "Configure...");
+    _menu.AppendMenuItem(MF_STRING, 2, "Enable layout editing mode");
+    _menu.AppendMenuItem(MF_STRING, 3, "Create scratch box");
+    _menu.AppendMenuSeparator();
+	_menu.AppendMenuItem(MF_STRING, 4, "Test");
+
+	idx = _menu.TrackPopupMenu(x, y);
+	switch(idx) {
+        case 1:
+            fb.ShowPreferences("参数选项: 组件");
+            break;
+        case 2:
+            fb.RunMainMenuCommand("视图/布局/启用布局编辑模式");
+            break;
+        case 3:
+            fb.RunMainMenuCommand("视图/布局/创建组合箱");
+            break;
+		case 4:
+			toggleMenuShow();
+			break;
+	}
+
+	_menu.Dispose();
+
+	if (mbg_id != null) {
+		panel.menus[mbg_id].updateImage(setMenuButtons(panel.menu.str[mbg_id]));
+		mbg_id = null;
+		window.Repaint();
+	}
+}
+
+
+function setPlaylistManagerMenu(x, y) {
+}
+
+
+
+// ==================== main process =======================
+// exec once on start
+initMenus();
+
+// ================= callbacks functions  ==================
+// exec on events
+window.MinHeight = window.MaxHeight = 28;
+function on_size() {
+	ww = window.Width;
+	wh = window.Height;
+	if(!ww || !wh) { return; }
+
+	// set menu locations
+	if (panel.menu.visible) {
+		var menu_start_x = 5;
+		for (var i = 0; i < panel.menus.length; i++) {
+			switch(i) {
+				case 0:
+					panel.menus[i].updatePosition(menu_start_x, (panel.menu.h-21)/2);
+					break;
+				default:
+					panel.menus[i].updatePosition(panel.menus[i-1].x + panel.menus[i-1].w + 2, (panel.menu.h-21)/2);
+					break;
+			}
+		}
+	}
+
+}
+
+function on_paint(gr) {
+	// draw background
+    gr.FillSolidRect(0, 0, ww, wh, RGB(195, 195, 195));
+    //gr.FillGradRect(0, 0, ww, wh, 90, 0, RGBA(0, 0, 0, 25));
+    gr.DrawLine(0, wh-2, ww, wh-2, 1, RGBA(255, 255, 255, 5));
+    gr.DrawLine(0, wh-1, ww, wh-1, 1, RGBA(0, 0, 0, 55));
+//	gr.SetSmoothingMode(0);
+
+	// draw menus
+	if (panel.menu.visible) {
+		var mcolor;
+		for (var i = 0; i < panel.menus.length; i++) {
+			panel.menus[i].draw(gr, 255);
+			mcolor = (mbg_id == i) ? RGB(240, 240, 240) : RGB(0, 0, 0);
+			gr.GdiDrawText(panel.menu.str[i], panel.menu.font, mcolor,
+					panel.menus[i].x, panel.menus[i].y, panel.menus[i].w, panel.menus[i].h, DT_CC);
+		}
+	}
+}
+
+
+
+function on_mouse_lbtn_down(x, y, mask) {
+
+	// buttons
+    pressedId = null;
+    window.Repaint();
+
+
+	// menu buttons
+	
+	if (panel.menu.visible) {
+		mbg_id = null;
+		window.Repaint();
+		for (var i = 0; i < panel.menus.length; i++) {
+			if (panel.menus[i].checkState("down", x, y, i) == 2) {
+
+				mbg_id = i;
+
+				panel.menus[mbg_id].updateImage([
+						setMenuButtons(panel.menu.str[mbg_id])[2],
+						setMenuButtons(panel.menu.str[mbg_id])[1],
+						setMenuButtons(panel.menu.str[mbg_id])[2]
+						]);
+				
+				if (i == panel.menus.length - 1) { 
+					setOptionsMenu(panel.menus[i].x, panel.menus[i].y + panel.menus[i].h); }
+				else { 
+					setMainMenuEntry(panel.menu.str[i], panel.menus[i].x, 
+							panel.menus[i].y + panel.menus[i].h); 
+				}
+
+				panel.menus[i].checkState("move", 0, 0, i);
+			}	
+		}
+	}
+
+    window.Repaint();
+
+}
+
+function on_mouse_lbtn_up(x, y, mask) {
+	// menu buttons
+
+	if (panel.menu.visible) {
+		mbg_id = null;
+		window.Repaint();
+
+		for (var i = 0; i < panel.menus.length; i++) {
+			if (panel.menus[i].checkState("down", x, y, i) == 2) { 
+
+				mbg_id = i;
+
+				panel.menus[mbg_id].updateImage([
+						setMenuButtons(panel.menu.str[mbg_id])[2],
+						setMenuButtons(panel.menu.str[mbg_id])[1],
+						setMenuButtons(panel.menu.str[mbg_id])[2]
+						]);
+
+				if (i !== panel.menus.length -1) {
+					setMainMenuEntry(panel.menu.str[i], 
+                            panel.menus[i].x, panel.menus[i].y +panel.menus[i].h);
+				} else {
+					setOptionsMenu(panel.menus[i].x, panel.menus[i].y + panel.menus[i].h);
+				}
+				panel.menus[i].checkState("move", x, y, i);
+			}
+		}
+	}
+
+}
+
+function on_mouse_lbtn_dblclk(x, y) {
+}
+
+function on_mouse_rbtn_down(x, y) {
+}
+
+function on_mouse_move(x, y) {
+	// menus
+	if (panel.menu.visible) {
+		for (var i = 0; i < panel.menus.length; i++) {
+			if (panel.menus[i].checkState("move", x, y) == 1) { }
+		}
+	}
+
+}
+
+function on_mouse_leave() {
+	// menus
+	if (panel.menu.visible) {
+		for (var i = 0; i < panel.menus.length; i++) {
+			panel.menus[i].checkState("leave");
+		}
+	}
+}
+
+function on_mouse_wheel(step) {
+
+}
+
+function on_focus(is_focused) {
+}
+
+function toRGB(d){ // convert back to RGB values
+	var d = d - 0xff000000;
+	var r = d >> 16;
+	var g = d >> 8 & 0xFF;
+	var b = d & 0xFF;
+	return [r,g,b];
+};
+
+function blendColors(c1, c2, factor) {
+	// When factor is 0, result is 100% color1, when factor is 1, result is 100% color2.
+	var c1 = toRGB(c1);
+	var c2 = toRGB(c2);
+	var r = Math.round(c1[0] + factor * (c2[0] - c1[0]));
+	var g = Math.round(c1[1] + factor * (c2[1] - c1[1]));
+	var b = Math.round(c1[2] + factor * (c2[2] - c1[2]));
+	//fb.trace("R = " + r + " G = " + g + " B = " + b);
+	return (0xff000000 | (r << 16) | (g << 8) | (b));
+};
+
+function GetKeyboardMask() {
+    var c = utils.IsKeyPressed(VK_CONTROL) ? true : false;
+    var a = utils.IsKeyPressed(VK_ALT) ? true : false;
+    var s = utils.IsKeyPressed(VK_SHIFT) ? true : false;
+    var ret = KMask.none;
+    if (c && !a && !s) ret = KMask.ctrl;
+    if (!c && !a && s) ret = KMask.shift;
+    if (c && !a && s) ret = KMask.ctrlshift;
+    if (c && a && !s) ret = KMask.ctrlalt;
+    if (c && a && s) ret = KMask.ctrlaltshift;
+    if (!c && a && !s) ret = KMask.alt;
+    return ret;
+};
+
+function getColors() {
+}
+
+
+// vi:set ft=javascript ff=unix et:
