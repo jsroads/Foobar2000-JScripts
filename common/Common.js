@@ -57,6 +57,10 @@ Array.prototype.unique = function() {
 function print(msg) {
     fb.trace("---> " + msg);
 }
+
+function console(s) {
+	fb.trace(s);
+};
 //--->
 
 function caller() {

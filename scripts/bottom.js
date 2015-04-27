@@ -366,14 +366,14 @@ function on_mouse_wheel(step) {
 	volumeBar.on_mouse_wheel(step);
 }
 
-function updateESLyric() {
+//function updateESLyric() {
   //  if (fb.IsPlaying) {
-        window.NotifyOthers("_eslyric_set_text_fallback_", "This is Jeannela's foobar2000!\n- ESLyric by ttsping -");
-        window.NotifyOthers("_eslyric_set_text_titleformat_fallback_", "[Artist: %artist%$crlf()]Title: %title%[$crlf()Album: %album%]$crlf()$crlf()- No Lyric -");
+        window.NotifyOthers("_eslyric_set_text_fallback_", "This is Jeannela's foobar2000!\n- ESLyric -");
+        window.NotifyOthers("_eslyric_set_text_titleformat_fallback_", "[Artist: %artist%$crlf()]Title: %title%$crlf()- No Lyric -");
         
    // }   
-}
-updateESLyric();
+//}
+//updateESLyric();
 // ========================================================================
 function on_playback_order_changed(new_order) {
 	refreshPlaybackOrderButton();
@@ -457,26 +457,68 @@ function refreshPlaybackOrderButton() {
 }
 
 function ESLyricPopupMenu(x, y) {
+    var metadb = fb.IsPlaying ? fb.GetNowPlaying() : null;
+    var no_lyric;
+    if (metadb) {
+        var no_lyric = $("$meta(ESLYRIC)", metadb).toLowerCase() == "no-lyric";
+    }
 	if (fb.GetMainMenuCommandStatus('View/ESLyric/显示桌面歌词') & MENU_ITEM_CHECKED) {
 		buttons[0].update(images.lrc_on_down, images.lrc_on_down, images.lrc_on_down);
 	} else {
 		buttons[0].update(images.lrc_off_down, images.lrc_off_down, images.lrc_off_down);
 	}
 	var _esl = window.CreatePopupMenu();
-	_esl.AppendMenuItem(MF_STRING, 1, "显示ESLyric面板");
-	_esl.AppendMenuItem(MF_STRING, 2, "显示ESLyric桌面歌词");
+	_esl.AppendMenuItem(MF_STRING, 1, "ESLyric 面板");
+	_esl.AppendMenuItem(MF_STRING, 2, "显示桌面歌词");
+    _esl.CheckMenuItem(2, fb.GetMainMenuCommandStatus("View/ESLyric/显示桌面歌词") & MENU_ITEM_CHECKED);
 	_esl.AppendMenuSeparator();
+    if (metadb) {
+        _esl.AppendMenuItem(MF_STRING, 10, "Set NO-LYRIC");
+        _esl.CheckMenuItem(10, no_lyric);
+        _esl.AppendMenuSeparator();
+    };
 	_esl.AppendMenuItem(MF_STRING, 3, "歌词搜索...");
 	_esl.AppendMenuItem(MF_STRING, 4, "重载歌词");
 	_esl.AppendMenuItem(MF_STRING, 5, "置顶桌面歌词");
+    _esl.CheckMenuItem(5, fb.GetMainMenuCommandStatus("View/ESLyric/置顶桌面歌词") & MENU_ITEM_CHECKED);
 	_esl.AppendMenuItem(MF_STRING, 6, "锁定桌面歌词");
-	_esl.AppendMenuItem(MF_STRING, 7, "参数设置");
+    _esl.CheckMenuItem(6, fb.GetMainMenuCommandStatus("View/ESLyric/锁定桌面歌词") & MENU_ITEM_CHECKED);
+	_esl.AppendMenuItem(MF_STRING, 7, "参数设置...");
 
 	var id = _esl.TrackPopupMenu(x, y);
 	switch(id) {
-		case 1:
+        case 1:
+            fb.RunMainMenuCommand("View/ESLyric/ESLyric 面板");
+            break;
+		case 2:
+            fb.RunMainMenuCommand("View/ESLyric/显示桌面歌词");
+            break;
+        case 3:
+            fb.RunMainMenuCommand("View/ESLyric/歌词搜索...");
+            break;
+        case 4:
+            fb.RunMainMenuCommand("View/ESLyric/重载歌词");
+            break;
+        case 5:
+            fb.RunMainMenuCommand("View/ESLyric/置顶桌面歌词");
+            break;
+        case 6:
+            fb.RunMainMenuCommand("View/ESLyric/锁定桌面歌词");
+            break;
+        case 7:
+            fb.RunMainMenuCommand("View/ESLyric/参数设置...");
+            break;
+        case 10:
+            if (metadb) {
+                if (no_lyric) {
+                    metadb.UpdateFileInfoSimple("ESLYRIC", "");
+                } else {
+                    metadb.UpdateFileInfoSimple("ESLYRIC", "NO-LYRIC");
+                };
+                fb.RunMainMenuCommand("View/ESLyric/重载歌词") || fb.RunMainMenuCommand("视图/ESLyric/重载歌词");
+            };
 			break;
-	}
+	};
 
 	_esl.Dispose();
 	if (fb.GetMainMenuCommandStatus('View/ESLyric/显示桌面歌词') & MENU_ITEM_CHECKED) {
