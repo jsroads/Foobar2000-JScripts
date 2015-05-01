@@ -292,10 +292,8 @@ function on_mouse_lbtn_up(x, y, m) {
 		switch (i) {
 			case 0:
 				if (buttons[i].checkState('up', x, y) == ButtonStates.hover) {
-					//fb.RunMainMenuCommand('View/ESLyric/显示桌面歌词');
-
-					//refreshEslyricButton();
 					ESLyricPopupMenu(buttons[0].x, buttons[0].y);
+                    //ReloadLyric();
 				}
 				break;
 			case 1:
@@ -456,7 +454,8 @@ function refreshPlaybackOrderButton() {
 	buttons[5].repaint();
 }
 
-function ESLyricPopupMenu(x, y) {
+function ESLyricPopupMenu(x, y, callback) {
+    var timer_id;
     var metadb = fb.IsPlaying ? fb.GetNowPlaying() : null;
     var no_lyric;
     if (metadb) {
@@ -515,8 +514,8 @@ function ESLyricPopupMenu(x, y) {
                 } else {
                     metadb.UpdateFileInfoSimple("ESLYRIC", "NO-LYRIC");
                 };
-                fb.RunMainMenuCommand("View/ESLyric/重载歌词") || fb.RunMainMenuCommand("视图/ESLyric/重载歌词");
             };
+            ReloadLyric();
 			break;
 	};
 
@@ -527,5 +526,15 @@ function ESLyricPopupMenu(x, y) {
 		buttons[0].update(images.lrc_off_normal, images.lrc_off_normal, images.lrc_off_down);
 	}
 	buttons[0].repaint();
+
 }
+
+function ReloadLyric() {
+    window.SetTimeout(function() {
+        fb.RunMainMenuCommand("View/ESLyric/重载歌词");
+        fb.trace("reload lyric");
+    }, 200);
+};
+
+
 

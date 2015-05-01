@@ -26,10 +26,10 @@ if (!safeMode) {
         UIHacks = new ActiveXObject("UIHacks");
     }
 }
-var panelsBackColor = RGB(255, 255, 255);
-var panelsLineColor = RGBA(51, 153, 255, 155);
-var panelsLineColorSelected = panelsLineColor;
-var panelsNormalTextColor = RGB(62, 62, 62);
+//var panelsBackColor = RGB(255, 255, 255);
+//var panelsLineColor = RGBA(51, 153, 255, 155);
+//var panelsLineColorSelected = panelsLineColor;
+//var panelsNormalTextColor = RGB(62, 62, 62);
 // ================================================================================= //
 //--->
 
@@ -563,69 +563,44 @@ var PlaybackOrder = {
 };
 //--->
 
-Guifx = {
+var AlbumArtId = {
+	front: 0,
+	back: 1,
+	disc: 2,
+	icon: 3,
+	artist: 4
+};
 
-    Play: 1,
-    Pause: 2,
-    Stop: 3,
-    Record: 4,
-    Rewind: 5,
-    FastForward: 6,
-    Previous: 7,
-    Next: 8,
-    Replay: 9,
-    Refresh: 0,
-    Mute: "!",
-    Mute2: "@",
-    VolumeDown: "#",
-    VolumeUp: "$",
-    ThumbsDown: "%",
-    ThumbsUp: "^",
-    Shuffle: "\&",
-    Repeat: "*",
-    Repeat1: "(",
-    Zoom: ")",
-    ZoomOut: "_",
-    ZoomIn: "+",
-    Minus: "-",
-    Plus: "=",
-    Up: "W",
-    Down: "S",
-    Left: "A",
-    Right: "D",
-    Up2: "w",
-    Down2: "s",
-    Left2: "a",
-    Right2: "d",
-    Start: "{",
-    End: "}",
-    Top: "?",
-    Bottom: "/",
-    JumpBackward: "[",
-    JumpForward: "]",
-    SlowBackward: ":",
-    SlowForward: "\"",
-    Eject: "\'",
-    Reject: ";",
-    Up3: ".",
-    Down3: ",",
-    Left3: "<",
-    Right: ">",
-    Guifx: "g",
-    ScreenUp: "|",
-    ScreenDown: "\\",
-    Power: "q",
-    Checkmark: "z",
-    Close: "x",
-    Hourglass: "c",
-    Heart: "v",
-    Star: "b",
-    Fire: "i",
-    Medical: "o",
-    Police: "p"
+// new color and fonts parameters 
+var ColorTypeDUI = {
+	text: 0,
+	background: 1,
+	highlight: 2,
+	selection: 3
+};
+var ColorTypeCUI = {
+	text: 0,
+	selection_text: 1,
+	inactive_selection_text: 2,
+	background: 3,
+	selection_background: 4,
+	inactive_selection_background: 5,
+	active_item_frame: 6
+};
 
-}
-//--->
+var FontTypeCUI = {
+	items: 0,
+	labels: 1
+};
+
+var FontTypeDUI = {
+	defaults: 0,
+	tabs: 1,
+	lists: 2,
+	playlists: 3,
+	statusbar: 4,
+	console: 5
+};
 
 function link(site, metadb) {
 
