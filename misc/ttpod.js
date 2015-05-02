@@ -4,13 +4,14 @@
 
 var xmlHttp = new ActiveXObject("Msxml2.ServerXMLHTTP.6.0");
 var debug = 0; // 如果要调试的话，改为 1.
+var ttpod = utils.CreateHttpRequest("GET");
 
 function get_my_name() {
 	return "天天动听";
 }
 
 function get_version() {
-	return "0.0.5";
+	return "0.1.0";
 }
 
 function get_author() {
@@ -28,18 +29,24 @@ function start_search(info, callback) {
 	artist = process_keywords(artist);
 	searchURL = "http://so.ard.iyyin.com/search.do?q=" + title + "+" + artist;
 
+	/*
 	try {
 		xmlHttp.open("GET", searchURL, false);
 		xmlHttp.send();
 	} catch(e) {
 		return;
 	}
+	*/
+	var htmlText = ttpod.Run(searchURL);
 
 	var newLyric = fb.CreateLyric();
 
-	if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+	//if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+	if (htmlText.length) {
 		
-		var results = json(xmlHttp.responseText);
+		//var results = json(xmlHttp.responseText);
+		var results = json(htmlText);
+
         if (!results.count) {
             return;
         }
@@ -50,20 +57,28 @@ function start_search(info, callback) {
 
 		// download lyric
 		for (var j = 0; j < data.length; j++) {
+			/*
 			try {
 				xmlHttp.open("GET", generate_url(data[j].singerName, data[j].songName, data[j].neid), false);
 				xmlHttp.send();
 			} catch(e) { continue; }
+			*/
+			var jsonText = ttpod.Run(generate_url(data[j].singerName, data[j].songName, data[j].neid));
 
-			if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+			//if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+			if (jsonText.length > 0) {
 				try {
-					if (json(xmlHttp.responseText).data.lrc) {
+					//if (json(xmlHttp.responseText).data.lrc) {
+					var lyricText = json(jsonText).data.lrc;
+					if (lyricText) {
                         
                         tracks[count++] = {
-                            lyric: json(xmlHttp.responseText).data.lrc,
+                            //lyric: json(xmlHttp.responseText).data.lrc,
+							lyric: lyricText,
                             title: data[j].songName,
                             artist: data[j].singerName
                         }
+
                     }
 				} catch(e) {
 					continue;
