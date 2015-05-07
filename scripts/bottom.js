@@ -1,6 +1,15 @@
 ﻿// vim:set ft=javascript et:
 // updated: 2015/04/27
 
+
+// settings
+var properties = {
+    enableCustomColors: window.GetProperty("*Color.Enable Custom Color", false),
+    sliderHeight: window.GetProperty("*Slider.Height", 2),
+    panelHeight: 56,
+
+};
+
 function getImagePath(image) {
 	return gdi.Image(imagePath + image);
 };
@@ -11,6 +20,8 @@ var MENU_ITEM_CHECKED = 1 << 1;
 var ww = 0, wh = 0;
 
 var buttons = [];
+var fonts = {};
+var colors = {};
 var imagePath = fb.ProfilePath + 'common\\icons\\';
 var images = {
 	// button icons
@@ -40,6 +51,7 @@ var images = {
 	shuffle_on_down: getImagePath('shuffle_on-down.png'),
 	// volume knob
 	soundBar_knob: getImagePath('soundBar-knob.png'),
+    seekSlider_cursor: getImagePath('cursor.png'),
 };
 
 var hand = false;
@@ -48,7 +60,7 @@ var mouseOver = false;
 var stopped = false;  // playback status: stopped
 var shuffleType = window.GetProperty("shuffle type", 4);
 
-window.MaxHeight = window.MinHeight = 50;
+window.MaxHeight = window.MinHeight = properties.panelHeight;
 window.MinWidth = 350;
 // init buttons
 buttons = [
@@ -63,58 +75,54 @@ buttons = [
 // refresh buttons
 refreshPlayOrPauseButton();
 refreshPlaybackOrderButton();
+getColors();
 
 
 
 // volumebar
 var volumeBar = new function() {
+
 	this.pos = 0;
-	this.start = 0;
 	this.hovX = 0;
 	this.drag = 0;
 	this.dragHov = false;
-	var w1 = 105;
-	var w2 = 101;
+	this.x = 0;
 	this.y;
+    this.w = 105;
+    this.h = properties.sliderHeight;
 
+	this.draw = function(gr, x, y) {
 
-	this.draw = function(gr, start, y) {
-		this.start = start;
+		this.x = x;
 		this.y = y;
+
 		// background
-		gr.SetSmoothingMode(2);
-		gr.FillRoundRect(this.start + 0, this.y - 1.5, w1, 9.5, 4.5, 4.5, RGBA(255, 255, 255, 210));
-		gr.FillRoundRect(this.start + 0, this.y - 1.5, w1, 8.5, 4.0, 4.0, RGBA(0, 0, 0, 140));
-		gr.FillRoundRect(this.start + 1, this.y + 0.5, w1 - 2, 6, 3, 3, RGBA(255, 255, 255, 110));
-		gr.FillRoundRect(this.start + 0, this.y - 0.5, w1, 6, 3, 3, RGBA(255, 255, 255, 10));
-		gr.DrawRoundRect(this.start + 0, this.y - 1.5, w1, 8.0, 4.0, 4.0, 1.0, RGBA(0, 0, 0, 25));
-		gr.FillRoundRect(this.start + 0.5, this.y - 0.5, w1-1, 3, 1.2, 1.2, RGBA(0, 0, 0, 15));
-		gr.SetSmoothingMode(0);
-		// cursor
-		gr.SetSmoothingMode(2);
-		this.pos = vol2pos(fb.Volume);
-		if (this.pos > 0) {
-			gr.FillRoundRect(this.start + 1, this.y - 0, 6 + this.pos - 1, 6, 2.5, 2.5, RGBA(12, 12, 12, 90));
-			gr.FillRoundRect(this.start + 2, this.y + 1, 6 + this.pos - 3, 4.5, 2.0, 2.0, RGBA(255, 255, 255, 40));
-		}
-		gr.SetSmoothingMode(0);
-		var knob = images.soundBar_knob;
-		gr.DrawImage(knob, this.start + this.pos - 9 + 2, this.y - 5, knob.Width - 0, knob.Height, 0, 0, knob.Width, knob.Height, 0, 255);
+        gr.FillSolidRect(this.x, this.y, this.w, this.h, RGB(226, 226, 226));
+
+        // cursor 
+        this.pos = vol2pos(fb.Volume) * this.w;
+        //fb.trace(this.pos);
+        if (this.pos > 0) {
+            gr.FillSolidRect(this.x, this.y, this.pos, this.h , colors.highlight);
+        }
+
 	};
 
+    this.isMouseOver = function(x, y) {
+        return (x > this.x && x < this.x + this.w && y > this.y -3 && y < this.y + this.h + 5);
+    };
+
+
 	this.on_mouse_move = function (x, y) {
+
 		// vol hover?
-		// var temp = this.dragHov;
-		if ((x - 1) >= this.start && (x-1) <= this.start+w1 && y > this.y - 3 && y < this.y + 9) {
-			this.dragHov = true;
-		} else {
-			this.dragHov = false;
-		}
+        this.dragHov = this.isMouseOver(x, y) ? true : false;
 
 		// volume seeker
 		if (this.drag) {
-			var v = pos2vol((x - 1) - this.start);
-			v = (v <= -100) ? -100 : (v >= 0) ? 0 : v;
+            x -= this.x;
+            var pos = x < 0 ? 0 : x > this.w ? 1 : x / this.w;
+			var v = pos2vol(pos);
 			fb.Volume = v;
 		}
 	}
@@ -123,7 +131,7 @@ var volumeBar = new function() {
 		// if volume click
 		if (this.dragHov) {
 			this.drag = true;
-			this.on_mouse_move(x - 1, y + 1);
+			this.on_mouse_move(x, y);
 		} else {
 			this.drag = false;
 		}
@@ -134,68 +142,97 @@ var volumeBar = new function() {
 	}
 
 	this.on_mouse_wheel = function(delta) {
-		if (this.dragHov) {
-			if (delta > 0) {
-				this.pos = this.pos < this.start + w2 ? this.pos+2 : this.pos;
-			} else {
-				this.pos = this.pos <= 0 ? this.pos : this.pos - 2;
-			}
-			var v = pos2vol(this.pos);
-			v = (v <= 100) ? -100 : (v >= 0) ? 0 : v;
-			fb.Volume = v;
-			window.RepaintRect(this.start - 15, 0, w2 + 30, wh);
-		}
+
 	}
 
 	this.on_volume_change = function(val) {
-		window.RepaintRect(this.start - 15, 0, w2 + 30, wh);
+		window.RepaintRect(this.x, this.y, this.w+1, this.h);
 	};
 
-	function pos2vol(pos) {
-		return (50 * Math.log(0.99 * (pos/w2<0?0:pos/w2) + 0.01) / Math.LN10);
-	}
-
-	function vol2pos(v){
-		return (Math.round(((Math.pow(10, v / 50) - 0.01) / 0.99)*w2));
-	}
 
 }();
 
+function pos2vol(pos) {
+     return (50 * Math.log(0.99 * pos + 0.01) / Math.LN10);
+}
+
+// Inverse function of pos2vol()
+function vol2pos(v){
+     return ((Math.pow(10, v / 50) - 0.01) / 0.99);
+}
+
 var seekSlider = new function() {
+
+    this.h = properties.sliderHeight;
+
     this.draw = function(gr, x, y) {
         this.x = x;
         this.y = y;
-        this.w = ww - this.x * 2;
         // seek bg
-        gr.SetSmoothingMode(2);
-        gr.FillRoundRect(this.x + 1, this.y + 0, this.w - 2, 7, 3, 3, RGBA(0, 0, 0, 140));
-        gr.FillRoundRect(this.x + 2, this.y + 2, this.w - 4, 5, 1, 1, RGBA(255, 255, 255, 110));
-        gr.FillRoundRect(this.x + 1, this.y + 1, this.w - 2, 5, 1, 1, RGBA(255, 255, 255, 110));
+        gr.FillSolidRect(this.x, this.y, this.w, this.h, RGB(200, 200, 200));
         // seek cursor
         if (fb.PlaybackLength > 0) {
             if (this.pos > 1) {
-                gr.FillRoundRect(this.x + 0, this.y + 0.5, 3 + this.pos, 6, 2.0, 2.0, RGBA(70, 72, 75, 120));
+                gr.FillSolidRect(this.x, this.y, this.pos, this.h, colors.highlight);
             }
         }
                 
     };
     this.on_size = function () {
-       // this.w  = ww - this.x * 2;
-        this.h = 8;
+        this.w = ww - volumeBar.w - 5;
     };
-    this.on_playback_time = function (time) {
+    this.on_playback_seek = function (time) {
         this.pos = (fb.PlaybackTime / fb.PlaybackLength) * this.w;
         this.repaint();
     }; 
     this.repaint = function() {
         window.RepaintRect(0, this.y - 2, ww, 10);
-    }        
+    };
+
+    this.isMouseOver = function(x, y) {
+        return (x > this.x && x < this.x + this.w && y > this.y-5 && y < this.y + this.h + 10);
+    };
+
+    this.on_mouse_lbtn_down = function(x, y) {
+        if (this.isMouseOver(x, y)) {
+            if (fb.PlaybackLength) {
+                this.drag = true;
+                this.dragSeek = (x > this.x) ? (x - this.x)/this.w : (x < this.x + this.w) ? (x - this.x)/this.w : 1;
+                this.dragSeek = (this.dragSeek < 0) ? 0 : (this.dragSeek < 1) ? this.dragSeek : 1;
+                fb.PlaybackTime = fb.PlaybackLength * this.dragSeek;
+                this.on_playback_seek();
+            }
+        }
+    };
+
+    this.on_mouse_lbtn_up = function(x, y) {
+        if (this.drag) {
+            this.drag = false;
+        }
+    };
+
+    this.on_mouse_move = function(x, y) {
+        if (this.drag) {
+            this.dragSeek = (x > this.x) ? (x - this.x)/this.w : (x < this.x + this.w) ? (x - this.x)/this.w : 1;
+            this.dragSeek = (this.dragSeek < 0) ? 0 : (this.dragSeek < 1) ? this.dragSeek : 1;
+            fb.PlaybackTime = fb.PlaybackLength * this.dragSeek;
+            this.on_playback_seek();
+        }
+    };
+
+
     this.pos = 0;
+    this.drag = false;
     this.x;
     this.y;
     this.w;
     this.h;
-}()
+}();
+
+
+
+window.NotifyOthers("_eslyric_set_text_fallback_", "This is Jeanne's foobar2000!\n- ESLyric -");
+window.NotifyOthers("_eslyric_set_text_titleformat_fallback_", "[Artist: %artist%$crlf()]Title: %title%$crlf()- No Lyric -");
 
 
 function on_size() {
@@ -209,15 +246,11 @@ function on_size() {
 function on_paint(gr) {
     
 	// draw background
-
-    gr.FillSolidRect(0, 0, ww, wh, RGB(195, 195, 195));
-    gr.FillSolidRect(0, 0, ww, 1, RGBA(0, 0, 0, 100));
-    gr.FillSolidRect(0, wh-31, ww, 1, RGBA(0, 0, 0, 50));
-    gr.FillSolidRect(0, wh-30, ww, 1, RGBA(255, 255, 255, 100));
+    gr.FillSolidRect(0, 0, ww, wh, colors.background);
 
 	// draw buttons
 	for (var i = 0; i < buttons.length; i++) {
-		var bh = (wh - 30) + (30 - buttons[i].h) / 2;
+        var bh = properties.sliderHeight + (wh - properties.sliderHeight - buttons[i].h) / 2;
 		switch (i) {
 			case 0:
 				if (fb.GetMainMenuCommandStatus('View/ESLyric/显示桌面歌词') & MENU_ITEM_CHECKED) {
@@ -228,28 +261,31 @@ function on_paint(gr) {
 				buttons[i].draw(gr, 10, bh);
 				break;
 			case 1:
-				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 15, bh);
+				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 10, bh);
 				break;
 			case 2:
-				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 5, bh);
+				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 10, bh);
 				break;
 			case 3:
-				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 5, bh);
+				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 10, bh);
 				break;
 			case 4:
-				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 20, bh);
+				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 10, bh);
 				break;
 			case 5:
-				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 5, bh);
+				buttons[i].draw(gr, buttons[i-1].x + buttons[i-1].w + 10, bh);
 				break;
 		}
 	}
 
 	// draw volumeBar
-	volumeBar.draw(gr, ww - 125, (wh - 30) + (30-6)/2);
+	volumeBar.draw(gr, ww - volumeBar.w, 0);
     
     // draw seekbar
-    seekSlider.draw(gr, 5, 6);
+    seekSlider.draw(gr, 0, 0);
+    
+
+    //DrawBoxBlurText(gr, "Text 汉字", gdi.font("Segoe UI", 14, 1), RGB(50, 50, 50), RGB(0, 20, 100), 4, 3, 200, 10 , 80, 20, StringFormat(1, 1));
 
 }
 
@@ -262,6 +298,10 @@ function on_mouse_move(x, y) {
 	
 	// sound bar
 	volumeBar.on_mouse_move(x, y);
+
+    // seek slider
+    seekSlider.on_mouse_move(x, y);
+
 }
 
 function on_mouse_lbtn_down(x, y, m) {
@@ -274,6 +314,9 @@ function on_mouse_lbtn_down(x, y, m) {
 
 	// sound bar
 	volumeBar.on_mouse_lbtn_down(x, y);
+
+    // seek slider
+    seekSlider.on_mouse_lbtn_down(x, y);
 }
 
 function on_mouse_lbtn_dblclk(x, y, m) {
@@ -340,6 +383,9 @@ function on_mouse_lbtn_up(x, y, m) {
 
 	// sound bar
 	volumeBar.on_mouse_lbtn_up(x, y);
+
+    // seek slider 
+    seekSlider.on_mouse_lbtn_up(x, y);
 }
 
 
@@ -364,14 +410,6 @@ function on_mouse_wheel(step) {
 	volumeBar.on_mouse_wheel(step);
 }
 
-//function updateESLyric() {
-  //  if (fb.IsPlaying) {
-        window.NotifyOthers("_eslyric_set_text_fallback_", "This is Jeannela's foobar2000!\n- ESLyric -");
-        window.NotifyOthers("_eslyric_set_text_titleformat_fallback_", "[Artist: %artist%$crlf()]Title: %title%$crlf()- No Lyric -");
-        
-   // }   
-//}
-//updateESLyric();
 // ========================================================================
 function on_playback_order_changed(new_order) {
 	refreshPlaybackOrderButton();
@@ -380,15 +418,18 @@ function on_playback_order_changed(new_order) {
 function on_playback_stop(reason) {
 	//if (reason === 0) {
 		refreshPlayOrPauseButton();
+        seekSlider.repaint();
 	//}
 }
 
 function on_playback_starting(cmd, is_paused) {
 	refreshPlayOrPauseButton();
+    seekSlider.repaint();
 }
 
 function on_playback_new_track(metadb) {
 	refreshPlayOrPauseButton();
+    seekSlider.repaint();
 }
 
 function on_playback_pause(state) {
@@ -396,12 +437,18 @@ function on_playback_pause(state) {
 }
 
 function on_playback_time(time) {
-    seekSlider.on_playback_time();
+    seekSlider.on_playback_seek();
 }
+ 
 
 function on_volume_change(val) {
 	volumeBar.on_volume_change(val);
 }
+
+function on_colors_changed() {
+    getColors();
+    window.Repaint();
+};
 
 // ================================================= // tool functions
 
@@ -536,5 +583,44 @@ function ReloadLyric() {
     }, 200);
 };
 
+function getColors() {
+
+    var arr;
+    arr = window.GetProperty("*Colors.Highlight", "1-160-216").split("-");
+    colors.highlight = RGB(arr[0], arr[1], arr[2]);
+
+    // get system's highlight color
+    if (!properties.enableCustomColors) {
+        if (window.InstanceType ==0) {
+            colors.highlight = window.GetColorCUI(ColorTypeCUI.active_item_frame);
+        } else if (window.InstanceType == 1) {
+            colors.highlight = window.GetColorDUI(ColorTypeDUI.highlight);
+        }
+    }
+
+    // background color
+    arr = window.GetProperty("*Colors.Background", "240-240-240").split("-");
+    colors.background = RGB(arr[0], arr[1], arr[2]);
+
+};
 
 
+function DrawBoxBlurText(gr, text, font, font_color, shadow_color, radius, iteration, x, y, w, h, align) {
+
+    var img_to_blur, _g;
+
+    img_to_blur = gdi.CreateImage(w*10, h*10);
+    _g = img_to_blur.GetGraphics();
+
+    _g.SetTextRenderingHint(TextRenderingHint.AntiAlias);
+    _g.DrawString(text, font, shadow_color, 2*x, 2*y, w, h, align);
+
+    img_to_blur.ReleaseGraphics(_g);
+    img_to_blur.BoxBlur(radius, iteration);
+
+    img_to_blur && gr.DrawImage(img_to_blur, x, y, w, h, x*2, y*2, w, h, 0, 255);
+    gr.SetTextRenderingHint(TextRenderingHint.ClearTypeGridFit);
+    gr.DrawString(text, font, font_color, x, y, w, h, align);
+    gr.SetTextRenderingHint(TextRenderingHint.Default);
+
+};

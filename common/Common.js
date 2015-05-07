@@ -1,12 +1,4 @@
-// ====================================== //
-// @name "Common (22.10.2013)"
-// @author "eXtremeHunter"
-// ====================================== //
-//---> 
-//---> Common Helpers, Flags
-//--->
-var themeName = "CaTRoX";
-var themeVersion = "";
+//## updated: 2015/05/04
 
 // ================================================================================= //
 var safeMode = uiHacks = false;
@@ -26,11 +18,6 @@ if (!safeMode) {
         UIHacks = new ActiveXObject("UIHacks");
     }
 }
-//var panelsBackColor = RGB(255, 255, 255);
-//var panelsLineColor = RGBA(51, 153, 255, 155);
-//var panelsLineColorSelected = panelsLineColor;
-//var panelsNormalTextColor = RGB(62, 62, 62);
-// ================================================================================= //
 //--->
 
 String.prototype.trim = function (s) {
@@ -40,18 +27,26 @@ String.prototype.validate = function() {
 	return this.replace(/[\/\\|:]/g, '-').replace(/\*/g, 'x').replace(/"/g, "''").replace(/[<>]/g, '_').replace(/\?/g, "");
 };
 Array.prototype.unique = function() {
-	var a = [];
-	var l = this.length;
-	for (var i = 0; i < l; i++) {
-		for (var j = i + 1; j < l; j++) {
-			if (this[i] === this[j]) {
-				j = ++i;
-			}
-			a.push(this[i]);
-		}
-		return a;
-	}
+
 };
+
+function unique(arr) {
+	if (arr.length > 0) {
+		for (var i = 0; i < arr.length; i++) {
+			for (var j = i+1; j < arr.length; j++) {
+				if (arr[i] === arr[j]) {
+					arr.splice(j, 1);
+					j--;
+				}
+			}
+		}
+	}
+	return arr;
+}
+
+
+
+
 
 
 function print(msg) {
@@ -67,6 +62,27 @@ function caller() {
     var caller = /^function\s+([^(]+)/.exec(arguments.callee.caller.caller);
     if (caller) return caller[1];
     else return 0;
+}
+
+
+function GetStrWidth(str, font, type) {
+	var temp_gr = gdi.CreateImage(1, 1);
+	var g = temp_gr.GetGraphics();
+	var ret;
+	switch (type) {
+		case 1:
+			// gdi+
+			ret = Math.ceil(g.MeasureString(str, font, 0, 0, 0, 0).Width);
+			break;
+		case 0:
+			// gdi
+		default:
+			ret = Math.ceil(g.CalcTextWidth(str, font));
+			break;
+	};
+	temp_gr.ReleaseGraphics(g);
+	temp_gr.Dispose();
+	return ret;
 }
 
 // only compatible with foo_wsh_panel_mod_plus >>> @ttsping

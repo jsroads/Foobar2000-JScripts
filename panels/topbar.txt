@@ -589,4 +589,4 @@ function getColors() {
 }
 
 
-// vi:set ft=javascript ff=unix et:
+// vi:set ft=javascript ff=dos et:
