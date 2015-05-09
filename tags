@@ -1,0 +1,172 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+AlbumArt	.\scripts\bottom_re.js	/^function AlbumArt() {$/;"	c
+ButtonManager	.\scripts\bottom_re.js	/^function ButtonManager() {$/;"	c
+ButtonManager.draw	.\scripts\bottom_re.js	/^	this.draw = function(gr) {$/;"	m
+ButtonManager.init_btns	.\scripts\bottom_re.js	/^	this.init_btns = function() {$/;"	m
+ButtonManager.lbtn_dblclk	.\scripts\bottom_re.js	/^	this.lbtn_dblclk = function(x, y) {$/;"	m
+ButtonManager.lbtn_down	.\scripts\bottom_re.js	/^	this.lbtn_down = function(x, y) {$/;"	m
+ButtonManager.lbtn_up	.\scripts\bottom_re.js	/^	this.lbtn_up = function (x, y) {$/;"	m
+ButtonManager.leave	.\scripts\bottom_re.js	/^	this.leave = function () {$/;"	m
+ButtonManager.move	.\scripts\bottom_re.js	/^	this.move = function(x, y) {$/;"	m
+ButtonManager.rfs_pbo_btns	.\scripts\bottom_re.js	/^	this.rfs_pbo_btns = function() {$/;"	m
+ButtonManager.rfs_playorpause_btn	.\scripts\bottom_re.js	/^	this.rfs_playorpause_btn = function() {$/;"	m
+ButtonV3	.\scripts\bottom_re.js	/^function ButtonV3(img, img_ln, w, h, func) {$/;"	c
+ButtonV3.changeState	.\scripts\bottom_re.js	/^	this.changeState = function(state) {$/;"	m
+ButtonV3.draw	.\scripts\bottom_re.js	/^	this.draw = function(gr, x, y) {$/;"	m
+ButtonV3.isMouseOver	.\scripts\bottom_re.js	/^	this.isMouseOver = function(x, y) {$/;"	m
+ButtonV3.on_click	.\scripts\bottom_re.js	/^	this.on_click = function(x, y) {$/;"	m
+ButtonV3.repaint	.\scripts\bottom_re.js	/^	this.repaint = function() {$/;"	m
+ButtonV3.update	.\scripts\bottom_re.js	/^	this.update = function (img, img_ln) {$/;"	m
+DrawBoxBlurText	.\scripts\bottom.js	/^function DrawBoxBlurText(gr, text, font, font_color, shadow_color, radius, iteration, x, y, w, h, align) {$/;"	f
+DrawGlowString	.\scripts\bottom_re.js	/^function DrawGlowString(gr,text,font,font_color,shadow_color,radius,iteration,x,y,w,h,align){var img_to_blur,_g;img_to_blur=gdi.CreateImage(w*5,h*5);_g=img_to_blur.GetGraphics();_g.SetTextRenderingHint(TextRenderingHint.AntiAlias);_g.DrawString(text,font,shadow_color,2*w,2*h,w,h,align);img_to_blur.ReleaseGraphics(_g);img_to_blur.BoxBlur(radius,iteration);img_to_blur&&gr.DrawImage(img_to_blur,x-w,y-h,w*3,h*3,w*1,h*1,w*3,h*3,0,255);gr.SetTextRenderingHint(TextRenderingHint.ClearTypeGridFit);gr.DrawString(text,font,font_color,x,y,w,h,align);gr.SetTextRenderingHint(TextRenderingHint.Default);}$/;"	f
+ESLyricPopupMenu	.\scripts\bottom.js	/^function ESLyricPopupMenu(x, y, callback) {$/;"	f
+InfoText	.\scripts\bottom_re.js	/^function InfoText() {$/;"	c
+InfoText.draw	.\scripts\bottom_re.js	/^	this.draw = function(gr) {$/;"	m
+InfoText.on_size	.\scripts\bottom_re.js	/^	this.on_size = function() {$/;"	m
+InfoText.repaintInfo	.\scripts\bottom_re.js	/^	this.repaintInfo = function() {$/;"	m
+InfoText.repaintTime	.\scripts\bottom_re.js	/^	this.repaintTime = function() {$/;"	m
+MENU_ITEM_CHECKED	.\scripts\bottom.js	/^var MENU_ITEM_CHECKED = 1 << 1;$/;"	v
+Panel	.\scripts\bili_tab.js	/^function Panel(x, y) {$/;"	c
+Panel	.\scripts\bottom_re.js	/^function Panel(x, y) {$/;"	c
+Panel.get_metadb	.\scripts\bottom_re.js	/^	this.get_metadb = function() {$/;"	m
+Panel.on_metadb_changed	.\scripts\bottom_re.js	/^	this.on_metadb_changed = function() {$/;"	m
+Panel.on_playback_time	.\scripts\bottom_re.js	/^	this.on_playback_time = function() {$/;"	m
+Panel.repaint	.\scripts\bili_tab.js	/^	this.repaint = function() {$/;"	m
+Panel.repaint	.\scripts\bottom_re.js	/^	this.repaint = function() {$/;"	m
+PlaylistsObject	.\scripts\bili_tab.js	/^function PlaylistsObject() {$/;"	f
+Properties	.\scripts\bottom_re.js	/^function Properties() {$/;"	c
+ReloadLyric	.\scripts\bottom.js	/^function ReloadLyric() {$/;"	f
+Seekbar	.\scripts\bottom_re.js	/^function Seekbar() {$/;"	c
+Seekbar.changeState	.\scripts\bottom_re.js	/^	this.changeState = function() {$/;"	m
+Seekbar.draw	.\scripts\bottom_re.js	/^	this.draw = function(gr, x, y) {$/;"	m
+Seekbar.isMouseOver	.\scripts\bottom_re.js	/^	this.isMouseOver = function(x, y) {$/;"	m
+Seekbar.lbtn_down	.\scripts\bottom_re.js	/^	this.lbtn_down = function (x, y){ $/;"	m
+Seekbar.lbtn_up	.\scripts\bottom_re.js	/^	this.lbtn_up = function(x, y) {$/;"	m
+Seekbar.move	.\scripts\bottom_re.js	/^	this.move = function (x, y) {$/;"	m
+Seekbar.on_size	.\scripts\bottom_re.js	/^	this.on_size = function() {$/;"	m
+Seekbar.repaint	.\scripts\bottom_re.js	/^	this.repaint = function() {$/;"	m
+String	.\common\Common.js	/^String.prototype.trim = function (s) {$/;"	c
+String.trim	.\common\Common.js	/^String.prototype.trim = function (s) {$/;"	m
+String.validate	.\common\Common.js	/^String.prototype.validate = function() {$/;"	m
+TraceLog	.\scripts\bili_tab.js	/^function TraceLog() {$/;"	c
+TraceLog	.\scripts\bottom_re.js	/^function TraceLog() {$/;"	c
+TraceLog.start	.\scripts\bili_tab.js	/^	this.start = function(msg) {$/;"	m
+TraceLog.start	.\scripts\bottom_re.js	/^	this.start = function(msg) {$/;"	m
+TraceLog.stop	.\scripts\bili_tab.js	/^	this.stop = function() {$/;"	m
+TraceLog.stop	.\scripts\bottom_re.js	/^	this.stop = function() {$/;"	m
+UIHacks	.\common\Common.js	/^var UIHacks;$/;"	v
+UserInterface	.\scripts\bili_tab.js	/^function UserInterface() {$/;"	c
+UserInterface	.\scripts\bottom_re.js	/^function UserInterface() {$/;"	c
+UserInterface.get_colors	.\scripts\bili_tab.js	/^	this.get_colors = function() {$/;"	m
+UserInterface.get_colors	.\scripts\bottom_re.js	/^	this.get_colors = function() {$/;"	m
+UserInterface.get_fonts	.\scripts\bili_tab.js	/^	this.get_fonts = function() {$/;"	m
+Volume	.\scripts\bottom_re.js	/^function Volume() {$/;"	c
+Volume.draw	.\scripts\bottom_re.js	/^	this.draw = function(gr, x, y) {$/;"	m
+Volume.isMouseOver	.\scripts\bottom_re.js	/^	this.isMouseOver = function(x, y) {$/;"	m
+Volume.lbtn_down	.\scripts\bottom_re.js	/^	this.lbtn_down = function(x, y) {$/;"	m
+Volume.lbtn_up	.\scripts\bottom_re.js	/^	this.lbtn_up = function(x, y){$/;"	m
+Volume.move	.\scripts\bottom_re.js	/^	this.move = function(x, y) {$/;"	m
+Volume.on_volume_change	.\scripts\bottom_re.js	/^	this.on_volume_change = function(val) {$/;"	m
+Volume.repaint	.\scripts\bottom_re.js	/^	this.repaint = function(x, y) {$/;"	m
+Volume.wheel	.\scripts\bottom_re.js	/^	this.wheel = function(delta) {$/;"	m
+buttons	.\scripts\bottom.js	/^var buttons = [];$/;"	v
+debug	.\misc\ttpod.js	/^var debug = 0; \/\/ 如果要调试的话，改为 1.$/;"	v
+enableCustomColors	.\scripts\bottom.js	/^    enableCustomColors: window.GetProperty("*Color.Enable Custom Color", false),$/;"	p
+generate_url	.\misc\ttpod.js	/^function generate_url(artist, title, neid) {$/;"	f
+getColors	.\scripts\bottom.js	/^function getColors() {$/;"	f
+getImagePath	.\scripts\bottom.js	/^function getImagePath(image) {$/;"	f
+get_author	.\misc\ttpod.js	/^function get_author() {$/;"	f
+get_my_name	.\misc\ttpod.js	/^function get_my_name() {$/;"	f
+get_version	.\misc\ttpod.js	/^function get_version() {$/;"	f
+hand	.\scripts\bottom.js	/^var hand = false;$/;"	v
+handPrev	.\scripts\bottom.js	/^var handPrev = false;$/;"	v
+imagePath	.\scripts\bottom.js	/^var imagePath = fb.ProfilePath + 'common\\\\icons\\\\';$/;"	v
+images.lrc_off_normal	.\scripts\bottom.js	/^	lrc_off_normal: getImagePath("lrc_off-normal.png"),$/;"	p
+initMenus	.\scripts\MenuBar.js	/^function initMenus() {$/;"	f
+mbg_id	.\scripts\MenuBar.js	/^var mbg_id = null;$/;"	v
+mouseOver	.\scripts\bottom.js	/^var mouseOver = false;$/;"	v
+on_color_changed	.\scripts\bottom_re.js	/^function on_color_changed() {$/;"	f
+on_colors_changed	.\scripts\bottom.js	/^function on_colors_changed() {$/;"	f
+on_item_focus_change	.\scripts\bottom_re.js	/^function on_item_focus_change(playlist, from, to) {$/;"	f
+on_metadb_changed	.\scripts\bottom_re.js	/^function on_metadb_changed(metadb, fromhook) {$/;"	f
+on_mouse_lbtn_dblclk	.\scripts\MenuBar.js	/^function on_mouse_lbtn_dblclk(x, y) {$/;"	f
+on_mouse_lbtn_dblclk	.\scripts\bottom.js	/^function on_mouse_lbtn_dblclk(x, y, m) {$/;"	f
+on_mouse_lbtn_dblclk	.\scripts\bottom_re.js	/^function on_mouse_lbtn_dblclk(x, y, m) {$/;"	f
+on_mouse_lbtn_down	.\scripts\MenuBar.js	/^function on_mouse_lbtn_down(x, y, mask) {$/;"	f
+on_mouse_lbtn_down	.\scripts\bottom.js	/^function on_mouse_lbtn_down(x, y, m) {$/;"	f
+on_mouse_lbtn_down	.\scripts\bottom_re.js	/^function on_mouse_lbtn_down(x, y, mask) {$/;"	f
+on_mouse_lbtn_up	.\scripts\MenuBar.js	/^function on_mouse_lbtn_up(x, y, mask) {$/;"	f
+on_mouse_lbtn_up	.\scripts\bottom.js	/^function on_mouse_lbtn_up(x, y, m) {$/;"	f
+on_mouse_lbtn_up	.\scripts\bottom_re.js	/^function on_mouse_lbtn_up(x, y, mask) {$/;"	f
+on_mouse_leave	.\scripts\MenuBar.js	/^function on_mouse_leave() {$/;"	f
+on_mouse_leave	.\scripts\bottom.js	/^function on_mouse_leave() {$/;"	f
+on_mouse_leave	.\scripts\bottom_re.js	/^function on_mouse_leave() {$/;"	f
+on_mouse_move	.\scripts\MenuBar.js	/^function on_mouse_move(x, y) {$/;"	f
+on_mouse_move	.\scripts\bottom.js	/^function on_mouse_move(x, y) {$/;"	f
+on_mouse_move	.\scripts\bottom_re.js	/^function on_mouse_move(x, y) {$/;"	f
+on_mouse_rbtn_down	.\scripts\MenuBar.js	/^function on_mouse_rbtn_down(x, y) {$/;"	f
+on_mouse_rbtn_up	.\scripts\bottom.js	/^function on_mouse_rbtn_up(x, y, mask) {$/;"	f
+on_mouse_rbtn_up	.\scripts\bottom_re.js	/^function on_mouse_rbtn_up(x, y, mask) {$/;"	f
+on_mouse_wheel	.\scripts\bottom.js	/^function on_mouse_wheel(step) {$/;"	f
+on_mouse_wheel	.\scripts\bottom_re.js	/^function on_mouse_wheel(delta) {$/;"	f
+on_paint	.\scripts\MenuBar.js	/^function on_paint(gr) {$/;"	f
+on_paint	.\scripts\bottom.js	/^function on_paint(gr) {$/;"	f
+on_paint	.\scripts\bottom_re.js	/^function on_paint(gr) {$/;"	f
+on_playback_new_track	.\scripts\bottom.js	/^function on_playback_new_track(metadb) {$/;"	f
+on_playback_new_track	.\scripts\bottom_re.js	/^function on_playback_new_track(info) {$/;"	f
+on_playback_order_changed	.\scripts\bottom.js	/^function on_playback_order_changed(new_order) {$/;"	f
+on_playback_order_changed	.\scripts\bottom_re.js	/^function on_playback_order_changed(new_order) {$/;"	f
+on_playback_pause	.\scripts\bottom.js	/^function on_playback_pause(state) {$/;"	f
+on_playback_pause	.\scripts\bottom_re.js	/^function on_playback_pause(state) {$/;"	f
+on_playback_starting	.\scripts\bottom.js	/^function on_playback_starting(cmd, is_paused) {$/;"	f
+on_playback_starting	.\scripts\bottom_re.js	/^function on_playback_starting(cmd, is_paused) {$/;"	f
+on_playback_stop	.\scripts\bottom.js	/^function on_playback_stop(reason) {$/;"	f
+on_playback_stop	.\scripts\bottom_re.js	/^function on_playback_stop(reason) {$/;"	f
+on_playback_time	.\scripts\bottom.js	/^function on_playback_time(time) {$/;"	f
+on_playback_time	.\scripts\bottom_re.js	/^function on_playback_time(time) {$/;"	f
+on_playlist_switch	.\scripts\bottom_re.js	/^function on_playlist_switch() {$/;"	f
+on_playlists_changed	.\scripts\bottom_re.js	/^function on_playlists_changed() {$/;"	f
+on_size	.\scripts\MenuBar.js	/^function on_size() {$/;"	f
+on_size	.\scripts\bottom.js	/^function on_size() {$/;"	f
+on_size	.\scripts\bottom_re.js	/^function on_size() {$/;"	f
+on_system_paint_called	.\scripts\bottom_re.js	/^function on_system_paint_called() {$/;"	f
+on_volume_change	.\scripts\bottom.js	/^function on_volume_change(val) {$/;"	f
+on_volume_change	.\scripts\bottom_re.js	/^function on_volume_change(val) {$/;"	f
+popupMainMenu	.\scripts\MenuBar.js	/^function popupMainMenu(entry, x, y) {$/;"	f
+pos2vol	.\scripts\bottom.js	/^function pos2vol(pos) {$/;"	f
+pos2vol	.\scripts\bottom_re.js	/^function pos2vol(pos){return(50*Math.log(0.99*pos+0.01)\/Math.LN10);}$/;"	f
+pressedId	.\scripts\MenuBar.js	/^var pressedId = null;$/;"	v
+refreshEslyricButton	.\scripts\bottom.js	/^function refreshEslyricButton() {$/;"	f
+refreshPlayOrPauseButton	.\scripts\bottom.js	/^function refreshPlayOrPauseButton() {$/;"	f
+refreshPlaybackOrderButton	.\scripts\bottom.js	/^function refreshPlaybackOrderButton() {$/;"	f
+safeMode	.\common\Common.js	/^var safeMode = uiHacks = false;$/;"	v
+shuffleType	.\scripts\bottom.js	/^var shuffleType = window.GetProperty("shuffle type", 4);$/;"	v
+ssss	.\scripts\bottom_re.js	/^var ssss = true;$/;"	v
+start_search	.\misc\ttpod.js	/^function start_search(info, callback) {$/;"	f
+stopped	.\scripts\bottom.js	/^var stopped = false;  \/\/ playback status: stopped$/;"	v
+this.draw	.\scripts\bottom.js	/^	this.draw = function(gr, x, y) {$/;"	m
+this.draw	.\scripts\bottom.js	/^    this.draw = function(gr, x, y) {$/;"	m
+this.isMouseOver	.\scripts\bottom.js	/^    this.isMouseOver = function(x, y) {$/;"	m
+this.on_mouse_lbtn_down	.\scripts\bottom.js	/^	this.on_mouse_lbtn_down = function(x, y) {$/;"	m
+this.on_mouse_lbtn_down	.\scripts\bottom.js	/^    this.on_mouse_lbtn_down = function(x, y) {$/;"	m
+this.on_mouse_lbtn_up	.\scripts\bottom.js	/^	this.on_mouse_lbtn_up = function(x, y) {$/;"	m
+this.on_mouse_lbtn_up	.\scripts\bottom.js	/^    this.on_mouse_lbtn_up = function(x, y) {$/;"	m
+this.on_mouse_move	.\scripts\bottom.js	/^	this.on_mouse_move = function (x, y) {$/;"	m
+this.on_mouse_move	.\scripts\bottom.js	/^    this.on_mouse_move = function(x, y) {$/;"	m
+this.on_mouse_wheel	.\scripts\bottom.js	/^	this.on_mouse_wheel = function(delta) {$/;"	m
+this.on_playback_seek	.\scripts\bottom.js	/^    this.on_playback_seek = function (time) {$/;"	m
+this.on_size	.\scripts\bottom.js	/^    this.on_size = function () {$/;"	m
+this.on_volume_change	.\scripts\bottom.js	/^	this.on_volume_change = function(val) {$/;"	m
+this.repaint	.\scripts\bottom.js	/^    this.repaint = function() {$/;"	m
+tracks.lyric	.\misc\ttpod.js	/^							lyric: lyricText,$/;"	p
+tracks.title	.\misc\ttpod.js	/^                            title: data[j].songName,$/;"	p
+ttpod	.\misc\ttpod.js	/^var ttpod = utils.CreateHttpRequest("GET");$/;"	v
+vol2pos	.\scripts\bottom.js	/^function vol2pos(v){$/;"	f
+vol2pos	.\scripts\bottom_re.js	/^function vol2pos(v){return((Math.pow(10,v\/50)-0.01)\/0.99);}$/;"	f
+ww	.\scripts\MenuBar.js	/^var ww, wh;$/;"	v
+ww	.\scripts\bottom.js	/^var ww = 0, wh = 0;$/;"	v

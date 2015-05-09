@@ -609,7 +609,7 @@ function DrawBoxBlurText(gr, text, font, font_color, shadow_color, radius, itera
 
     var img_to_blur, _g;
 
-    img_to_blur = gdi.CreateImage(w*10, h*10);
+    img_to_blur = gdi.CreateImage(w*5, h*5);
     _g = img_to_blur.GetGraphics();
 
     _g.SetTextRenderingHint(TextRenderingHint.AntiAlias);
