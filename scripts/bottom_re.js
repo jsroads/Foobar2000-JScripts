@@ -547,6 +547,7 @@ function InfoText() {
 	this.repaintTime = function() {
 		this.paint_time_called = true;
 		window.RepaintRect(it.time_x, it.l1y, it.time_w, it.l2y-it.l1y);
+		//window.Repaint();
 	};
 
 	this.repaintInfo = function() {
