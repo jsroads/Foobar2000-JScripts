@@ -29,6 +29,14 @@ function Properties() {
 	this.sliderHeight = window.GetProperty("Slider.height", 3);
 	this.sliderHoverHeight = window.GetProperty("Slider.hover height", 10);
 	this.shuffle = window.GetProperty("Shuffle type", 4);
+
+	this.check = function() {
+		this.sliderHeight = this.sliderHeight > 10 ? 10 : this.sliderHeight;
+		if (this.sliderHoverHeight < this.sliderHeight) this.sliderHoverHeight = this.sliderHeight;
+		if (typeof this.shuffle == "number" && this.shuffle > 6) this.shuffle = 0;
+	}
+	this.check();
+
 };
 
 
@@ -462,25 +470,15 @@ function AlbumArt() {
 	var album, album_old;
 
 	this.get = function(metadb) {
-		//if (metadb == null) return;
 		album = $(tf_artistalbum, metadb);
-		//if (album != album_old) {
 		if (metadb) {
 			if (album != album_old) utils.GetAlbumArtAsync(window.ID, metadb, 0);
-		} //else this.cover = null;
-		//if (althis.cover = null;
-		//}
+		}
 	};
 
 	this.on_get_done = function(metadb, art_id, image, image_path) {
-		
-		//if (!metadb) image = null;
-		//if (!image) {
-			this.cover = image;
-		//} else {
+		this.cover = image;
 		if (this.cover) this.cover = this.cover.Resize(50, 50, 2);
-		//fb.trace("hello");
-		//}
 		it.repaintInfo();
 		album_old = $(tf_artistalbum, metadb);
 	};
