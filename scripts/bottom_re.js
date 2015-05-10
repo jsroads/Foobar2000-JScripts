@@ -26,7 +26,7 @@ Trace.enable = false;
 
 function Properties() {
 	this.enableSysColor = window.GetProperty("Color.use system color", false);
-	this.sliderHeight = window.GetProperty("Slider.height", 2);
+	this.sliderHeight = window.GetProperty("Slider.height", 3);
 	this.sliderHoverHeight = window.GetProperty("Slider.hover height", 10);
 	this.shuffle = window.GetProperty("Shuffle type", 4);
 };
