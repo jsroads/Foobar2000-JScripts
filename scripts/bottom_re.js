@@ -517,12 +517,11 @@ function InfoText() {
 		//};
 
 
-		if (sys_paint_called) {
 
+		if (sys_paint_called) {
 			cover_x = this.time_x - cover_w - 4*2;
 			cover_y = p.y + prop.sliderHeight + 4;
 			// album art
-
 			if (p.metadb && aa.cover) gr.DrawImage(aa.cover, cover_x+1, cover_y+1, cover_w-1, cover_w-1, 0, 0, aa.cover.Width, aa.cover.Height, 0, 220);
 			else gr.DrawImage(aa.nocover, cover_x, cover_y, cover_w, cover_w, 0, 0, aa.nocover.Width, aa.nocover.Height, 0, 220);
 
@@ -541,13 +540,16 @@ function InfoText() {
 
 			this.paint_info_called = false;
 			//fb.trace("hello");
-		};
+		}
 	};
 
 	this.repaintTime = function() {
 		this.paint_time_called = true;
-		window.RepaintRect(it.time_x, it.l1y, it.time_w, it.l2y-it.l1y);
-		//window.Repaint();
+		try {
+			window.RepaintRect(it.time_x, it.l1y, it.time_w, it.l2y-it.l1y);
+		} catch (e) {
+			window.Repaint();
+		};
 	};
 
 	this.repaintInfo = function() {
