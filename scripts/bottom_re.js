@@ -1,4 +1,4 @@
-// updated: 2015/05/09
+// updated: 2015/05/10
 // created by jeanne
 
 var sys_paint_called = false;
@@ -76,13 +76,9 @@ function Panel(x, y) {
 	this.hand = false;
 	this.hand_prev = false;
 	this.metadb = null;
-	this.show_cover = false;
-	this.show_info = false;
-	this.show_time = false;
 	var tf_artist = "[%artist%]";
 	var tf_title = "%title%";
 	var tf_length = "$if2(%length%, '0:00')";
-	var tf_album = "[%album%]";
 	var tf_playback_time = "$if2(%playback_time%, '0:00')";
 	this.paint_called = false;
 	var metadb_old = null;
@@ -103,20 +99,15 @@ function Panel(x, y) {
 			this.length = fb.TitleFormat(tf_length).Eval();
 			this.playback_time = fb.TitleFormat(tf_playback_time).Eval();
 
-			var album = $(tf_album, this.metadb);
-			var album_old;
-			if (metadb_old) album_old = $(tf_album, metadb_old);
-
-			// if this.show_cover;
-			if (album_old != album) {
-				aa.cover = utils.GetAlbumArtV2(this.metadb, 0, true);
-				// a resize will costs 40ms
-				//if (aa.cover) aa.cover.Resize(44, 44, 2);
-			}
-			fb.trace(this.title);
+			aa.get(this.metadb);
 			
 			metadb_old = this.metadb;
-		};
+		} else {
+			this.title = "";
+			this.artist = "";
+			this.length = "0:00";
+			this.playback_time = "0:00";
+		}
 
 		this.repaint();
 	};
@@ -460,11 +451,39 @@ var bm = new ButtonManager();
 
 
 function AlbumArt() {
+	var img_path = fb.ProfilePath + "\\common\\images\\";
+	this.nocover = gdi.Image(img_path + "nocover.png");
 	this.cover = null;
 	this.cover_next = null;
 	this.timer = false;
 	this.alpha = 0;
+	var tf_artistalbum = "%album artist%%artist%", album, album_old;
 
+	var album, album_old;
+
+	this.get = function(metadb) {
+		//if (metadb == null) return;
+		album = $(tf_artistalbum, metadb);
+		//if (album != album_old) {
+		if (metadb) {
+			if (album != album_old) utils.GetAlbumArtAsync(window.ID, metadb, 0);
+		} else this.cover = null;
+		//if (althis.cover = null;
+		//}
+	};
+
+	this.on_get_done = function(metadb, art_id, image, image_path) {
+		
+		if (!metadb) image = null;
+		if (!image) {
+			this.cover = null;
+		} else {
+			this.cover = image.Resize(50, 50, 2);
+		//fb.trace("hello");
+		}
+		it.repaintInfo();
+		album_old = $(tf_artistalbum, metadb);
+	};
 };
 
 var aa = new AlbumArt();
@@ -482,11 +501,12 @@ function InfoText() {
 	var info_x, info_w;
 	var glow_r = 2, glow_i = 1;
 
+
 	this.draw = function(gr) {
 		this.l1y = prop.sliderHeight;
 		this.l2y = (p.h + prop.sliderHeight)/2;
 		this.time_x = p.x + p.w - this.time_w;
-		cover_w = p.h - prop.sliderHeight - 4 * 2;
+		cover_w = Math.ceil(p.h - prop.sliderHeight - 4 * 2);
 
 		this.time_x = Math.max(this.time_x, bm.end_x + cover_w + 20);
 
@@ -498,15 +518,19 @@ function InfoText() {
 			this.paint_time_called = false;
 		//};
 
+
 		if (sys_paint_called) {
 
 			cover_x = this.time_x - cover_w - 4*2;
 			cover_y = p.y + prop.sliderHeight + 4;
 			// album art
-			gr.DrawRect(cover_x, cover_y, cover_w, cover_w, 1, RGB(150, 150, 150));
+
 			if (p.metadb) {
 				if (aa.cover) gr.DrawImage(aa.cover, cover_x+1, cover_y+1, cover_w-1, cover_w-1, 0, 0, aa.cover.Width, aa.cover.Height, 0, 220);
-			};
+			} else {
+				gr.DrawImage(aa.nocover, cover_x, cover_y, cover_w, cover_w, 0, 0, aa.nocover.Width, aa.nocover.Height, 0, 220);
+			}
+			gr.DrawRect(cover_x, cover_y, cover_w, cover_w, 1, RGB(180, 180, 180));
 			// draw info text
 			info_x = bm.end_x + 20;
 			info_w = Math.max(gr.CalcTextWidth(p.title, f1), gr.CalcTextWidth(p.artist, f2))+5;
@@ -518,6 +542,7 @@ function InfoText() {
 				DrawGlowString(gr, p.title, f1, fc1, fs1, glow_r, glow_i, info_x, this.l1y, info_w, this.l2y - this.l1y, rc);
 				DrawGlowString(gr, p.artist, f2, fc2, fs2, glow_r, glow_i, info_x, this.l2y, info_w, p.y + p.h - this.l2y, rc);
 			};
+
 			this.paint_info_called = false;
 			//fb.trace("hello");
 		};
@@ -541,29 +566,6 @@ function InfoText() {
 
 var it = new InfoText();
 
-
-/*
-var on_resize = (function() {
-	var _ww, started = false, done;
-	var timer = null;
-	return function() {
-		if (!started) {
-			started = true;
-			done = false;
-			timer = window.SetInterval(function() {
-				if (_ww == window.Width) {
-					on_resize_done();
-					done = true;
-					started = false;
-					window.ClearInterval(timer);
-				}
-			}, 50);
-		}; _ww = window.Width;
-	};
-})();
-*/
-
-
 function pos2vol(pos){return(50*Math.log(0.99*pos+0.01)/Math.LN10);}
 function vol2pos(v){return((Math.pow(10,v/50)-0.01)/0.99);}
 function DrawGlowString(gr,text,font,font_color,shadow_color,radius,iteration,x,y,w,h,align){var img_to_blur,_g;img_to_blur=gdi.CreateImage(w*5,h*5);_g=img_to_blur.GetGraphics();_g.SetTextRenderingHint(TextRenderingHint.AntiAlias);_g.DrawString(text,font,shadow_color,2*w,2*h,w,h,align);img_to_blur.ReleaseGraphics(_g);img_to_blur.BoxBlur(radius,iteration);img_to_blur&&gr.DrawImage(img_to_blur,x-w,y-h,w*3,h*3,w*1,h*1,w*3,h*3,0,255);gr.SetTextRenderingHint(TextRenderingHint.ClearTypeGridFit);gr.DrawString(text,font,font_color,x,y,w,h,align);gr.SetTextRenderingHint(TextRenderingHint.Default);}
@@ -577,7 +579,7 @@ function on_size() {
 	it.on_size();
 };
 
-
+sys_paint_called = true;
 function on_paint(gr) {
 
 	// =====>
@@ -605,6 +607,7 @@ function on_paint(gr) {
 	Trace.stop();
 	sys_paint_called = false;
 	p.paint_called = false;
+	
 };
 
 function on_mouse_move(x, y) {
@@ -647,10 +650,11 @@ function on_mouse_wheel(delta) {
 
 
 function on_playback_stop(reason) {
-	if (reason == 0) {
+	if (reason !=2) {
 		sk.repaint();
 		bm.rfs_playorpause_btn();
 		p.on_metadb_changed();
+		it.repaintInfo();
 	};
 };
 
@@ -676,8 +680,18 @@ function on_playback_time(time) {
 	it.repaintTime();
 };
 
-function on_playback_new_track(info) {
+function on_playback_new_track(metadb) {
 	p.on_metadb_changed();
 };
+
+function on_get_album_art_done(metadb, art_id, image, image_path) {
+//	fb.trace("path: " + image_path);
+	aa.on_get_done(metadb, art_id, image, image_path);
+	it.repaintInfo();
+};
+
+function on_focus() {
+	p.repaint();
+}
 
 p.on_metadb_changed();
