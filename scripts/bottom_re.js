@@ -101,7 +101,6 @@ function Panel(x, y) {
 
 			aa.get(this.metadb);
 			
-			metadb_old = this.metadb;
 		} else {
 			this.title = "";
 			this.artist = "";
@@ -109,6 +108,7 @@ function Panel(x, y) {
 			this.playback_time = "0:00";
 		}
 
+		metadb_old = this.metadb;
 		this.repaint();
 	};
 	this.on_playback_time = function() {
@@ -302,7 +302,7 @@ function ButtonV3(img, img_ln, w, h, func) {
 };
 
 function ButtonManager() {
-	var image_path = fb.ProfilePath + "common\\images\\";
+	var image_path = fb.ProfilePath + "\\Jeanne\\images\\";
 	var icon_img = gdi.Image(image_path + "icons-24x20.png");
 	var b_w = 24, b_h = 20;
 	var btns = [], hbtn, dbtn;
@@ -451,7 +451,7 @@ var bm = new ButtonManager();
 
 
 function AlbumArt() {
-	var img_path = fb.ProfilePath + "\\common\\images\\";
+	var img_path = fb.ProfilePath + "\\Jeanne\\images\\";
 	this.nocover = gdi.Image(img_path + "nocover.png");
 	this.cover = null;
 	this.cover_next = null;
@@ -467,20 +467,20 @@ function AlbumArt() {
 		//if (album != album_old) {
 		if (metadb) {
 			if (album != album_old) utils.GetAlbumArtAsync(window.ID, metadb, 0);
-		} else this.cover = null;
+		} //else this.cover = null;
 		//if (althis.cover = null;
 		//}
 	};
 
 	this.on_get_done = function(metadb, art_id, image, image_path) {
 		
-		if (!metadb) image = null;
-		if (!image) {
-			this.cover = null;
-		} else {
-			this.cover = image.Resize(50, 50, 2);
+		//if (!metadb) image = null;
+		//if (!image) {
+			this.cover = image;
+		//} else {
+		if (this.cover) this.cover = this.cover.Resize(50, 50, 2);
 		//fb.trace("hello");
-		}
+		//}
 		it.repaintInfo();
 		album_old = $(tf_artistalbum, metadb);
 	};
@@ -525,11 +525,9 @@ function InfoText() {
 			cover_y = p.y + prop.sliderHeight + 4;
 			// album art
 
-			if (p.metadb) {
-				if (aa.cover) gr.DrawImage(aa.cover, cover_x+1, cover_y+1, cover_w-1, cover_w-1, 0, 0, aa.cover.Width, aa.cover.Height, 0, 220);
-			} else {
-				gr.DrawImage(aa.nocover, cover_x, cover_y, cover_w, cover_w, 0, 0, aa.nocover.Width, aa.nocover.Height, 0, 220);
-			}
+			if (p.metadb && aa.cover) gr.DrawImage(aa.cover, cover_x+1, cover_y+1, cover_w-1, cover_w-1, 0, 0, aa.cover.Width, aa.cover.Height, 0, 220);
+			else gr.DrawImage(aa.nocover, cover_x, cover_y, cover_w, cover_w, 0, 0, aa.nocover.Width, aa.nocover.Height, 0, 220);
+
 			gr.DrawRect(cover_x, cover_y, cover_w, cover_w, 1, RGB(180, 180, 180));
 			// draw info text
 			info_x = bm.end_x + 20;
