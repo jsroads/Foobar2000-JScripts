@@ -1,4 +1,4 @@
-// update 2015/05/09 
+// update 2015/05/11
 // created by Jeanne
 
 function TraceLog() {
@@ -20,30 +20,24 @@ function TraceLog() {
 
 var Trace = new TraceLog();
 
-
-function UserInterface() {
-	this.type = window.InstanceType;
-	this.colors = {};
-	this.fonts = {};
-	this.get_colors = function() {
-	};
-	this.get_colors();
-
-	this.get_fonts = function() {
-	};
-	this.get_fonts();
-};
-
 function Panel(x, y) {
 	this.x = x;
 	this.y = y;
 	this.repaint = function() {
 		window.Repaint();
 	};
+}
 
-};
-
-function PlaylistsObject() {
-};
+var p = new Panel(0, 0);
 
 
+
+
+
+
+function on_size() {
+	window.MaxHeight = window.MinHeight = 45;
+	if (!window.Width || !window.Height) return;
+	p.w = window.Width;
+	p.h = window.Height;
+}

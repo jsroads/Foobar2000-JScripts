@@ -1,4 +1,4 @@
-// updated: 2015/05/10
+// updated: 2015/05/12 
 // created by jeanne
 
 var sys_paint_called = false;
@@ -55,7 +55,11 @@ function UserInterface() {
 			if (this.type) { // DUI
 				this.colors.highlight = window.GetColorDUI(ColorTypeDUI.highlight);
 			} else { // CUI
-				this.colors.highlight = window.GetColorDUI(ColorTypeDUI.active_item_frame);
+				try {
+					this.colors.highlight = window.GetColorCUI(ColorTypeCUI.active_item_frame);
+				} catch (e) {
+					this.colors.highlight = RGB(arr[0], arr[1], arr[2]);
+				};
 			}
 		};
 		// background color
@@ -570,7 +574,7 @@ function vol2pos(v){return((Math.pow(10,v/50)-0.01)/0.99);}
 function DrawGlowString(gr,text,font,font_color,shadow_color,radius,iteration,x,y,w,h,align){var img_to_blur,_g;img_to_blur=gdi.CreateImage(w*5,h*5);_g=img_to_blur.GetGraphics();_g.SetTextRenderingHint(TextRenderingHint.AntiAlias);_g.DrawString(text,font,shadow_color,2*w,2*h,w,h,align);img_to_blur.ReleaseGraphics(_g);img_to_blur.BoxBlur(radius,iteration);img_to_blur&&gr.DrawImage(img_to_blur,x-w,y-h,w*3,h*3,w*1,h*1,w*3,h*3,0,255);gr.SetTextRenderingHint(TextRenderingHint.ClearTypeGridFit);gr.DrawString(text,font,font_color,x,y,w,h,align);gr.SetTextRenderingHint(TextRenderingHint.Default);}
 
 function on_size() {
-	window.MaxHeight = window.MinHeight = 50;
+	window.MaxHeight = window.MinHeight = 60;
 	if (!window.Width || !window.Height) return;
 	p.w = window.Width;
 	p.h = window.Height;
