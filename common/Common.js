@@ -1,4 +1,5 @@
-//## updated: 2015/05/04
+var VERSION = "2015/05/13-06:01";
+
 
 // ================================================================================= //
 var safeMode = uiHacks = false;
@@ -43,10 +44,6 @@ function unique(arr) {
 	}
 	return arr;
 }
-
-
-
-
 
 
 function print(msg) {
