@@ -1,4 +1,4 @@
-// update 2015/05/11
+// updated 2015/05/11
 // created by Jeanne
 
 function TraceLog() {
@@ -13,41 +13,36 @@ function TraceLog() {
 	this.stop = function() {
 		if (!this.enable) return;
 		var curr = new Date().getTime();
-		var end_time = curr - this.startTime;
-		fb.trace('[' + this.msg + '] has finished at ' + end_time + ' ms');
+		var endTime = curr - this.startTime;
+		fb.trace('[' + this.msg + '] has finished at ' + endTime + ' ms');
 	};
 };
 
 var Trace = new TraceLog();
 
-
 function UserInterface() {
 	this.type = window.InstanceType;
-	this.colors = {};
-	this.fonts = {};
-	this.get_colors = function() {
+	this.color = {};
+	this.font = {};
+	this.getColor = function() {
 		if (this.type) {
-			this.text =  window.GetColorDUI(ColorTypeDUI.text);
-			this.selection = window.GetColorDUI(ColorTypeDUI.selection);
-			this.background = window.GetColorDUI(ColorTypeDUI.background);
-			this.highlight = window.GetColorDUI(ColorTypeDUI.highlight);
+			this.color.text =  window.GetColorDUI(ColorTypeDUI.text);
+			this.color.selection = window.GetColorDUI(ColorTypeDUI.selection);
+			this.color.background = window.GetColorDUI(ColorTypeDUI.background);
+			this.color.highlight = window.GetColorDUI(ColorTypeDUI.highlight);
 		} else {
 			try {
-				this.text = window.GetColorCUI(ColorTypeCUI.text);
-				this.selection = window.GetColorCUI(ColorTypeCUI.selection_background);
-				this.background = window.GetColorCUI(ColorTypeCUI.background);
-				this.highlight = window.GetColorCUI(ColorTypeCUI.highlight);
+				this.color.text = window.GetColorCUI(ColorTypeCUI.text);
+				this.color.selection = window.GetColorCUI(ColorTypeCUI.selection_background);
+				this.color.background = window.GetColorCUI(ColorTypeCUI.background);
+				this.color.highlight = window.GetColorCUI(ColorTypeCUI.highlight);
 			} catch (e) {};
 		}
 		// process colors
-		this.bg_active = this.selection & 0x10000000;
-		this.bg_active_border = this.selection & 0xaa000000;
-		this.text_normal = this.text;
-		this.text_playing = this.highlight;
 	};
-	this.get_colors();
+	this.getColor();
 
-	this.get_fonts = function() {
+	this.getFonts = function() {
 		var fontError;
 		if (this.type) this.font = window.GetFontDUI(FontTypeDUI.lists);
 		else try { this.font = window.GetFontCUI(FontTypeCUI.items); } catch(e) {};
@@ -61,214 +56,223 @@ function UserInterface() {
 			this.font = gdi.Font("Segoe Ui", 12, 0);
 		}
 
-		this.item_font = gdi.font(this.font.Name, 12, 0);
+		this.font_item = gdi.font(this.font.Name, 12, 0);
 		this.font_wd2 = gdi.font("wingdings 2", 22, 0);
 
 	};
-	this.get_fonts();
+	this.getFonts();
 };
 
 var ui = new UserInterface();
 
-function on_font_changed() {
-	ui.get_fonts();
-	window.Repaint();
-}
-
-function on_colors_changed() {
-	ui.get_colors();
-	window.Repaint();
-}
-
-function Panel(x, y) {
-	this.x = x;
-	this.y = y;
+function Panel() {
 	this.repaint = function() {
 		window.Repaint();
 	};
+	this.setSize = function(x, y, w, h) {
+		this.x = x;
+		this.y = y;
+		this.h = h;
+		this.w = w;
+	};
+	this.setSize(0, 0, window.Width, window.Height);
+	this.drawBg = function(gr) {
+		gr.FillSolidRect(p.x, p.y, p.w, p.h, RGB(240, 240, 240));
+	};
+	this.console = function(str) {
+		fb.trace(str);
+	};
 };
 
-var p = new Panel(0, 0);
+var p = new Panel();
 
+var Item = {};
 
-function PanelInfo() {
-	this.draw = function(gr) {
-		gr.FillSolidRect(p.x, p.y, p.w, p.h, ui.text_normal & 0x10ffffff);
-	};
-}
-
-var pi = new PanelInfo();
-
-
-
-
-function Playlist_Manager() { // playlist manager
-	this.arr = [];
-
-	this.on_init = function(callback) {
-		var count_text;
-		this.arr.splice(0, this.arr.length);
-		for (var j = 0; j < fb.PlaylistCount; j++) {
-			count_text = "[" + fb.PlaylistItemCount(j) + "]";
-			this.arr[j] = [fb.IsAutoPlaylist(j) | 0, fb.GetPlaylistName(j), count_text];
-		}
-		callback && callback();
-	};
-	var on_init_done = function() {
-		window.Repaint();
-	};
-	this.on_init(function() {window.Repaint();});
+Item.playlistManager = function(id) {
+	this.id = id;
+	this.type = fb.IsAutoPlaylist(this.id) | 0;
+	this.name = fb.GetPlaylistName(this.id);
+	this.contentCount = fb.PlaylistItemCount(this.id);
+	this.state = 0;
 };
 
-var pm = new Playlist_Manager();
-
-function ScrollbarObject() {
+var ScrollbarObject = function() {
 	this.show = false;
 };
 
 var scrb = new ScrollbarObject();
 
-
-function ListItem() {
-	this.state = 0; // 1: hover, 2: down/active
-}
-
-function ListObject() {
+var List = {};
+List.playlistManager = function() {
+	//
+	this.init = function(callback) {
+		this.arr = [];
+		var listCount = fb.PlaylistCount;
+		for (var j = 0; j < listCount; j++) {
+			this.arr[j] = new Item.playlistManager(j);
+		}
+		callback && callback();
+	};
+	this.init(function() { window.Repaint(); });
 
 	var ROW_HEIGHT = 40;
 	var PADDING_TOP = 8;
 	var PADDING_LEFT = 8;
 	var PADDING_RIGHT = 8;
+	var PADDING_BOTTOM = 8;
 
-	this.startIdx = 0;
 
 	this.repaint = function() {
 		window.Repaint();
 	};
 
-	this.on_size = function() {
-		this.rh = p.h - PADDING_TOP;
-		this.rw = p.w - PADDING_RIGHT;
+	this.x = p.x + PADDING_LEFT;
+	this.y = PADDING_TOP;
+	this.startId = 0;
 
-		this.visibleItemCount = (this.rh / ROW_HEIGHT) | 0;
+	this.on_size = function() {
+		this.h = p.h - PADDING_TOP - PADDING_BOTTOM;
+		this.w = p.w - PADDING_LEFT - PADDING_RIGHT;
+		this.visibleItemCount = Math.floor(this.h / ROW_HEIGHT) | 0;
 		scrb.show = (fb.PlaylistCount > this.visibleItemCount);
 
-		if (this.startIdx + this.visibleItemCount > fb.PlaylistCount) {
-			this.startIdx = fb.PlaylistCount - this.visibleItemCount;
-		}
-
-		if (this.startIdx < 0) this.startIdx = 0;
-	};
-
-	this.wheel = function(delta) {
-		if (scrb.show) {
-			this.startIdx -= delta;
-			this.startIdx = this.startIdx < 0 ? 0 : this.startIdx;
-			if (this.startIdx > fb.PlaylistCount - this.visibleItemCount) this.startIdx = fb.PlaylistCount - this.visibleItemCount;
-			// scrb.refresh();
-			this.repaint();
-		};
+		if (this.startId + this.visibleItemCount > fb.PlaylistCount) this.startId = fb.PlaylistCount - this.visibleItemCount;
+		if (this.startId < 0) this.startId = 0;
 	}
 
-	this.move = function(x, y) {
-		if (y > PADDING_TOP) {
+	var LT = DT_END_ELLIPSIS;
 
+	this.on_paint = function(gr) {
+		gr.FillSolidRect(this.x, this.y, this.w, this.h, 0xffffffff);
+		var rX = this.x, rW = this.w, rY;
+		var icoW = 32, icoH = ui.font_wd2.Height, icoY;
+		var tX = rX + icoW, tW = rW - icoW, tH = ui.font_item.Height, tY;
+		var lid = 0, txtColor, icoChar;
 
+		for (var k = 0; (k + this.startId < fb.PlaylistCount) && (k <= this.visibleItemCount); k++) {
+			lid = k + this.startId;
+			rY =  k * ROW_HEIGHT + this.y;
+			tY = rY + (ROW_HEIGHT - tH) / 2;
+			icoY = rY + (ROW_HEIGHT - icoH) / 2 - 2;
+
+			if (k == this.visibleItemCount) {
+				tH = this.y + this.h - tY-1;
+				icoH = this.y + this.h - icoY;
+			};
+
+			if (this.arr[lid].state == 2) {
+				gr.FillSolidRect(rX, rY + 5, rW, ROW_HEIGHT-10,ui.color.text & 0x20ffffff);
+			}
+			if (lid == fb.ActivePlaylist) {
+				gr.FillSolidRect(rX, rY + 5, rW, ROW_HEIGHT-10, ui.color.text & 0x10ffffff);
+			};
+
+			// icon char
+			icoChar = String.fromCharCode(this.arr[lid].type ? 0x2c : 0x29);
+			
+			// text color
+			if (fb.IsPlaying && lid == fb.PlayingPlaylist) {
+				txtColor = ui.color.highlight;
+			} else {
+				txtColor = ui.color.text;
+			}
+			// draw text
+			gr.GdiDrawText(icoChar, ui.font_wd2, txtColor, rX+8, icoY, icoW, icoH, LT);
+			gr.GdiDrawText(this.arr[lid].name, ui.font_item, txtColor, tX, tY+2, tW, tH, LT);
 		}
+	};
+
+
+	var thisId;
+
+	this.move = function(x, y) {
+
 	};
 
 	this.lbtn_down = function(x, y) {
-		var t;
-		if (y > PADDING_TOP) {
-			t = this.getPlaylistId(y);
-			if (t != null) {
-				fb.ActivePlaylist = t;
-				this.drag = true;
+		var thisId;
+		if (y > this.y && y < this.y + this.h) {
+			thisId = this.getPlaylistId(y);
+			if (thisId != null) {
+				fb.ActivePlaylist = thisId;
 			}
+		}
+	};
+
+	this.rbtn_down = function(x, y) {
+		if (y > this.y && y < this.y + this.h) {
+			thisId = this.getPlaylistId(y);
+			if (thisId) this.arr[thisId].state = 2;
+			p.repaint();
 		}
 	}
 
 	this.lbtn_up = function(x, y) {
-		if (this.drag) this.drag = false;
-	}
 
-	this.dblclk =function(x, y) {
-	}
+	};
 
 	this.rbtn_up = function(x, y) {
-	}
+	};
 
 	this.leave = function() {
-	}
+	};
+
+	this.wheel = function(delta) {
+		if (scrb.show) {
+			this.startId -= delta;
+			this.startId = this.startId < 0 ? 0 : this.startId;
+			if (this.startId > fb.PlaylistCount - this.visibleItemCount) {
+				this.startId = fb.PlaylistCount - this.visibleItemCount;
+			};
+			this.repaint();
+		};
+	};
 
 	this.getPlaylistId = function(y) {
-		var p = Math.floor((y - PADDING_TOP) / ROW_HEIGHT) + this.startIdx;
-		if (p >= 0 && p < fb.PlaylistCount) return p;
+		var pl = Math.floor((y - this.y) / ROW_HEIGHT) + this.startId;
+		if (pl >= 0 && pl < fb.PlaylistCount) return pl;
 		else return null;
 	};
 
-	var lc = DT_VCENTER | DT_CALCRECT | DT_SINGLELINE | DT_END_ELLIPSIS;
-	var cc = DT_CENTER | lc;
 
-	this.draw = function(gr) {
-		var list_item_x = p.x + PADDING_LEFT;
-		var list_item_w = p.w - PADDING_RIGHT - PADDING_LEFT;
-		var icon_w = 35;
-		var text_x = list_item_x + icon_w;
-		var text_w = list_item_w - icon_w;
+}
 
-
-		// draw playlist items only
-		var text_color, bg_color; 
-		var idx = 0;
-		for (var k = 0 ; (k + this.startIdx < fb.PlaylistCount) && (k <= this.visibleItemCount); k++) {
-			idx = k + this.startIdx;
-			// for test
-			// draw playlist background
-			if (idx == fb.ActivePlaylist) {
-				gr.FillSolidRect(list_item_x, k * ROW_HEIGHT + PADDING_TOP + 5, list_item_w, ROW_HEIGHT - 5*2, ui.bg_active);
-			};
-			var icon_text = String.fromCharCode(pm.arr[idx][0] ? 0x2c : 0x29);
-
-			// draw text
-			if (fb.IsPlaying && idx == fb.PlayingPlaylist) {
-				text_color = ui.text_playing;
-			} else {
-				text_color = ui.text_normal;
-			}
-			gr.GdiDrawText(icon_text, ui.font_wd2, text_color, list_item_x, k * ROW_HEIGHT + PADDING_TOP + 5, icon_w, ROW_HEIGHT - 5 * 2, cc);
-			gr.GdiDrawText(pm.arr[idx][1], ui.item_font, text_color, text_x, k * ROW_HEIGHT + PADDING_TOP + 5, text_w, ROW_HEIGHT - 5 * 2, lc);
-		}
-	}
-};
-
-
-var list = new ListObject();
-
+var li = new List.playlistManager();
 
 function on_size() {
 	if (!window.Width || !window.Height) return ;
-	p.w = window.Width;
-	p.h = window.Height;
-	list.on_size();
+	p.setSize(0, 0, window.Width, window.Height);
+	li.on_size();
 }
 
 function on_paint(gr) {
-	gr.FillSolidRect(0, 0, window.Width, window.Height, RGB(255, 255, 255));
-	pi.draw(gr);
-	list.draw(gr);
+	p.drawBg(gr);
+	li.on_paint(gr);
 }
 
 function on_mouse_wheel(delta) {
-	list.wheel(delta);
+	li.wheel(delta);
 }
 
 function on_mouse_lbtn_down(x, y, m) {
-	list.lbtn_down(x, y);
+	li.lbtn_down(x, y);
 }
 
 function on_mouse_lbtn_up(x, y, m) {
-	list.lbtn_up(x, y);
+	li.lbtn_up(x, y);
+}
+
+function on_mouse_rbtn_up(x, y, m) {
+	var VK_SHIFT = 4;
+	if (m !== VK_SHIFT) {
+		return true;
+	} else {
+		li.rbtn_up(x, y);
+	}
+}
+
+function on_mouse_rbtn_down(x, y, m) {
+	li.rbtn_up(x, y);
 }
 
 function on_playlists_changed() {
@@ -284,6 +288,16 @@ function on_playback_starting() {
 }
 
 function on_playback_stop() {
+	p.repaint();
+}
+
+function on_font_changed() {
+	ui.getFonts();
+	p.repaint();
+}
+
+function on_colors_changed() {
+	ui.getColor();
 	p.repaint();
 }
 
