@@ -259,7 +259,7 @@ function Seekbar() {
 	this.isMouseOver = function (x, y) {
 		return (x > this.x && x < this.x + this.w && y > this.y  && y < this.y + this.h);
 	};
-	this.on_move = function (x, y) {
+	this.move = function (x, y) {
 		var fb_playback_time;
 		//this.hover = this.isMouseOver(x, y);
 		if (this.drag) {
@@ -281,7 +281,7 @@ function Seekbar() {
 		if (this.isMouseOver(x, y)) {
 			if (fb.IsPlaying && fb.PlaybackLength > 0) {
 				this.drag = true;
-				this.on_move(x, y);
+				this.move(x, y);
 			}
 		}
 	};
@@ -476,18 +476,47 @@ var sk = new Seekbar();
 var vl = new Volume();
 var bm = new ButtonManager();
 
+
+var resizeDone;
+var _ww, _timerStarted;
 function on_size() {
+
 	p.w = window.Width;
 	p.h = window.Height;
 	if (p.w <= 0 || p.h <= 0) return;
-	sk.setSize(p.w, 5);
-	sk.setXY(p.x, p.y + p.h - sk.h - 2);
-	window.MaxHeight = window.MinHeight = 45 + sk.h;
+
+	if (!_timerStarted) {
+
+		_timerStarted = true;
+		resizeDone = false;
+
+		var _timer = window.SetInterval(function() {
+			if (_ww == window.Width) {
+
+				sk.setSize(p.w, 5);
+				sk.setXY(p.x, p.y + p.h - sk.h - 2);
+				window.MaxHeight = window.MinHeight = 45 + sk.h;
+
+				resizeDone = true;
+
+				_timerStarted = false;
+				window.Repaint();
+				window.ClearInterval(_timer);
+			} else {
+				_ww = window.Width;
+			}
+		}, 50);
+
+	}
+
 };
 
 function on_paint(gr) {
 	// bg
 	gr.FillSolidRect(p.x, p.y, p.w, p.h, RGB(225, 225, 225));
+
+	if (!resizeDone) return;
+
 	gr.FillSolidRect(sk.x, sk.y + sk.h, sk.w, 2, ui.color.text & 0x50ffffff);
 	sk.draw(gr);
 	vl.draw(gr, 185, p.y + (p.h - sk.h - vl.h)/2);
@@ -509,7 +538,7 @@ function on_paint(gr) {
 };
 
 function on_mouse_move(x, y) {
-	sk.on_move(x, y);
+	sk.move(x, y);
 	vl.move(x, y);
 	bm.move(x, y);
 };
