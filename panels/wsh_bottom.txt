@@ -1,0 +1,4 @@
+﻿// ==PREPROCESSOR==
+// @import "E:\GitHub\Foobar2000-WSH-Scripts\common\common2.js"
+// @import "E:\GitHub\Foobar2000-WSH-Scripts\scripts\statusbar.js"
+// ==/PREPROCESSOR==

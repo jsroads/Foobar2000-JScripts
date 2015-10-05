@@ -1,9 +1,0 @@
-﻿// ==PREPROCESSOR==
-// @name = "Main Interface"
-// @author "elia_is_me <elia.of.war@gmail.com>"
-// @feature "dragdrop"
-// @feature "v1.4"
-// @feature "watch-metadb"
-// @import "E:\GitHub\Foobar2000-WSH-Scripts\common\Common.js"
-// @import "E:\GitHub\Foobar2000-WSH-Scripts\scripts\bottom.js"
-// ==/PREPROCESSOR==
