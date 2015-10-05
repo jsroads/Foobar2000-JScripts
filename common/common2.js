@@ -1,4 +1,4 @@
-var VERSION = "2015/09/19-17:12";
+var VERSION = "2015/10/05"
 
 oButton = function(img, x, y, func) {
 	this.img = img;
