@@ -201,7 +201,9 @@ function Volume() {
 		this.pos = vol2pos(fb.Volume);
 		if (this.pos * this.w > 4) gr.FillRoundRect(this.x, this.y, this.w * this.pos, this.h, 2, 2, RGB(110, 110, 110));
 		gr.SetSmoothingMode(0);
-		gr.DrawImage(vol_img, this.x - vol_img.Width - 5, this.y-2, vol_img.Width, vol_img.Height, 0, 0, vol_img.Width, vol_img.Height, 0, 255);
+		try{
+			gr.DrawImage(vol_img, this.x - vol_img.Width - 5, this.y-2, vol_img.Width, vol_img.Height, 0, 0, vol_img.Width, vol_img.Height, 0, 255);
+		} catch (e) {};
 	};
 	this.move = function (x, y) {
 		var _pos;
@@ -239,7 +241,7 @@ function Volume() {
 
 function Seekbar() {
 	this.draw = function (gr) {
-		gr.FillSolidRect(this.x, this.y, this.w, this.h, ui.color.text & 0x50ffffff);
+		//gr.FillSolidRect(this.x, this.y, this.w, this.h, ui.color.text & 0x50ffffff);
 		this.pos = fb.PlaybackTime / fb.PlaybackLength;
 		if (fb.IsPlaying && this.pos > 0) {
 			gr.FillSolidRect(this.x, this.y, this.w * this.pos, this.h, ui.color.highlight & 0xeeffffff);
@@ -300,7 +302,7 @@ function Seekbar() {
 		if (!fb.IsPlaying || fb.IsPaused || fb.PlaybackLength <= 0 || sk.drag) return;
 		sk.repaint();
 	},
-	250);
+	1000);
 };
 
 function ButtonV3(img, img_ln, w, h, func) {
@@ -320,7 +322,9 @@ function ButtonV3(img, img_ln, w, h, func) {
 		var oY = this.img_ln * this.h;
 		this.x = x;
 		this.y = y;
-		gr.DrawImage(this.img, this.x, this.y, this.w, this.h, oX, oY, this.w, this.h, 0, 255);
+		try {
+			gr.DrawImage(this.img, this.x, this.y, this.w, this.h, oX, oY, this.w, this.h, 0, 255);
+		} catch (e) {};
 	};
 	this.isMouseOver = function (x, y) {
 		return (x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h);
@@ -485,39 +489,17 @@ function on_size() {
 	p.h = window.Height;
 	if (p.w <= 0 || p.h <= 0) return;
 
-	if (!_timerStarted) {
-
-		_timerStarted = true;
-		resizeDone = false;
-
-		var _timer = window.SetInterval(function() {
-			if (_ww == window.Width) {
-
-				sk.setSize(p.w, 5);
-				sk.setXY(p.x, p.y + p.h - sk.h - 2);
-				window.MaxHeight = window.MinHeight = 45 + sk.h;
-
-				resizeDone = true;
-
-				_timerStarted = false;
-				window.Repaint();
-				window.ClearInterval(_timer);
-			} else {
-				_ww = window.Width;
-			}
-		}, 50);
-
-	}
+	sk.setSize(p.w, 5);
+	sk.setXY(p.x, p.y + p.h - sk.h - 2);
+	window.MaxHeight = window.MinHeight = 25 + sk.h;
 
 };
 
 function on_paint(gr) {
 	// bg
-	gr.FillSolidRect(p.x, p.y, p.w, p.h, RGB(225, 225, 225));
+	gr.FillSolidRect(p.x, p.y, p.w, p.h, RGB(247, 247, 247));
 
-	if (!resizeDone) return;
-
-	gr.FillSolidRect(sk.x, sk.y + sk.h, sk.w, 2, ui.color.text & 0x50ffffff);
+	//gr.FillSolidRect(sk.x, sk.y + sk.h, sk.w, 2, ui.color.text & 0x50ffffff);
 	sk.draw(gr);
 	vl.draw(gr, 185, p.y + (p.h - sk.h - vl.h)/2);
 	bm.draw(gr);

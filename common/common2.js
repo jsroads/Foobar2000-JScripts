@@ -1,12 +1,83 @@
-var VERSION = "2015/05/13-06:01";
+var VERSION = "2015/09/19-17:12";
+
+function oButton(img, x, y, func) {
+	this.img = img;
+	this.x = x;
+	this.y = y;
+	try {
+		this.w = this.img[0].Width;
+		this.h = this.img[0].Height;
+	} catch(e) {
+		this.w = 0;
+		this.h = 0;
+	};
+	this.state = ButtonStates.normal;
+
+	this.onClick = function() {
+		func && func();
+	};
+
+	this.draw = function(gr) {
+		try {
+			this.img[this.state] && gr.DrawImage(this.img[this.state], this.x, this.y, this.w, this.h, 0, 0, this.w, this.h, 0, 255);
+		} catch(e) {};
+	};
+
+	this.update = function(img) {
+		this.img = img;
+		this.w = this.img[0].Width;
+		this.h = this.img[0].Height;
+	};
+
+	this.setPos = function(x, y) {
+		this.x = x;
+		this.y = y;
+	};
+
+	this.repaint = function() {
+		window.RepaintRect(this.x, this.y, this.w + 1, this.h + 1);
+	};
+
+	this.checkState = function(event, x, y) {
+		this.isHover = (x > this.x && x < this.x + this.w - 1 && y > this.y &&  y < this.y + this.h - 1);
+		this.oldState = this.state;
+		switch (event) {
+			case 'down':
+				switch(this.state) {
+					case ButtonStates.normal:
+					case ButtonStates.hover:
+						this.state = this.isHover ? ButtonStates.down : ButtonStates.normal;
+						break;
+				}
+				break;
+			case 'up':
+				this.state = this.isHover ? ButtonStates.hover : ButtonStates.normal;
+				break;
+			case 'right':
+				break;
+			case 'move':
+				switch(this.state) {
+					case ButtonStates.normal:
+					case ButtonStates.hover:
+						this.state = this.isHover ? ButtonStates.hover : ButtonStates.normal;
+						break;
+				}
+				break;
+			case 'leave':
+				this.state = this.isDown ? ButtonStates.down : ButtonStates.normal;
+				break;
+		}
+		if (this.state !== this.oldState) this.repaint();
+		return this.state;
+	};
+};
 
 function Button(img_normal, img_hover, img_down) {
-	this.init = (function() {
-		this.img = [img_normal, img_hover, img_down];
-		this.w = this.img[0] ? this.img[0].Width : 0;
-		this.h = this.img[0] ? this.img[0].Height: 0;
-		this.state = ButtonStates.normal;
-	})();
+	this.img = [img_normal, img_hover, img_down];
+	this.w = this.img[0].Width;
+	this.h = this.img[0].Height;
+	this.state = ButtonStates.normal;
+
 	this.update = function (img_normal, img_hover, img_down) {
 		this.img = [img_normal, img_hover, img_down];
 		this.w = img_normal.Width;
@@ -19,10 +90,6 @@ function Button(img_normal, img_hover, img_down) {
 	};
 	this.repaint = function() {
 		window.RepaintRect(this.x, this.y, this.w+1, this.h+1);
-	};
-	this.setSize = function(w, h) {
-		this.w = w;
-		this.h = h;
 	};
 	this.checkState = function(event, x, y) {
 		this.isHover = (x > this.x && x < this.x + this.w - 1 && y > this.y &&  y < this.y + this.h - 1);
@@ -73,6 +140,9 @@ function GetStrWidth(str,font,type){var temp_gr=gdi.CreateImage(1,1);var g=temp_
 function GetFBWnd(){return utils.CreateWND(window.ID).GetAncestor(2);}
 function InputBox(caption,promp,defval,num_only){return GetFBWnd().InputBox(caption,promp,defval,num_only);}
 function MsgBox(caption,promp,type){return GetFBWnd().MsgBox(caption,promp,type);}
+function FileDialog(mode, title, filetype, deftext) {
+	return GetFBWnd().FileDialog(mode, title, filetype, deftext);
+}
 
 function $(field,metadb){return metadb?fb.TitleFormat(field).EvalWithMetadb(metadb):"";}
 
@@ -81,7 +151,29 @@ function FormatTracksLength(c){if(c>0){var e,a,b,d;e=Math.floor(c/86400);a=Math.
 function StringFormat(){var h_align=0,v_align=0,trimming=0,flags=0;switch(arguments.length){case 4:flags=arguments[3];case 3:trimming=arguments[2];case 2:v_align=arguments[1];case 1:h_align=arguments[0];break;default:return 0;};return((h_align<<28)|(v_align<<24)|(trimming<<20)|flags);}
 function RGBA(r,g,b,a){return((a<<24)|(r<<16)|(g<<8)|(b));}
 function RGB(r,g,b){return(0xff000000|(r<<16)|(g<<8)|(b));}
-function toRGB(d){var d=d-0xff000000;var r=d>>16;var g=d>>8&0xFF;var b=d&0xFF;return[r,g,b];};function blendColors(c1,c2,factor){var c1=toRGB(c1);var c2=toRGB(c2);var r=Math.round(c1[0]+factor*(c2[0]-c1[0]));var g=Math.round(c1[1]+factor*(c2[1]-c1[1]));var b=Math.round(c1[2]+factor*(c2[2]-c1[2]));return(0xff000000|(r<<16)|(g<<8)|(b));};
+function toRGB(d){var d=d-0xff000000;var r=d>>16;var g=d>>8&0xFF;var b=d&0xFF;return[r,g,b];};
+function blendColors(c1,c2,factor){var c1=toRGB(c1);var c2=toRGB(c2);var r=Math.round(c1[0]+factor*(c2[0]-c1[0]));var g=Math.round(c1[1]+factor*(c2[1]-c1[1]));var b=Math.round(c1[2]+factor*(c2[2]-c1[2]));return(0xff000000|(r<<16)|(g<<8)|(b));};
+
+function getAlpha(color) {
+	return ((color >> 24) & 0xff);
+}
+
+function getRed(color) {
+	return ((color >> 16) & 0xff);
+}
+
+function getGreen(color) {
+	return ((color >> 8) & 0xff);
+}
+
+function getBlue(color) {
+	return (color & 0xff);
+}
+
+function setAlpha(color, a) {
+	return ((color & 0x00ffffff) | (a << 24));
+}
+
 
 function sqrt(a){return Math.sqrt(a);}
 function pow(a,b){return Math.pow(a,b);}
@@ -104,6 +196,7 @@ var DT_WORDBREAK = 0x00000010;
 var DT_CALCRECT = 0x00000400;
 var DT_NOPREFIX = 0x00000800;
 var DT_END_ELLIPSIS = 0x00008000;
+var DT_SINGLELINE = 0x00000020;
 
 var MF_GRAYED = 0x00000001;
 var MF_STRING = 0x00000000;
