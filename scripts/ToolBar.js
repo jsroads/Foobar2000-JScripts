@@ -568,7 +568,7 @@ function refresh_playOrPause_button() {
 function sendResponse() {
 
 	var s2 = searchBox.inputbox.text;
-	var pl_to_move = [];
+	var pl_to_remove = [];
 	if (s2.length == 0) return true;
 	var found = false;
 	var total = plman.PlaylistCount;
@@ -579,18 +579,17 @@ function sendResponse() {
 					var plId = i;
 					found = true;
 				}
-				pl_to_move.push(i);
+				pl_to_remove.push(i);
 			};
 		}
 	}
 
 	if (found && !keepSearchResult) {
-		var r = pl_to_move.length - 1;
+		var r = pl_to_remove.length - 1;
 		while (r >= 0) {
-			plman.RemovePlaylist(pl_to_move[r]);
+			plman.RemovePlaylist(pl_to_remove[r]);
 			r--;
 		};
-		plId = plman.PlaylistCount;
 	} else {
 		plId = total;
 	};
@@ -599,12 +598,14 @@ function sendResponse() {
 	var results;
 	switch(searchboxScrope) {
 		case 0:
+			var tf = fb.TitleFormat("%album artist% | %album% | %discnumber% | %tracknumber%");
 			results = fb.QueryMulti(handles, s2);
+			results.OrderByFormat(tf, 1);
 			break;
 	};
 
 	fb.CreatePlaylist(plId, "Search [" + s2 + "]");
-	plman.InsertPlaylistItems(plId, 0, results, select = true);
+	plman.InsertPlaylistItems(plId, 0, results, select = false);
 	plman.ActivePlaylist = plId;
 
 };

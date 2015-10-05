@@ -32,30 +32,33 @@ oScroll = function (parent, vertical) {
 				this.needed = false;
 			}
 		};
+
+		if (this.visible && this.needed) {
+			this.cursorH = this.parent.totalRows / this.parent.total * this.h;
+			this.cursorY = this.parent.startId / this.parent.total * this.h + this.y;
+			if (this.cursorH < 25) {
+				this.cursorH = 25;
+				this.cursorY = this.parent.startId / this.parent.total * (this.h - this.cursorH) + this.y;
+			};
+		};
+
 	};
 
 	this.draw = function(gr) {
 		if (!this.needed || !this.visible) return;
 
-		this.cursorH = this.parent.totalRows / this.parent.total * this.h;
-		this.cursorY = this.parent.startId / this.parent.total * this.h + this.y;
-		if (this.cursorH < 25) {
-			this.cursorH = 25;
-			this.cursorY = this.parent.startId / this.parent.total * (this.h - this.cursorH) + this.y;
-		};
-
 		gr.FillSolidRect(this.x, this.y, this.w, this.h, colors.normalTxt & 0x10ffffff);
-		if (this.y + this.cursorH <= this.parent.h) {
-			if (this.cursorClicked) {
-				gr.FillSolidRect(this.x, this.cursorY, this.w, this.cursorH, colors.normalTxt & 0x99ffffff);
+		//if (this.y + this.cursorH <= this.parent.h) {
+		if (this.cursorClicked) {
+			gr.FillSolidRect(this.x, this.cursorY, this.w, this.cursorH, colors.normalTxt & 0x99ffffff);
+		} else {
+			if (this.hoverCursor) {
+				gr.FillSolidRect(this.x, this.cursorY, this.w, this.cursorH, colors.normalTxt & 0x55ffffff);
 			} else {
-				if (this.hoverCursor) {
-					gr.FillSolidRect(this.x, this.cursorY, this.w, this.cursorH, colors.normalTxt & 0x55ffffff);
-				} else {
-					gr.FillSolidRect(this.x, this.cursorY, this.w, this.cursorH, colors.normalTxt & 0x33ffffff);
-				}
+				gr.FillSolidRect(this.x, this.cursorY, this.w, this.cursorH, colors.normalTxt & 0x33ffffff);
 			}
 		}
+		//}
 	};
 
 	this.isHover =function(x, y) {
@@ -218,6 +221,7 @@ oPlaylistManager = function(objectName) {
 		var color_txt, color_bg;
 		var icon, iconX, iconW, iconY, iconId;
 		var countX, countW;
+		var pad = 8;
 
 		if (this.scrollbar.needed && this.scrollbar.visible) {
 			this.scrollbarW = this.scrollbar.w + 2;
@@ -228,7 +232,6 @@ oPlaylistManager = function(objectName) {
 		// bg;
 		gr.FillSolidRect(this.x, this.y, this.w, this.h, this.color_bg);
 
-		cx = this.x + 10;
 		ch = this.rowHeight;
 
 		idx = 0;
@@ -237,7 +240,6 @@ oPlaylistManager = function(objectName) {
 			idx = k + this.startId;
 			cy = this.y + k * ch;
 
-			iconId = 0;
 
 			// item bg
 			color_bg = this.color_bg;
@@ -252,7 +254,7 @@ oPlaylistManager = function(objectName) {
 				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, this.color_sel & 0x15ffffff);
 			};
 
-
+			iconId = 0;
 			if (idx == fb.PlayingPlaylist && fb.IsPlaying) {
 				color_txt = this.color_high;
 				iconId = 1;
@@ -263,8 +265,8 @@ oPlaylistManager = function(objectName) {
 			icon = images.list;
 			if (this.playlist[idx].isAuto) icon = images.autoList;
 			if (this.playlist[idx].name.slice(0, 8) == "Search [") icon = images.searchList;
-			iconW = images.list[0].Width;
-			iconX = this.x + 0;
+			iconW = icon[0].Width;
+			iconX = this.x + pad;
 			iconY = cy + (this.rowHeight - iconW) / 2;
 
 			try {
@@ -278,13 +280,13 @@ oPlaylistManager = function(objectName) {
 			};
 
 			if (countW > 0) {
-				countX = this.x + this.w - this.scrollbarW - countW - 10;
+				countX = this.x + this.w - this.scrollbarW - countW - pad;
 				gr.GdiDrawText(this.playlist[idx].totalTracks, this.font_item, this.color_txt, countX, cy, countW, ch, dt_lc);
 			};
 
 			// items
-			cx = iconX + iconW + 5;
-			cw = countX - cx - 5;
+			cx = iconX + iconW + pad;
+			cw = countX - cx - pad;
 
 			gr.GdiDrawText(this.playlist[idx].name, this.font_item, color_txt, cx, cy, cw, ch, dt_lc);
 
@@ -379,10 +381,16 @@ oPlaylistManager = function(objectName) {
 			case "rbtn_down":
 				break;
 			case "leave":
+				this.hoverId = -1;
+				this.hoverIdSaved = -1;
+				this.repaint();
 				break;
 			case "wheel":
 				if (this.totalRows < this.total) {
-					this.scrollbar.scroll(mask) && this.repaint();
+					if (this.scrollbar.scroll(mask)) {
+						this.scrollbar.refresh();
+						this.repaint();
+					};
 				};
 				break;
 				
