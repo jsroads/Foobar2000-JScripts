@@ -1,16 +1,11 @@
 var VERSION = "2015/09/19-17:12";
 
-function oButton(img, x, y, func) {
+oButton = function(img, x, y, func) {
 	this.img = img;
 	this.x = x;
 	this.y = y;
-	try {
-		this.w = this.img[0].Width;
-		this.h = this.img[0].Height;
-	} catch(e) {
-		this.w = 0;
-		this.h = 0;
-	};
+	this.w = this.img[0].Width;
+	this.h = this.img[0].Height;
 	this.state = ButtonStates.normal;
 
 	this.onClick = function() {
@@ -42,7 +37,7 @@ function oButton(img, x, y, func) {
 		this.isHover = (x > this.x && x < this.x + this.w - 1 && y > this.y &&  y < this.y + this.h - 1);
 		this.oldState = this.state;
 		switch (event) {
-			case 'down':
+			case "down":
 				switch(this.state) {
 					case ButtonStates.normal:
 					case ButtonStates.hover:
@@ -50,12 +45,12 @@ function oButton(img, x, y, func) {
 						break;
 				}
 				break;
-			case 'up':
+			case "up":
 				this.state = this.isHover ? ButtonStates.hover : ButtonStates.normal;
 				break;
-			case 'right':
+			case "right":
 				break;
-			case 'move':
+			case "move":
 				switch(this.state) {
 					case ButtonStates.normal:
 					case ButtonStates.hover:
@@ -63,7 +58,7 @@ function oButton(img, x, y, func) {
 						break;
 				}
 				break;
-			case 'leave':
+			case "leave":
 				this.state = this.isDown ? ButtonStates.down : ButtonStates.normal;
 				break;
 		}
@@ -71,61 +66,6 @@ function oButton(img, x, y, func) {
 		return this.state;
 	};
 };
-
-function Button(img_normal, img_hover, img_down) {
-	this.img = [img_normal, img_hover, img_down];
-	this.w = this.img[0].Width;
-	this.h = this.img[0].Height;
-	this.state = ButtonStates.normal;
-
-	this.update = function (img_normal, img_hover, img_down) {
-		this.img = [img_normal, img_hover, img_down];
-		this.w = img_normal.Width;
-		this.h = img_hover.Height;
-	};
-	this.draw = function(gr, x, y, alpha) {
-		this.x = x;
-		this.y = y;
-		this.img[this.state] && gr.DrawImage(this.img[this.state], this.x, this.y, this.w, this.h, 0, 0, this.w, this.h, 0, alpha || 255);
-	};
-	this.repaint = function() {
-		window.RepaintRect(this.x, this.y, this.w+1, this.h+1);
-	};
-	this.checkState = function(event, x, y) {
-		this.isHover = (x > this.x && x < this.x + this.w - 1 && y > this.y &&  y < this.y + this.h - 1);
-		this.oldState = this.state;
-		switch (event) {
-			case 'down':
-				switch(this.state) {
-					case ButtonStates.normal:
-					case ButtonStates.hover:
-						this.state = this.isHover ? ButtonStates.down : ButtonStates.normal;
-						break;
-				}
-				break;
-			case 'up':
-				this.state = this.isHover ? ButtonStates.hover : ButtonStates.normal;
-				break;
-			case 'right':
-				break;
-			case 'move':
-				switch(this.state) {
-					case ButtonStates.normal:
-					case ButtonStates.hover:
-						this.state = this.isHover ? ButtonStates.hover : ButtonStates.normal;
-						break;
-				}
-				break;
-			case 'leave':
-				this.state = this.isDown ? ButtonStates.down : ButtonStates.normal;
-				break;
-		}
-		if (this.state !== this.oldState) this.repaint();
-		return this.state;
-	}
-}
-
-
 
 String.prototype.trim=function(s){return this.replace(/^[\s　]*|[\s　]*$/g,"");};
 String.prototype.validate=function(){return this.replace(/[\/\\|:]/g,'-').replace(/\*/g,'x').replace(/"/g,"''").replace(/[<>]/g,'_').replace(/\?/g,"");};
