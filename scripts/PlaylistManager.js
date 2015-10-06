@@ -239,13 +239,13 @@ oPlaylistManager = function(objectName) {
 				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch - 0, 1, colors.selectedBg);
 			}
 			// hover playlist
-			if (idx == this.hoverId && this.dragId < 0) {
+			if (idx == this.hoverId && this.dragId < 0 && !this.dragdrop.actived) {
 				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, colors.selectedBg & 0x20ffffff);
 				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch - 0, 1, colors.selectedBg & 0xa0ffffff);
 			};
 			// dragover playlist
 			if (this.dragdrop.targetId == idx && (dragdrop.dragFile || this.dragdrop.actived)) {
-				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch, 2, colors.selectedBg);
+				gr.DrawRect(this.x, cy+2, this.w - this.scrollbarW - 1, ch-2, 2, colors.highlight);
 			};
 
 			iconId = 0;
@@ -349,14 +349,21 @@ oPlaylistManager = function(objectName) {
 						this.dragHoverId = this.hoverId;
 					};
 					if (this.totalRows < this.total) {
+						if (y > this.y + this.totalRows * this.rowHeight) {
+							this.dragHoverId = this.total;
+							this.repaint();
+						};
 						if (y < this.y + this.rowHeight / 2) {
 							this.startAutoScroll(1, function() {
-								plm.dragHoverId = plm.startId + plm.totalRows;
+								plm.dragHoverId = plm.startId;
 							});
 						} else if (y > this.y + this.h - this.rowHeight / 2) {
 							this.startAutoScroll(-1, function() {
 								plm.dragHoverId = plm.startId + plm.totalRows;
 							});
+							if (!this.checkStartId()) {
+								this.dragHoverId = this.total;
+							};
 						}
 					} else {
 						if (y < this.y) this.dragHoverId = 0;
@@ -368,7 +375,6 @@ oPlaylistManager = function(objectName) {
 				};
 
 				if (dragdrop.handlesIn != null) {
-					console("handles");
 					if (this.hoverId > -1 && this.hoverId != this.activeId) {
 						this.dragdrop.targetId = this.hoverId;
 						var iidx = fb.PlaylistItemCount(this.hoverId);
