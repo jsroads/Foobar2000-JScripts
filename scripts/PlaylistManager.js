@@ -7,7 +7,6 @@ oScroll = function (parent, vertical) {
 	this.visible = false;
 	this.cursorClicked = false;
 	this.hoverCursor = false;
-	this.scrolling = false;
 
 	this.setSize = function(x, y, w, h) {
 		this.x = x;
@@ -77,7 +76,6 @@ oScroll = function (parent, vertical) {
 				};
 
 				if (this.cursorClicked) {
-					//if (this.cursorY >= this.y && this.cursorY + this.cursorH <= this.y + this.h) {
 						this.cursorY = y - this.cursorClickedDelta;
 						if (this.cursorY < this.y) {
 							this.cursorY = this.y;
@@ -88,7 +86,6 @@ oScroll = function (parent, vertical) {
 						this.parent.startId = Math.floor((this.cursorY - this.y) * this.parent.total / this.h);
 						this.parent.checkStartId();
 						this.parent.repaint();
-					//};
 				};
 				break;
 			case "down":
@@ -136,7 +133,6 @@ oPlaylistManager = function(objectName) {
 
 	this.playlist = [];
 	this.scrollbar = new oScroll(this, true);
-	this.scrolling = false;
 	this.scrollbarW = 0;
 
 	this.totalRows = 0;
@@ -171,7 +167,7 @@ oPlaylistManager = function(objectName) {
 		this.w = w;
 		this.h = h;
 
-		this.totalRows = (this.h / this.rowHeight) | 0;
+		this.totalRows = Math.floor(this.h / this.rowHeight);
 		this.checkStartId();
 		var scrbW = 10;
 		this.scrollbar.setSize(this.x + this.w - scrbW - 0, this.y, scrbW, this.h);
@@ -236,7 +232,7 @@ oPlaylistManager = function(objectName) {
 				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, colors.selectedBg & 0x39ffffff);
 				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch - 0, 1, colors.selectedBg);
 			}
-			if (idx == this.hoverId) {
+			if (idx == this.hoverId && this.dragId < 0) {
 				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, colors.selectedBg & 0x20ffffff);
 				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch - 0, 1, colors.selectedBg & 0xa0ffffff);
 			};
@@ -278,16 +274,20 @@ oPlaylistManager = function(objectName) {
 			gr.GdiDrawText(this.playlist[idx].name, this.font_item, color_txt, cx, cy, cw, ch, dt_lc);
 
 			// drag split-line
-			if (this.dragId > -1 && this.dragOverId == idx) {
-				if (this.dragId > this.dragOverId) {
-					gr.DrawLine(this.x, cy+1, this.x + this.w, cy+1, 2, colors.highlight);
-				}
-				if (this.dragId <= this.dragHoverId) {
-					gr.DrawLine(this.x, cy+ch-1, this.x + this.w, cy+ch-1, 2, colors.highlight);
-				};
-
+			if (this.dragId > -1 && this.dragHoverId == idx) {
+				//if (this.dragId > this.dragHoverId) {
+					gr.DrawLine(this.x, cy+1, this.x + this.w - this.scrollbarW, cy+1, 2, colors.highlight);
+				//} else {
+				//	gr.DrawLine(this.x, cy+ch, this.x + this.w - this.scrollbarW, cy+ch, 2, colors.highlight);
+				//};
 			};
 
+		};
+
+		if (this.dragId > -1 && this.dragHoverId == this.total) {
+			var max = Math.min(this.totalRows, this.total);
+			var Y = this.y + max * this.rowHeight + 1;
+			gr.DrawLine(this.x, Y, this.x + this.w - this.scrollbarW, Y, 2, colors.highlight);
 		};
 
 		// scrollbar
@@ -319,10 +319,48 @@ oPlaylistManager = function(objectName) {
 					this.repaint();
 				};
 
+
 				if (this.dragId > -1) {
-					if (this.dragId != this.hoverId) {
-						this.dragOverId = 0;
+					if (this.hoverId > -1) {
+						this.dragHoverId = this.hoverId;
 					};
+					if (this.totalRows < this.total) {
+
+						window.ClearInterval(plm.scrollTimer);
+
+						if (y < this.y + this.rowHeight) {
+							this.scrollTimer = window.SetInterval(function() {
+								var scrolling = plm.scrollbar.scroll(1);
+								if (scrolling) {
+									plm.scrollbar.refresh();
+									plm.dragHoverId = plm.startId;
+									plm.repaint();
+								} else {
+									window.ClearInterval(plm.scrollTimer);
+								}
+							}, 100);
+						} else 
+						if (y > this.y + this.h - this.rowHeight) {
+							this.scrollTimer = window.SetInterval(function() {
+								var scrolling = plm.scrollbar.scroll(-1);
+								if (scrolling) {
+									plm.scrollbar.refresh();
+									plm.dragHoverId = plm.startId + plm.totalRows;
+									plm.repaint();
+								} else {
+									window.ClearInterval(plm.scrollTimer);
+								}
+							}, 100);
+						} else 
+						{
+						};
+					} else {
+						if (y < this.y) this.dragHoverId = 0;
+						if (y > this.y + this.total * this.rowHeight){
+						   this.dragHoverId = this.total;
+						   this.repaint();
+						}
+					}
 				};
 				break;
 			case "lbtn_down":
@@ -334,20 +372,10 @@ oPlaylistManager = function(objectName) {
 							this.activeId = this.hoverId;
 							this.repaint();
 							fb.ActivePlaylist = this.activeId;
+						} else {
+							this.dragId = this.hoverId;
 						};
-						this.dragId = this.hoverId;
 					};
-				};
-				break;
-			case "lbtn_up":
-				this.scrollbar.monitor("up", x, y);
-				if (this.dragId > -1) {
-					if (this.dragOverId > -1) {
-						fb.MovePlaylist(this.dragId, this.dragOverId);
-					};
-					this.dragId = -1;
-					this.dragOverId = -1;
-					this.repaint();
 				};
 				break;
 			case "dblclk":
@@ -360,12 +388,27 @@ oPlaylistManager = function(objectName) {
 					}
 				};
 				break;
+			case "lbtn_up":
+				this.scrollbar.monitor("up", x, y);
+				if (this.dragId > -1) {
+					if (this.dragHoverId > -1) {
+						if (this.dragHoverId == this.total) {
+							fb.MovePlaylist(this.dragId, this.dragHoverId - 1);
+						} else {
+							fb.MovePlaylist(this.dragId, this.dragHoverId);
+						};
+					};
+					this.dragId = -1;
+					this.dragHoverId = -1;
+					this.repaint();
+				};
+				break;
+			case "rbtn_down":
+				break;
 			case "rbtn_up":
 				if (this._isHover) {
 					this.contextMenu(x, y, this.hoverId);
 				}
-				break;
-			case "rbtn_down":
 				break;
 			case "leave":
 				this.hoverId = -1;
@@ -383,110 +426,6 @@ oPlaylistManager = function(objectName) {
 				
 		};
 
-				
-				
-
-
-		/*
-		this.isHoverItems = (x > this.x && x < this.x + this.w - this.scrollbarW && y > this.y + this.marginT && y < this.y + this.h);
-
-		if (this.isHoverItems) {
-			this.hoverId = Math.floor((y - this.marginT) / this.rowHeight) + this.startId;
-			if (this.hoverId < 0 || this.hoverId >= this.total) {
-				this.hoverId = -1;
-			};
-		} else {
-			this.hoverId = -1;
-		};
-
-		switch(event) {
-			case "wheel":
-				if (this.totalRows < this.total) {
-					this.scrollbar.monitor("wheel", 0, 0, mask);
-				};
-				break;
-			case "lbtn_down":
-				if (this.scrollbar.isHover(x, y)) {
-					this.scrollbar.monitor("down", x, y, mask);
-				} else {
-					if (this.hoverId > -1) {
-						if (this.hoverId != this.activeId) {
-							this.activeId = this.hoverId;
-							this.repaint();
-						};
-						fb.ActivePlaylist = this.activeId;
-						this.dragId = this.hoverId;
-					};
-				};
-				break;
-			case "rbtn_up":
-				if (this.hoverId > -1) {
-				};
-				if (!this.scrollbar.isHover(x, y)) this.contextMenu(x, y, this.hoverId);
-				break;
-			case "rbtn_down":
-				if (this.hoverId > -1) {
-					if (!this.scrollbar.isHover(x, y)) {
-						this.rightClickedId = this.hoverId;
-						this.repaint();
-					};
-				};
-				break;
-			case "move":
-
-				if (this.hoverId != this.oldHoverId) {
-					this.oldHoverId = this.hoverId;
-					this.repaint();
-				};
-
-				if (this.dragId > -1) {
-
-					if (this.dragId != this.hoverId) {
-						if (y < this.y + this.marginT) {
-							this.dragHoverId = 0;
-						} else if (y > this.y + this.h || y > this.y + this.marginT + fb.PlaylistCount * this.rowHeight) {
-							this.dragHoverId = fb.PlaylistCount - 1;
-						} else {
-							this.dragHoverId = this.hoverId;
-						};
-						if (this.oldHoverId != this.hoverId) this.repaint();
-						this.oldHoverId = this.hoverId;
-					};
-				};
-				this.scrollbar.monitor("move", x, y);
-				break;
-			case "lbtn_up":
-				this.scrollbar.monitor("up", x, y);
-				if (this.dragId > -1) {
-					if (this.dragHoverId > -1) {
-						fb.MovePlaylist(this.dragId, this.dragHoverId);
-					};
-				};
-				this.dragId = -1;
-				this.dragHoverId = -1;
-				this.repaint();
-				break;
-			case "dblclk":
-				if (this.scrollbar.isHover(x, y)) {
-					this.scrollbar.monitor("down", x, y);
-				} else {
-					if (this.hoverId > -1) {
-						if (fb.IsPlaying && this.hoverId == fb.PlayingPlaylist) {
-							fb.PlayOrPause();
-						} else {
-							fb.PlayingPlaylist = this.hoverId;
-							fb.Play();
-						};
-					};
-				};
-				break;
-			case "leave":
-				this.scrolling = false;
-				this.rightClickedId = -1;
-				this.repaint();
-				break;
-		};
-	*/
 	};
 
 	this.contextMenu = function(x, y, pl) {
@@ -563,7 +502,6 @@ oPlaylistManager = function(objectName) {
 };
 
 
-
 ////////////////////////////////////////////////////// globals
 
 var panel_name = "Playlist Manager"
@@ -572,8 +510,6 @@ var g_font_name = "Segoe UI";
 
 
 //
-var g_instanceType = window.InstanceType;
-
 var ww, wh;
 var margin = { t: 2, b: 2, l: 2, r: 2};
 var dt_lc = DT_VCENTER | DT_LEFT | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS;
@@ -663,6 +599,7 @@ function on_playlist_switch() {
 };
 
 function on_playlists_changed() {
+	plm.activeId = fb.ActivePlaylist;
 	plm.refresh(true);
 };
 
@@ -792,5 +729,4 @@ function Luminance(color) {
 	color = toRGB(color);
 	return (0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]) / 255.0;
 }
-
 
