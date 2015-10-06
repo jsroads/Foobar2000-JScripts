@@ -12,8 +12,8 @@
 		if (artist == "" && album == "") { return };
 
 		artist = artist.replace(/\s+/g, "+");
-		title = title.replace(/\s+/g, "+");
-		url = "http://www.xiami.com/search/song/?key=" + artist + "+" + title;
+		album = album.replace(/\s+/g, "+");
+		url = "http://www.xiami.com/search/song/?key=" + artist + "+" + album;
 		console(url);
 
 		htmlText = xiamiHttpRequest.Run(url);

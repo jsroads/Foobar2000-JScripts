@@ -48,7 +48,6 @@ oScroll = function (parent, vertical) {
 		if (!this.needed || !this.visible) return;
 
 		gr.FillSolidRect(this.x, this.y, this.w, this.h, colors.normalTxt & 0x10ffffff);
-		//if (this.y + this.cursorH <= this.parent.h) {
 		if (this.cursorClicked) {
 			gr.FillSolidRect(this.x, this.cursorY, this.w, this.cursorH, colors.normalTxt & 0x99ffffff);
 		} else {
@@ -154,13 +153,6 @@ oPlaylistManager = function(objectName) {
 	this.rowHeight = window.GetProperty("plman.Row Height", 30);
 	this.marginT = 0;
 
-	this.setColors = function() {
-		this.color_txt = colors.normalTxt;
-		this.color_bg = colors.normalBg;
-		this.color_sel = colors.selectedBg;
-		this.color_high = colors.highlight;
-	};
-	this.setColors();
 
 	this.setFonts = function() {
 		this.font_item = gdi.font(g_font_name, 12, 0);
@@ -218,7 +210,7 @@ oPlaylistManager = function(objectName) {
 		};
 		var cx, cy, cw, ch;
 		var idx;
-		var color_txt, color_bg;
+		var color_txt;
 		var icon, iconX, iconW, iconY, iconId;
 		var countX, countW;
 		var pad = 8;
@@ -229,9 +221,6 @@ oPlaylistManager = function(objectName) {
 			this.scrollbarW = 0;
 		};
 
-		// bg;
-		gr.FillSolidRect(this.x, this.y, this.w, this.h, this.color_bg);
-
 		ch = this.rowHeight;
 
 		idx = 0;
@@ -240,23 +229,21 @@ oPlaylistManager = function(objectName) {
 			idx = k + this.startId;
 			cy = this.y + k * ch;
 
+			color_txt = colors.normalTxt;
 
 			// item bg
-			color_bg = this.color_bg;
-			color_txt = this.color_txt;
-
-
 			if (idx == this.activeId) {
-				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, this.color_sel & 0x55ffffff);
-				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch - 1, 1, this.color_sel & 0x55ffffff);
+				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, colors.selectedBg & 0x39ffffff);
+				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch - 0, 1, colors.selectedBg);
 			}
 			if (idx == this.hoverId) {
-				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, this.color_sel & 0x15ffffff);
+				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, colors.selectedBg & 0x20ffffff);
+				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch - 0, 1, colors.selectedBg & 0xa0ffffff);
 			};
 
 			iconId = 0;
 			if (idx == fb.PlayingPlaylist && fb.IsPlaying) {
-				color_txt = this.color_high;
+				color_txt = colors.highlight;
 				iconId = 1;
 			};
 
@@ -281,7 +268,7 @@ oPlaylistManager = function(objectName) {
 
 			if (countW > 0) {
 				countX = this.x + this.w - this.scrollbarW - countW - pad;
-				gr.GdiDrawText(this.playlist[idx].totalTracks, this.font_item, this.color_txt, countX, cy, countW, ch, dt_lc);
+				gr.GdiDrawText(this.playlist[idx].totalTracks, this.font_item, colors.normalTxt, countX, cy, countW, ch, dt_lc);
 			};
 
 			// items
@@ -293,10 +280,10 @@ oPlaylistManager = function(objectName) {
 			// drag split-line
 			if (this.dragId > -1 && this.dragOverId == idx) {
 				if (this.dragId > this.dragOverId) {
-					gr.DrawLine(this.x, cy+1, this.x + this.w, cy+1, 2, this.color_high);
+					gr.DrawLine(this.x, cy+1, this.x + this.w, cy+1, 2, colors.highlight);
 				}
 				if (this.dragId <= this.dragHoverId) {
-					gr.DrawLine(this.x, cy+ch-1, this.x + this.w, cy+ch-1, 2, this.color_high);
+					gr.DrawLine(this.x, cy+ch-1, this.x + this.w, cy+ch-1, 2, colors.highlight);
 				};
 
 			};
@@ -612,13 +599,12 @@ images = {
 
 
 var plm;
-
+plm = new oPlaylistManager("PlaylistManager");
 
 ////////////////////////////////////////////////////////// main process
 getColors();
 getImages();
 
-plm = new oPlaylistManager("PlaylistManager");
 
 ///////////////////////////////////////////////////////// callback functions
 function on_size() {
@@ -672,6 +658,7 @@ function on_mouse_wheel(delta) {
 
 ////////////////////////////////////////// playlist callbacks
 function on_playlist_switch() {
+	plm.activeId = fb.ActivePlaylist;
 	plm.repaint();
 };
 
@@ -702,6 +689,13 @@ function on_colors_changed() {
 	getColors();
 	getImages();
 	window.Repaint();
+};
+
+
+function on_notify_data(name, info) {
+	if (info == "IsHoverOtherPanel") {
+		plm.on_mouse("move", -1, -1, 0);
+	};
 };
 
 ///////////////////////////////////////////// functions
