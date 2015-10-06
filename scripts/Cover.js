@@ -195,6 +195,10 @@ function on_paint(gr) {
 
 };
 
+function on_mouse_move(x, y, mask) {
+	window.NotifyOthers("IsHoverOtherPanel", 0);
+};
+
 function on_get_album_art_done(metadb, art_id, image, image_path) {
 	aart.onGetArtDone(metadb, art_id, image, image_path);
 };

@@ -344,11 +344,6 @@ oPlaylistManager = function(objectName) {
 			case "move":
 				this.scrollbar.monitor("move", x, y);
 
-				if (this.hoverId != this.hoverIdSaved) {
-					this.hoverIdSaved = this.hoverId;
-					this.repaint();
-				};
-
 				if (this.dragId > -1) {
 					if (this.hoverId > -1) {
 						this.dragHoverId = this.hoverId;
@@ -371,6 +366,33 @@ oPlaylistManager = function(objectName) {
 						}
 					}
 				};
+
+				if (dragdrop.handlesIn != null) {
+					console("handles");
+					if (this.hoverId > -1 && this.hoverId != this.activeId) {
+						this.dragdrop.targetId = this.hoverId;
+						var iidx = fb.PlaylistItemCount(this.hoverId);
+						plman.InsertPlaylistItems(this.hoverId, iidx, dragdrop.handlesIn, false);
+
+						window.ClearTimeout(this.dragdrop.timer);
+						this.dragdrop.actived = true;
+						this.repaint();
+						this.dragdrop.timer = window.SetTimeout(function() {
+							plm.dragdrop.actived = false;
+							plm.repaint();
+						}, 500);
+					};
+
+					dragdrop.handlesIn = null;
+					window.NotifyOthers("ClearDragDropHandles", 0);
+
+				};
+
+				if (this.hoverId != this.hoverIdSaved) {
+					this.hoverIdSaved = this.hoverId;
+					this.repaint();
+				};
+
 				break;
 			case "lbtn_down":
 				if (this._isHoverScroll) {
@@ -411,9 +433,11 @@ oPlaylistManager = function(objectName) {
 					this.dragHoverId = -1;
 					this.repaint();
 				};
+
 				if (this.autoScrolling) {
 					this.stopAutoScroll();
 				};
+
 				break;
 			case "rbtn_down":
 				break;
@@ -510,6 +534,7 @@ oPlaylistManager = function(objectName) {
 					plm.dragdrop.actived = false;
 					plm.repaint();
 				}, 500);
+				this.dragdrop.targetId = -1;
 				break;
 			case "leave":
 				dragdrop.dragFile = false;
@@ -629,6 +654,8 @@ images = {
 
 dragdrop = {
 	dragFile: false,
+	handlesIn: null,
+	handlesOut: null,
 };
 
 var plm;
@@ -744,8 +771,15 @@ function on_colors_changed() {
 
 
 function on_notify_data(name, info) {
-	if (info == "IsHoverOtherPanel") {
-		plm.on_mouse("move", -1, -1, 0);
+	switch(name) {
+		case "WshPlaylistDragDrop":
+			dragdrop.handlesIn = info;
+			break;
+		case "IsHoverOtherPanel":
+			if (!dragdrop.handlesIn) {
+				plm.on_mouse("move", -1, -1, 0);
+			};
+			break;
 	};
 };
 
