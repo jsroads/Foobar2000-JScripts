@@ -264,14 +264,14 @@ oPlaylistManager = function(objectName) {
 
 			if (countW > 0) {
 				countX = this.x + this.w - this.scrollbarW - countW - pad;
-				gr.GdiDrawText(this.playlist[idx].totalTracks, this.font_item, colors.normalTxt, countX, cy, countW, ch, dt_lc);
+				gr.GdiDrawText(this.playlist[idx].totalTracks, this.font_item, colors.normalTxt, countX, cy + 1, countW, ch, dt_lc);
 			};
 
 			// items
 			cx = iconX + iconW + pad;
 			cw = countX - cx - pad;
 
-			gr.GdiDrawText(this.playlist[idx].name, this.font_item, color_txt, cx, cy, cw, ch, dt_lc);
+			gr.GdiDrawText(this.playlist[idx].name, this.font_item, color_txt, cx, cy + 1, cw, ch, dt_lc);
 
 			// drag split-line
 			if (this.dragId > -1 && this.dragHoverId == idx) {
