@@ -8,6 +8,7 @@ oScroll = function (parent, vertical) {
 	this.cursorClicked = false;
 	this.hoverCursor = false;
 
+
 	this.setSize = function(x, y, w, h) {
 		this.x = x;
 		this.y = y;
@@ -56,7 +57,6 @@ oScroll = function (parent, vertical) {
 				gr.FillSolidRect(this.x, this.cursorY, this.w, this.cursorH, colors.normalTxt & 0x33ffffff);
 			}
 		}
-		//}
 	};
 
 	this.isHover =function(x, y) {
@@ -113,7 +113,7 @@ oScroll = function (parent, vertical) {
 
 	this.scroll = function(delta) {
 		this.parent.startId -= delta;
-		return this.parent.checkStartId();
+		return (this.parent.checkStartId());
 	};
 
 };
@@ -149,6 +149,11 @@ oPlaylistManager = function(objectName) {
 	this.rowHeight = window.GetProperty("plman.Row Height", 30);
 	this.marginT = 0;
 
+
+	this.dragdrop = {
+		targetId: -1,
+		isHoverArea: false,
+	};
 
 	this.setFonts = function() {
 		this.font_item = gdi.font(g_font_name, 12, 0);
@@ -228,13 +233,19 @@ oPlaylistManager = function(objectName) {
 			color_txt = colors.normalTxt;
 
 			// item bg
+			// active playlist
 			if (idx == this.activeId) {
 				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, colors.selectedBg & 0x39ffffff);
 				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch - 0, 1, colors.selectedBg);
 			}
+			// hover playlist
 			if (idx == this.hoverId && this.dragId < 0) {
 				gr.FillSolidRect(this.x, cy, this.w - this.scrollbarW, ch, colors.selectedBg & 0x20ffffff);
 				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch - 0, 1, colors.selectedBg & 0xa0ffffff);
+			};
+			// dragover playlist
+			if (this.dragdrop.targetId == idx && (dragdrop.dragFile || this.dragdrop.actived)) {
+				gr.DrawRect(this.x, cy, this.w - this.scrollbarW - 1, ch, 2, colors.selectedBg);
 			};
 
 			iconId = 0;
@@ -244,7 +255,6 @@ oPlaylistManager = function(objectName) {
 			};
 
 			// icons
-			//icon = this.playlist[idx].isAuto ? images.autoList : images.list;
 			icon = images.list;
 			if (this.playlist[idx].isAuto) icon = images.autoList;
 			if (this.playlist[idx].name.slice(0, 8) == "Search [") icon = images.searchList;
@@ -275,11 +285,7 @@ oPlaylistManager = function(objectName) {
 
 			// drag split-line
 			if (this.dragId > -1 && this.dragHoverId == idx) {
-				//if (this.dragId > this.dragHoverId) {
-					gr.DrawLine(this.x, cy+1, this.x + this.w - this.scrollbarW, cy+1, 2, colors.highlight);
-				//} else {
-				//	gr.DrawLine(this.x, cy+ch, this.x + this.w - this.scrollbarW, cy+ch, 2, colors.highlight);
-				//};
+				gr.DrawLine(this.x, cy+1, this.x + this.w - this.scrollbarW, cy+1, 2, colors.highlight);
 			};
 
 		};
@@ -296,6 +302,30 @@ oPlaylistManager = function(objectName) {
 
 	this.isHover = function(x, y) {
 		return (x > this.x && x < this.x + this.w - this.scrollbarW && y > this.y && y < this.y + this.h);
+	};
+
+	this.startAutoScroll = function(delta, onScrolling) {
+		if (!this.autoScrolling) {
+			plm.scrollTimeout = window.SetTimeout(function() {
+				plm.scrollInterval = window.SetInterval(function() {
+					var scrolling = plm.scrollbar.scroll(delta);
+					if (scrolling) {
+						onScrolling && onScrolling();
+						plm.scrollbar.refresh();
+						plm.repaint();
+					} else {
+						plm.stopAutoScroll();
+					};
+				}, 50);
+			}, 350);
+			this.autoScrolling = true;
+		}
+	};
+
+	this.stopAutoScroll = function() {
+		window.ClearInterval(this.scrollInterval);
+		window.ClearTimeout(this.scrollTimeout);
+		this.autoScrolling = false;
 	};
 
 	this.on_mouse = function(event, x, y, mask) {
@@ -319,41 +349,20 @@ oPlaylistManager = function(objectName) {
 					this.repaint();
 				};
 
-
 				if (this.dragId > -1) {
 					if (this.hoverId > -1) {
 						this.dragHoverId = this.hoverId;
 					};
 					if (this.totalRows < this.total) {
-
-						window.ClearInterval(plm.scrollTimer);
-
-						if (y < this.y + this.rowHeight) {
-							this.scrollTimer = window.SetInterval(function() {
-								var scrolling = plm.scrollbar.scroll(1);
-								if (scrolling) {
-									plm.scrollbar.refresh();
-									plm.dragHoverId = plm.startId;
-									plm.repaint();
-								} else {
-									window.ClearInterval(plm.scrollTimer);
-								}
-							}, 100);
-						} else 
-						if (y > this.y + this.h - this.rowHeight) {
-							this.scrollTimer = window.SetInterval(function() {
-								var scrolling = plm.scrollbar.scroll(-1);
-								if (scrolling) {
-									plm.scrollbar.refresh();
-									plm.dragHoverId = plm.startId + plm.totalRows;
-									plm.repaint();
-								} else {
-									window.ClearInterval(plm.scrollTimer);
-								}
-							}, 100);
-						} else 
-						{
-						};
+						if (y < this.y + this.rowHeight / 2) {
+							this.startAutoScroll(1, function() {
+								plm.dragHoverId = plm.startId + plm.totalRows;
+							});
+						} else if (y > this.y + this.h - this.rowHeight / 2) {
+							this.startAutoScroll(-1, function() {
+								plm.dragHoverId = plm.startId + plm.totalRows;
+							});
+						}
 					} else {
 						if (y < this.y) this.dragHoverId = 0;
 						if (y > this.y + this.total * this.rowHeight){
@@ -402,6 +411,9 @@ oPlaylistManager = function(objectName) {
 					this.dragHoverId = -1;
 					this.repaint();
 				};
+				if (this.autoScrolling) {
+					this.stopAutoScroll();
+				};
 				break;
 			case "rbtn_down":
 				break;
@@ -427,6 +439,88 @@ oPlaylistManager = function(objectName) {
 		};
 
 	};
+
+	this.on_drag = function(event, action, x, y, mask) {
+		this.dragdrop.isHoverArea = this.isHover(x, y);
+		switch(event) {
+			case "enter":
+				dragdrop.dragFile = true;
+				break;
+			case "over":
+				this.dragdrop.targetId = -1;
+				if (this.dragdrop.isHoverArea) {
+					this.dragdrop.targetId = Math.floor((y - this.y) /this.rowHeight) + this.startId;
+					if (this.dragdrop.targetId < 0) {
+						this.dragdrop.targetId = -1;
+					}
+					if (this.dragdrop.targetId >= this.total) {
+						this.dragdrop.targetId = this.total;
+					}
+				};
+
+				if (this.dragdrop.targetIdSaved != this.dragdrop.targetId) {
+					this.dragdrop.targetIdSaved = this.dragdrop.targetId;
+					this.repaint();
+				}
+
+				if (this.total > this.totalRows) {
+					if (y < this.y + this.rowHeight / 2) {
+						this.startAutoScroll(1, function() {
+							plm.dragdrop.targetId = -1;
+							if (plm.dragdrop.isHoverArea) {
+								plm.dragdrop.targetId = Math.floor((y - plm.y) /plm.rowHeight) + plm.startId;
+								if (plm.dragdrop.targetId < 0) {
+									plm.dragdrop.targetId = -1;
+								}
+								if (plm.dragdrop.targetId >= plm.total) {
+									plm.dragdrop.targetId = plm.total;
+								}
+							};
+						});
+					};
+					if (y > this.y + this.h - this.rowHeight / 2) {
+						this.startAutoScroll(-1, function() {
+							plm.dragdrop.targetId = -1;
+							if (plm.dragdrop.isHoverArea) {
+								plm.dragdrop.targetId = Math.floor((y - plm.y) /plm.rowHeight) + plm.startId;
+								if (plm.dragdrop.targetId < 0) {
+									plm.dragdrop.targetId = -1;
+								}
+								if (plm.dragdrop.targetId >= plm.total) {
+									plm.dragdrop.targetId = plm.total;
+								}
+							};
+						});
+					};
+				};
+
+				break;
+			case "drop":
+				if (this.dragdrop.targetId == -1) return;
+				dragdrop.dragFile = false;
+				if (this.dragdrop.targetId < this.total) {
+					action.ToPlaylist();
+					action.Playlist = this.dragdrop.targetId;
+					action.ToSelect = false;
+				};
+				window.ClearTimeout(this.dragdrop.timer);
+				this.dragdrop.actived = true;
+				this.repaint();
+				this.dragdrop.timer = window.SetTimeout(function() {
+					plm.dragdrop.actived = false;
+					plm.repaint();
+				}, 500);
+				break;
+			case "leave":
+				dragdrop.dragFile = false;
+				if (this.autoScrolling) {
+					this.stopAutoScroll();
+				};
+				break;
+		};
+	};
+
+
 
 	this.contextMenu = function(x, y, pl) {
 		var MF_SEPARATOR = 0x00000800;
@@ -533,6 +627,9 @@ images = {
 	searchList: null,
 };
 
+dragdrop = {
+	dragFile: false,
+};
 
 var plm;
 plm = new oPlaylistManager("PlaylistManager");
@@ -622,6 +719,23 @@ function on_playback_stop(reason) {
 };
 
 
+///////////////////////////////////////////// dragdrop callbacks
+function on_drag_enter() {
+	plm.on_drag("enter");
+};
+
+function on_drag_leave() {
+	plm.on_drag("leave");
+};
+
+function on_drag_over(action, x, y, mask) {
+	plm.on_drag("over", action, x, y, mask);
+};
+
+function on_drag_drop(action, x, y, mask) {
+	plm.on_drag("drop", action, x, y, mask);
+};
+///////////////////////////////////////////// misc
 function on_colors_changed() {
 	getColors();
 	getImages();
