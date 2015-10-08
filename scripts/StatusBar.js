@@ -313,7 +313,7 @@ function on_playback_order_changed(new_order) {
 function get_colors() {
 //	bg_color = utils.GetSysColor(15);
 //	bg_color = RGB(38, 38, 38);
-	bg_color = RGB(247, 247, 247);
+	bg_color = RGB(240, 240, 240);
 	if (colorScheme == "light") {
 		txt_color = RGB(88, 88, 88);
 		slider_bg_color = RGBA(0, 0, 0, 20);

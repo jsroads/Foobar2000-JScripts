@@ -390,7 +390,6 @@ oPlaylistManager = function(objectName) {
 					};
 
 					dragdrop.handlesIn = null;
-					window.NotifyOthers("ClearDragDropHandles", 0);
 
 				};
 
@@ -398,6 +397,12 @@ oPlaylistManager = function(objectName) {
 					this.hoverIdSaved = this.hoverId;
 					this.repaint();
 				};
+
+				if (this.dragId > -1) {
+					window.SetCursor(32651);
+				} else {
+					window.SetCursor(32512);
+				}
 
 				break;
 			case "lbtn_down":
@@ -422,6 +427,7 @@ oPlaylistManager = function(objectName) {
 					if (this.hoverId > -1) {
 						fb.PlayingPlaylist = this.hoverId;
 						fb.Play();
+						fb.RunMainMenuCommand("View/Show now playing");
 					}
 				};
 				break;
@@ -721,6 +727,10 @@ function on_mouse_wheel(delta) {
 	plm.on_mouse("wheel", 0, 0, delta);
 };
 
+function on_mouse_leave() {
+	plm.on_mouse("leave", 0, 0, 0);
+};
+
 
 ////////////////////////////////////////// playlist callbacks
 function on_playlist_switch() {
@@ -781,10 +791,12 @@ function on_notify_data(name, info) {
 		case "WshPlaylistDragDrop":
 			dragdrop.handlesIn = info;
 			break;
+			/*
 		case "IsHoverOtherPanel":
 			if (!dragdrop.handlesIn) {
-				plm.on_mouse("move", -1, -1, 0);
+		//		plm.on_mouse("move", -1, -1, 0);
 			};
+			*/
 			break;
 	};
 };
@@ -844,11 +856,11 @@ function getImages() {
 };
 
 function getColors() {
-	colors.normalTxt = eval(window.GetProperty("custom.Color normal text", "RGB(180, 180, 180)"));
+	colors.normalTxt = eval(window.GetProperty("custom.Color normal text", "RGB(70, 70, 70)"));
 	colors.selectedTxt = eval(window.GetProperty("custom.Color selected text", "RGB(255, 255, 255)"));
-	colors.normalBg = eval(window.GetProperty("custom.Color normal background", "RGB(25, 25, 25)"));
+	colors.normalBg = eval(window.GetProperty("custom.Color normal background", "RGB(245, 245, 245)"));
 	colors.selectedBg = eval(window.GetProperty("custom.Color selected background", "RGB(130, 150, 255)"));
-	colors.highlight = eval(window.GetProperty("custom.Color highlight", "RGB(255, 170, 50)"));
+	colors.highlight = eval(window.GetProperty("custom.Color highlight", "RGB(215, 65, 100)"));
 	if (!prop.useCustomColor) {
 		if (window.InstanceType == 1) { // dui
 			colors.normalTxt = window.GetColorDUI(ColorTypeDUI.text);

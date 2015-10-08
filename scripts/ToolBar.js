@@ -395,7 +395,7 @@ function on_notify_data(name, info) {
 ///////////////////////////////////////////// functions
 function get_colors() {
 	bg_color = utils.GetSysColor(15);
-	bg_color = RGB(247, 247, 247);
+	bg_color = RGB(240, 240, 240);
 	//bg_color = RGB(38, 38, 38);
 	txt_color = RGB(25, 25, 25);
 };

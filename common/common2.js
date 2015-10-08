@@ -161,4 +161,31 @@ var FontTypeCUI={items:0,labels:1};
 var FontTypeDUI={defaults:0,tabs:1,lists:2,playlists:3,statusbar:4,console:5};
 var ButtonStates = {normal: 0, hover: 1, down: 2};
 
+var ColorScheme = {
+	Light: {
+		TextNormal: RGB(70, 70, 70),
+		TextSelected: RGB(0, 0, 0), 
+		BackNormal: RGB(245, 245, 245),
+		BackSelected: RGB(120, 120, 120),
+		Highlight: RGB(215, 65, 100)
+	},
+	Dark: {
+		TextNormal: RGB(190, 190, 190),
+		TextSelected: RGB(255, 255, 255), 
+		BackNormal: RGB(76, 76, 76),
+		BackSelected: RGB(140, 140, 140),
+		Highlight: RGB(255, 142, 196)
+	},
+	User: {
+	},
+	LoadUserColor: function() {
+		this.User = {
+			TextNormal: eval(window.GetProperty("ColorScheme.TextNormal", "RGB(70, 70, 70)")),
+			TextSelected: eval(window.GetProperty("ColorScheme.TextSelected", "RGB(0, 0, 0)")),
+			BackNormal: eval(window.GetProperty("ColorScheme.BackNormal", "RGB(245, 245, 245)")),
+			BackSelected: eval(window.GetProperty("ColorScheme.BackSelected", "RGB(110, 110, 110)")),
+			Highlight: eval(window.GetProperty("ColorScheme.Highlight", "RGB(215, 65, 100)"))
+		}
+	}
+};
 
