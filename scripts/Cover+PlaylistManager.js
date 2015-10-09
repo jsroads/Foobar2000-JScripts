@@ -110,14 +110,15 @@ Scroll = function(vertical, parent) {
 
 PlaylistManager = function() {
 	this.playlist = [];
-	this.scrb = new Scroll(true, this);
-	this.scrb_width = 0;
-	this.show_scrb = true;
-	this.need_scrb = false;
 	this.margin = prop.margin;
-	this.scrb_right = this.margin;
 	this.row_height = 22;
 	this.show_count = true;
+
+	this.scrb = new Scroll(true, this);
+	this.scrb_right = this.margin;
+	this.scrb_width = prop.scrb_width;
+	this.show_scrb = true;
+	this.need_scrb;
 
 	this.start_id = 0;
 	this.hover_id = -1;
@@ -139,24 +140,21 @@ PlaylistManager = function() {
 		this.y = y;
 		this.w = w;
 		this.h = h;
+		//
+		this.list_x = this.x + this.margin;
+		this.list_y = this.y + this.margin;
+		this.list_w = this.w - this.margin * 2;
+		this.list_h = this.h - this.margin * 2;
 
 		this.total_rows = Math.floor((this.h - this.margin * 2) / this.row_height);
 		this.check_start_id();
 
 		this.need_scrb = this.total > this.total_rows;
-		this.scrb_width = 0;
-		this.scrb_right = 0;
 		if (this.need_scrb && this.show_scrb) {
-			var scrb_width = 10;
-			this.scrb.set_size(this.x + this.w - scrb_width - this.margin, this.y + this.margin, scrb_width, this.h - this.margin * 2);
-			this.scrb_width = this.scrb.w;
-			this.scrb_right = this.margin;
+			this.list_w = this.list_w - this.scrb_width - this.scrb_right;
+			this.scrb.set_size(this.list_x + this.list_w + this.scrb_right, this.list_y, this.scrb_width, this.list_h);
 		};
 
-		this.list_x = this.x + this.margin;
-		this.list_y = this.y + this.margin;
-		this.list_w = this.w - this.margin * 2 - this.scrb_width - this.scrb_right;
-		this.list_h = this.h - this.margin * 2;
 	};
 
 	this.check_start_id = function() {
@@ -424,9 +422,11 @@ PlaylistManager = function() {
 				};
 				break;
 			case "leave":
-				this.hover_id = -1;
-				this.hover_id_saved = -1;
-				this.repaint();
+				if (!this.right_clicked) {
+					this.hover_id = -1;
+					this.hover_id_saved = -1;
+					this.repaint();
+				};
 				break;
 			case "wheel":
 				this.scrb.on_mouse("wheel", 0, 0, mask);
@@ -515,6 +515,9 @@ PlaylistManager = function() {
 	}; // eom
 
 	this.context_menu = function(x, y, plid) {
+
+		this.right_clicked = true;
+
 		var _menu = window.CreatePopupMenu();
 		var _np = window.CreatePopupMenu();
 		var add_mode = (plid == null || plid < 0);
@@ -571,6 +574,8 @@ PlaylistManager = function() {
 
 		_np.Dispose();
 		_menu.Dispose();
+
+		this.right_clicked = false;
 
 		return true;
 	};
@@ -791,6 +796,7 @@ prop = new function() {
 		max_size: window.GetProperty("_prop_cover_art: maximum image size", 300),
 	};
 	this.font_name = "Segoe UI";
+	this.scrb_width = 10;
 };
 		
 { // on startup
