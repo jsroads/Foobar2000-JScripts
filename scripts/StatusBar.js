@@ -317,7 +317,7 @@ function get_colors() {
 	if (colorScheme == "light") {
 		txt_color = RGB(88, 88, 88);
 		slider_bg_color = RGBA(0, 0, 0, 20);
-		slider_active_color = RGBA(0, 0, 0, 100);
+		slider_active_color = RGBA(0, 0, 0, 150);
 	};
 };
 
@@ -335,9 +335,10 @@ function create_button_images() {
 	var normal_color, hover_color, down_color, color;
 	var s, img_arr, img;
 	var sf_cc = StringFormat(1, 1);
+	var normal_c = RGB(100, 100, 100);
 
 	// repeat off
-	normal_color = RGB(150, 150, 150);
+	normal_color = normal_c;
 	hover_color = RGB(120, 120, 120);
 	down_color = RGB(100, 100, 100);
 
@@ -412,7 +413,7 @@ function create_button_images() {
 	images.repeatTrack = img_arr;
 
 	// shuffle off
-	normal_color = RGB(150, 150, 150);
+	normal_color = normal_c;
 	hover_color = RGB(120, 120, 120);
 	down_color = RGB(100, 100, 100);
 
@@ -466,7 +467,7 @@ function create_button_images() {
 	images.shuffleOn = img_arr;
 
 	// mute
-	normal_color = RGB(150, 150, 150);
+	normal_color = normal_c;
 	hover_color = RGB(120, 120, 120);
 	down_color = RGB(100, 100, 100);
 

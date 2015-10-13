@@ -95,7 +95,7 @@ oSearchbox = function() {
 	this.getImages();
     
 	this.on_init = function() {
-		this.inputbox = new oInputbox(120, 20, "", "Library Search", RGB(0, 0, 0), RGB(255, 255, 255), 0, RGB(150, 170, 255), sendResponse, "searchBox");
+		this.inputbox = new oInputbox(120, 20, "", "Library Search", RGB(0, 0, 0), RGB(255, 255, 255), 0, RGB(50, 170, 255), sendResponse, "searchBox");
         this.inputbox.autovalidation = autoSearch;
 	}
 	this.on_init();
@@ -413,7 +413,7 @@ function get_images() {
 	var s, imgArr, img, font;
 	var sf = StringFormat(1, 1);
 
-	normalColor = RGB(150, 150, 150);
+	normalColor = RGB(100, 100, 100);
 	hoverColor = RGB(120, 120, 120);
 	downColor = RGB(100, 100, 100);
 
@@ -550,7 +550,7 @@ function set_buttons() {
 	buttons[1] = new oButton(images.prev, 0, 0, function() { fb.Prev() });
 	buttons[2] = new oButton(images.play, 0, 0, function() { fb.PlayOrPause() });
 	buttons[3] = new oButton(images.next, 0, 0, function() { fb.Next() });
-	buttons[4] = new oButton(images.heart, 0, 0, function() {});
+	buttons[4] = new oButton(images.heart, 0, 0, function() { fb.RunMainMenuCommand("View/Console");});
 	buttons[5] = new oButton(images.mainMenu, 0, 0, function() {});
 
 	refresh_playOrPause_button();
