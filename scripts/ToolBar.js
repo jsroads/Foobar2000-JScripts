@@ -403,8 +403,9 @@ function get_colors() {
 function get_images() {
 
 	var fontAwesome = gdi.Font("FontAwesome", 18, 0);
-	var img = gdi.Image(images_path + "logo.png").Resize(28, 28, 7);;
-	images.mainMenu = [img, img, img];
+	var img = gdi.Image(images_path + "logo.png").Resize(28, 28, 2);;
+	var img2 = img.Resize(30, 30, 2);
+	images.mainMenu = [img, img, img2];
 
 	var fontGuifx = gdi.Font("Guifx v2 Transports", 17, 0);
 	var fontGuifx2 = gdi.Font("Guifx v2 Transports", 19, 0);
@@ -547,11 +548,19 @@ function get_images() {
 
 function set_buttons() {
 	buttons[0] = new oButton(images.stop, 0, 0, function() { fb.Stop() });
-	buttons[1] = new oButton(images.prev, 0, 0, function() { fb.Prev() });
+	buttons[1] = new oButton(images.prev, 0, 0, function() { 
+		if (utils.IsKeyPressed(VK_SHIFT)) plman.PlayingPlaylist = plman.ActivePlaylist;
+		fb.Prev() 
+	});
 	buttons[2] = new oButton(images.play, 0, 0, function() { fb.PlayOrPause() });
-	buttons[3] = new oButton(images.next, 0, 0, function() { fb.Next() });
+	buttons[3] = new oButton(images.next, 0, 0, function() { 
+		if (utils.IsKeyPressed(VK_SHIFT)) plman.PlayingPlaylist = plman.ActivePlaylist;
+		fb.Next() 
+	});
 	buttons[4] = new oButton(images.heart, 0, 0, function() { fb.RunMainMenuCommand("View/Console");});
-	buttons[5] = new oButton(images.mainMenu, 0, 0, function() {});
+	buttons[5] = new oButton(images.mainMenu, 0, 0, function() {
+		window.NotifyOthers("Reload script", true);
+	});
 
 	refresh_playOrPause_button();
 };
