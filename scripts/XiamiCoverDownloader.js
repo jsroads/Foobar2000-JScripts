@@ -35,9 +35,12 @@
 			}
 			albumId.unique();
 
+			console("album id length: " + albumId.length);
+
 			total = Math.min(15, albumId.length);
 			var trackArr, track;
 			for (var i = 0; i < total; i++) {
+				console(albumId[i]);
 				url = "http://www.xiami.com/song/playlist/id/" + albumId[i] + "/type/1";
 				xmlText = xiamiHttpRequest.Run(url);
 				if (xmlText) {
@@ -45,13 +48,22 @@
 					trackArr = xmlDoc.getElementsByTagName("trackList");
 					if (trackArr) {
 						track = trackArr[0].getElementsByTagName("track");
-						for (var k = 0; k < track.length; k++) {
+						//for (var k = 0; k < track.length; k++) {
+
+						//	console(track.length);
+
 							this.results[count] = {
-								artist: track[k].getElementsByTagName("artist")[0].childNodes[0].nodeValue,
-								album: track[k].getElementsByTagName("album_name")[0].childNodes[0].nodeValue,
-								albumPic: track[k].getElementsByTagName("album_pic")[0].childNodes[0].nodeValue
+								artist: track[0].getElementsByTagName("artist")[0].childNodes[0].nodeValue,
+								album: track[0].getElementsByTagName("album_name")[0].childNodes[0].nodeValue,
+								albumPic: track[0].getElementsByTagName("album_pic")[0].childNodes[0].nodeValue
 							};
-						};
+
+							//console(track.length);
+							//console(this.results[count].artist);
+							//console(this.results[count].album);
+							//break;
+
+						//};
 						count++;
 					}
 				};
