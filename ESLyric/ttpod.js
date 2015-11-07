@@ -62,7 +62,7 @@ function start_search(info, callback) {
 					var lrc_ = json(xmlHttp.responseText).data.lrc;
 					if (lrc_ && lrc_ != "") { 
                         tracks.push({
-                            lyric: lrc_;
+                            lyric: lrc_,
                             title: data[j].song_name,
                             artist: data[j].singer_name
                         });
