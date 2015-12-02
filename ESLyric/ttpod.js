@@ -23,7 +23,7 @@ function get_author() {
 }
 
 function start_search(info, callback) {
-	
+
 	var searchURL, lyricURL;
 	var title = info.Title;
 	var artist = info.Artist;
@@ -43,11 +43,11 @@ function start_search(info, callback) {
 	var newLyric = fb.CreateLyric();
 
 	if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
-		
+
 		var results = json(xmlHttp.responseText);
 		var data = results.data;
-        
-        var tracks = [];
+
+		var tracks = [];
 
 		debug && console("data.length > " + data.length);
 		// Download lyric
@@ -56,19 +56,19 @@ function start_search(info, callback) {
 				xmlHttp.open("GET", generate_url(data[j].singer_name, data[j].song_name, data[j].song_id), false);
 				xmlHttp.send();
 			} catch(e) { continue; }
-            
+
 			if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
 				try {
 					var lrc_ = json(xmlHttp.responseText).data.lrc;
 					if (lrc_ && lrc_ != "") { 
-                        tracks.push({
-                            lyric: lrc_,
-                            title: data[j].song_name,
-                            artist: data[j].singer_name
-                        });
+						tracks.push({
+							lyric: lrc_,
+							title: data[j].song_name,
+							artist: data[j].singer_name
+						});
 
 						debug && console(lrc_);
-                    };
+					};
 				} catch(e) {
 					continue;
 				}
@@ -85,14 +85,14 @@ function start_search(info, callback) {
 					}
 				}
 			}
-            
+
 			// 排除无效歌词
-            for (var i = 0; i < tracks.length; i++) {
-                if (tracks[i].lyric.indexOf("无歌词") > -1) {
-                    tracks.splice(i, 1);
-                }
-            };
-                
+			for (var i = 0; i < tracks.length; i++) {
+				if (tracks[i].lyric.indexOf("无歌词") > -1) {
+					tracks.splice(i, 1);
+				}
+			};
+
 			for (var i = 0; i < tracks.length; i++) {
 				newLyric.LyricText = tracks[i].lyric;
 				newLyric.Title = tracks[i].title;
@@ -101,7 +101,7 @@ function start_search(info, callback) {
 				callback.AddLyric(newLyric);
 			}
 		}
-            
+
 	}
 	newLyric.Dispose();
 }
@@ -123,16 +123,16 @@ function process_keywords(str) {
 
 function json(text) 
 {
-  try{
-      var data=JSON.parse(text);
-      return data;
-  }catch(e){
-    return false;
-  }
+	try{
+		var data=JSON.parse(text);
+		return data;
+	}catch(e){
+		return false;
+	}
 }
 
 function console(s) {
-    fb.trace("TTpod: " + s);
+	fb.trace("TTpod: " + s);
 };
 
 
