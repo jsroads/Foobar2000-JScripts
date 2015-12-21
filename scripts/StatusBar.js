@@ -1,4 +1,217 @@
+﻿// vim:set ft=javascript bomb et:
 // 2015/09/21
+alert("暂时失效！");
+// Seekbar
+Seekbar = function() {
+
+	var is_drag = false;
+	var pos_p = 0, pos_p_old = 0;
+
+	var slider_l = 5; var slider_r = 5;
+	var slider_w = 0; var slider_h = slider_height;
+
+	var img_nob = images.slider_nob;
+	var nob_h = img_nob.Height; var nob_y;
+
+	var tfont = gdi.Font("Tahoma", 9);
+
+	this.repaint = function() {
+		window.Repaint();
+	};
+
+	this.is_hover = function(x, y) {
+		return (x > slider_x && x < slider_x + slider_w && y > this.y && y < this.h + this.y);
+	};
+
+	this.show_time = true;
+
+	this.set_size = function(x, y, w, h) {
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+	};
+
+	this.draw = function(gr) {
+
+		//
+		debug && gr.FillSolidRect(this.x, this.y, this.w, this.h, 0xff112233);
+
+		// Set lr
+		var len = format_time(fb.PlaybackLength);
+		var tim = format_time(fb.PlaybackTime);
+
+		if (this.show_time) {
+			slider_r = slider_l = GetTextWidth(len, tfont) + 20;
+		} else {
+			slider_r = slider_l = 5;
+		};
+
+		slider_x = this.x + slider_l;
+		slider_w = this.w - slider_l - slider_r;
+		slider_y = this.y + Math.floor((this.h - slider_h) / 2);
+		nob_y = slider_y - 4;
+
+		// Draw time/length
+		gr.GdiDrawText(tim, tfont, g_colors.bg_slider_active, this.x, this.y, slider_l, this.h, dt_cc);
+		gr.GdiDrawText(len, tfont, g_colors.bg_slider_active, this.x + this.w - slider_r, this.y, slider_r, this.h, dt_cc);
+
+		// Draw slider
+		var pos_w = 0;
+		
+		gr.FillSolidRect(slider_x, slider_y, slider_w, slider_h, g_colors.bg_slider_normal);
+		if (fb.PlaybackLength) {
+			pos_w = Math.floor(fb.PlaybackTime / fb.PlaybackLength * slider_w);
+			if (fb.IsPlaying && pos_w > 0) {
+				gr.FillSolidRect(slider_x, slider_y, pos_w, slider_h, g_colors.bg_slider_active);
+			};
+		};
+		gr.DrawImage(img_nob, slider_x + pos_w - nob_h / 2, nob_y, nob_h, nob_h, 0, 0, nob_h, nob_h, 0, 255);
+	};
+
+	this.on_mouse = function(event, x, y, mask) {
+		switch (event) {
+			case "move":
+				if (is_drag) {
+					this.set_pos(x);
+					this.repaint();
+				};
+				break;
+			case "down":
+				if (this.is_hover(x, y)) {
+					if (fb.IsPlaying && fb.PlaybackLength > 0) {
+						is_drag = true;
+						this.set_pos(x);
+						this.repaint();
+					};
+				};
+				break;
+			case "up":
+				if (is_drag) is_drag = false;
+				break;
+			case "leave":
+				break;
+			case "wheel":
+				break;
+		};
+	};
+
+	this.set_pos = function(x) {
+		var pt;
+		x -= slider_x;
+		pos_p = x < 0 ? 0 : x > slider_w ? 1 : x / slider_w;
+		pt = fb.PlaybackLength * pos_p;
+		fb.PlaybackTime = pt < fb.PlaybackLength ? pt : fb.PlaybackLength;
+	};
+
+	this.on_playback_time = function() {
+		if (!fb.IsPlaying || fb.IsPaused || fb.PlaybackLength <= 0 || is_drag) return;
+		this.repaint();
+	};
+
+	window.SetInterval(function() {
+		if (!fb.IsPlaying || fb.IsPaused || fb.PlaybackLength <= 0 || is_drag) return;
+		sk.repaint();
+	}, 1000);
+
+};
+
+Volume = function() {
+
+	var is_drag = false;
+	var pos_p = 0;
+	//
+	var slider_l = 32; var slider_r = 0;
+	var slider_x; var slider_y; var slider_w; var slider_h = slider_height;
+
+	var img_nob = images.slider_nob;
+	var nob_h = img_nob.Height;
+	var nob_y;
+
+
+	this.repaint = function() {
+		window.Repaint();
+	};
+
+	this.is_hover = function(x, y) {
+		return (x > slider_x && x < slider_x + slider_w && y > this.y && y < this.h + this.y);
+	};
+
+	this.set_size = function(x, y, w, h) {
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+		slider_x = this.x + slider_l;
+		slider_y = this.y + Math.floor((this.h - slider_h) / 2);
+		slider_w = this.w - slider_l - slider_r;
+		nob_y = slider_y - 4;
+	};
+
+	this.draw = function(gr) {
+
+		//
+		debug && gr.FillSolidRect(this.x, this.y, this.w, this.h, 0xff223344);
+
+
+		var pos_w;
+		gr.FillSolidRect(slider_x, slider_y, slider_w, slider_h, g_colors.bg_slider_normal);
+		pos_w = vol2pos(fb.Volume) * slider_w;
+		gr.DrawImage(img_nob, slider_x + pos_w - nob_h / 2, nob_y, nob_h, nob_h, 0, 0, nob_h, nob_h, 0, 255);
+		if (pos_w > 0) {
+			gr.FillSolidRect(slider_x, slider_y, pos_w, slider_h, g_colors.bg_slider_active);
+		};
+	};
+
+	this.on_mouse = function(event, x, y, mask) {
+		var is_hover;
+		is_hover = this.is_hover(x, y);
+		switch (event) {
+			case "move":
+				if (is_drag) {
+					this.set_pos(x);
+				}
+				break;
+			case "down":
+				if (is_hover) {
+					is_drag = true;
+					this.set_pos(x);
+				};
+				break;
+			case "up":
+				if (is_drag) is_drag = false;
+				break;
+			case "wheel":
+				if (is_hover) {
+					pos_p = vol2pos(fb.Volume);
+					pos_p += mask / 50 * 2;
+					pos_p = (pos_p < 0 ? 0 : pos_p > 1 ? 1 : pos_p);
+					fb.Volume = pos2vol(pos_p);
+				};
+				break;
+			case "leave":
+				break;
+		};
+	};
+
+	this.set_pos = function(x) {
+		x -= slider_x;
+		pos_p = x < 0 ? 0 : x > slider_w ? 1 : x / slider_w;
+		fb.Volume = pos2vol(pos_p);
+	};
+
+};
+
+function pos2vol(pos) {
+	return (50 * Math.log(0.99 * pos + 0.01) / Math.LN10);
+};
+
+function vol2pos(v) {
+	return ((Math.pow(10, v / 50) - 0.01) / 0.99);
+};
+
+
+/*
 function oVolume() {
 	this.pos = 0;
 	this.drag = false;
@@ -130,7 +343,9 @@ function oSeekBar() {
 				break;
 		};
 	};
+
 };
+*/
 
 
 
@@ -151,16 +366,18 @@ var muted = false;
 var colorScheme = "light";
 
 //////////////////// main process
-sk = new oSeekBar();
-vol = new oVolume();
+sk = new SeekBar();
+vol = new Volume();
 get_colors();
 create_button_images();
 set_buttons();
 
+/*
 window.SetInterval(function() {
 	if (!fb.IsPlaying || fb.IsPaused || fb.PlaybackLength <= 0 || sk.drag || !sk.visible) {return;}
 	window.RepaintRect(0, 0, buttons[0].x, wh);
 }, 1000);
+*/
 
 ///////////////////////////////////////////////////////////////// callback functions
 function on_size() {
@@ -175,10 +392,10 @@ function on_size() {
 	var volX = Math.max(ww - volW - 35, 215);
 	var textW = 70;
 	var gap = 80;
-	vol.setSize(volX, sliderY, volW, slider_height); 
+	vol.set_size(volX, sliderY, volW, slider_height); 
 	if (ww > 450) {
 		sk.visible = true;
-		sk.setSize(textW, sliderY, volX - textW * 2 - gap, slider_height);
+		sk.set_size(textW, sliderY, volX - textW * 2 - gap, slider_height);
 	} else {
 		sk.visible = false;
 	};
@@ -520,6 +737,13 @@ function create_button_images() {
 	};
 	images.muted = img_arr;
 
+	// slider_nob
+	images.slider_nob = gdi.CreateImage(10, 10);
+	g = images.slider_nob.GetGraphics();
+	g.SetSmoothingMode(2);
+	g.FillEllipse(1, 1, 7, 7, 0xffffffff);
+	images.slider_nob.ReleaseGraphics(g);
+
 };
 
 function set_buttons() {
@@ -583,7 +807,7 @@ function set_popup_menu(x, y) {
 	_st.AppendMenuItem(MF_STRING, 21, "Shuffle(tracks)");
 	_st.AppendMenuItem(MF_STRING, 22, "Shuffle(albums)");
 	_st.AppendMenuItem(MF_STRING, 23, "Shuffle(folders)");
-	_st.AppendTo(_menu, MF_STRING, "Shuffle type");
+	_st.AppendTo(_menu,  MF_STRING, "Shuffle type");
 	_st.CheckMenuRadioItem(20, 23, shuffle_type + 17);
 
 	id = _menu.TrackPopupMenu(x, y);
@@ -607,6 +831,7 @@ function set_popup_menu(x, y) {
 	// shuflle type
 	if (id <= 23 && id >= 20) {
 		shuffle_type = id - 17;
+		if (fb.PlaybackOrder >= 3) fb.PlaybackOrder = shuffle_type;
 		window.SetProperty("system.Shuffle Type", shuffle_type);
 	};
 

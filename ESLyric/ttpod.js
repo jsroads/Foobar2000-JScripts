@@ -1,6 +1,6 @@
 ﻿// ======================================================
 // Created by Jeannela <jeannela@foxmail.com>
-// Updated: 2015-11-07 15:26
+// Updated: 2015-12-21 17:41
 // Refer: www.bkjia.com/jQuery/1017034.html
 // ======================================================
 
@@ -8,7 +8,7 @@
  * ESLyric 的天天动听歌词搜索脚本，仅适用于 ESLyric！*/
 
 var xmlHttp = new ActiveXObject("Msxml2.ServerXMLHTTP.6.0");
-var debug = 0; // 如果要调试的话，改为 1.
+var debug = false; // 如果要调试的话，改为 true.
 
 function get_my_name() {
 	return "天天动听";
@@ -31,12 +31,14 @@ function start_search(info, callback) {
 	// Process keywords
 	title = process_keywords(title);
 	artist = process_keywords(artist);
-	searchURL = "http://so.ard.iyyin.com/s/song_with_out?q=" + title + "+" + artist;
+	searchURL = "http://so.ard.iyyin.com/s/song_with_out?q=" + encodeURIComponent(title) + "+" + encodeURIComponent(artist);
+	debug && console(searchURL);
 
 	try {
 		xmlHttp.open("GET", searchURL, false);
 		xmlHttp.send();
 	} catch(e) {
+		console("Search failed");
 		return;
 	}
 
@@ -107,7 +109,7 @@ function start_search(info, callback) {
 }
 
 function generate_url(artist, title, song_id) {
-	return "http://lp.music.ttpod.com/lrc/down?lrcid=&artist=" + artist + "&title=" + title + "&song_id=" + song_id;
+	return "http://lp.music.ttpod.com/lrc/down?lrcid=&artist=" + encodeURIComponent(artist) + "&title=" + encodeURIComponent(title) + "&song_id=" + song_id;
 }
 
 function process_keywords(str) {
