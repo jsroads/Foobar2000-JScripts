@@ -15,7 +15,7 @@ function get_my_name() {
 }
 
 function get_version() {
-	return "0.1.2";
+	return "0.1.3";
 }
 
 function get_author() {
