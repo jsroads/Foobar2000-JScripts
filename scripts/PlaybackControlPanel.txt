@@ -8,6 +8,8 @@
 
 
 var DT_CC = DT_CENTER | DT_VCENTER | DT_CALCRECT;
+var DT_LC = DT_VCENTER | DT_CALCRECT;
+var DT_RC = DT_VCENTER | DT_RIGHT | DT_CALCRECT;
 
 var ww = 0,
 	wh = 0;
@@ -22,11 +24,13 @@ var length_time = "0:00",
 	playback_time = "0:00";
 
 var sk = null,
+    vol = null,
 	bt = [];
 
 var mouse_x, 
     mouse_y;
 var mouse_is_down = false;
+
 
 //>
 
@@ -46,9 +50,9 @@ function prepare_images() {
 	images.nob.ReleaseGraphics(g);
 
 	// create button images
-	var ico_name = ["prev", "pause", "play", "next", "volume", "shuffle", "repeat", "repeat1"];
+	var ico_name = ["prev", "pause", "play", "next", "volume", "shuffle", "repeat", "repeat1", "normal"];
 	// 对应的 unicode 编码
-	var ico_code = ["\uE100", "\uE103", "\uE102", "\uE101", "\uE15D" , "\uE14B", "\uE149", "\uE1CC"];
+	var ico_code = ["\uE100", "\uE103", "\uE102", "\uE101", "\uE15D" , "\uE14B", "\uE149", "\uE1CC", "\uE8AB"];
 	var len = ico_code.length;
 	var w = 30;
 	var sf = StringFormat(1, 1);
@@ -72,6 +76,7 @@ function prepare_images() {
 	g.FillEllipse(0, 0, w, w, 0x30ffffff);
 	g.SetSmoothingMode(0);
 	images["round"].ReleaseGraphics(g);
+
 }
 
 function reset_time() {
@@ -80,11 +85,22 @@ function reset_time() {
     window.Repaint();
 }
 
+function pos2vol(pos) {
+	return (50 * Math.log(0.99 * pos + 0.01) / Math.LN10);
+};
+
+function vol2pos(v) {
+	return ((Math.pow(10, v / 50) - 0.01) / 0.99);
+};
+
 
 // >
 
 function on_size() {
 	ww = window.Width;
+    if (ww < 380) {
+        ww = 380;
+    }
 	wh = window.Height;
 }
 
@@ -93,12 +109,16 @@ function on_paint(gr) {
 	// bg
 	gr.FillSolidRect(0, 0, ww, wh, back_color);
 
-    // seekbar
-    sk.draw(gr, 70, 7, ww-140, 20, 9, text_color & 0xeeffffff, text_color & 0x20ffffff);
     // time
-    gr.GdiDrawText(playback_time, time_font, text_color, 10, 7, 50, 20, DT_CC);
-    gr.GdiDrawText(length_time, time_font, text_color, ww-60, 7, 50, 20, DT_CC);
+    var tl1 = gr.CalcTextWidth(playback_time, time_font)+1;
+    var tl2 = gr.CalcTextWidth(length_time, time_font)+1;
+    gr.GdiDrawText(playback_time, time_font, text_color, 20, 7, tl1, 20, DT_RC);
+    gr.GdiDrawText(length_time, time_font, text_color, ww-tl2-20, 7, tl2, 20, DT_LC);
 
+    // seekbar
+    sk.draw(gr, 20+tl1+10, 7, ww-tl2-20-10 - 20 - tl1 - 10, 20, 9, text_color & 0xeeffffff, text_color & 0x20ffffff);
+
+    // draw buttons
     var img_w = images.prev.Width;
     var pad = 20;
     var Y = (wh + 22 - img_w) / 2;
@@ -115,18 +135,40 @@ function on_paint(gr) {
     bt[2].draw(gr, images.next, X, Y, img_w, img_w);
 
     X += (img_w + pad);
-    if (pb_order >= 3) {
-        bt[3].draw(gr, images.shuffle, X, Y, img_w, img_w);
-    } else if (pb_order == 2) {
-        bt[3].draw(gr, images.repeat1, X, Y, img_w, img_w);
-    } else if (pb_order == 1) {
-        bt[3].draw(gr, images.repeat, X, Y, img_w, img_w);
-    } else {
-        bt[3].draw(gr, images.repeat, X, Y, img_w, img_w);
+    var img;
+    switch (true) {
+        case (pb_order == 0):
+            img = images.normal;
+            break;
+        case (pb_order == 1):
+            img = images.repeat;
+            break;
+        case (pb_order == 2):
+            img = images.repeat1;
+            break;
+        case (pb_order >=3):
+            img = images.shuffle;
+            break;
+        default:
+            break;
     }
+    bt[3].draw(gr, img, X, Y, img_w, img_w);
 
     X += (img_w + pad);
     bt[4].draw(gr, images.volume, X, Y, img_w, img_w);
+
+    // volume panel
+    if (vol.visible) {
+
+        var x = bt[4].x + bt[4].w+10;
+        var y = bt[4].y;
+        var h = bt[4].h;
+        var offset = Math.floor((h - 2)/2);
+        var w = Math.max(Math.min(100, ww-20-x), 30);
+
+        vol.draw(gr, x, y, w, h, offset, text_color & 0xeeffffff, text_color & 0x20ffffff);
+
+    }
             
 }
 
@@ -136,6 +178,10 @@ function on_mouse_move(x, y) {
         if (sk.is_drag) {
             on_playback_time(fb.PlaybackTime);
         }
+    }
+
+    if (vol.visible) {
+        vol.move(x, y);
     }
 
     bt.map(function(i) {
@@ -149,6 +195,10 @@ function on_mouse_lbtn_down(x, y, mask) {
         sk.down(x, y);
     }
 
+    if (vol.visible) {
+        vol.down(x, y);
+    }
+
     bt.find(function(i) {
         return i.down(x, y);
     });
@@ -156,12 +206,19 @@ function on_mouse_lbtn_down(x, y, mask) {
 
 function on_mouse_lbtn_up(x, y, mask) {
     sk.up(x, y);
+    if (vol.visible) {
+        vol.up(x, y);
+    }
     bt.find(function(i) {
         if (i.up(x, y)) {
             i.on_click(x, y);
             return true;
         }
     });
+}
+
+function on_mouse_rbtn_up(x, y, mask) {
+    return (mask != MK_SHIFT);
 }
 
 on_mouse_lbtn_dblclk = on_mouse_lbtn_down;
@@ -215,6 +272,12 @@ sk = new Slider(images.nob,
 		function() {return fb.PlaybackTime/fb.PlaybackLength;},
 		function(pos) {fb.PlaybackTime = fb.PlaybackLength * pos;});
 
+vol = new Slider(images.nob,
+        function() { return vol2pos(fb.Volume); },
+        function(pos) { fb.Volume = pos2vol(pos); });
+vol.visible = false;
+
+
 // Prev
 bt[0] = new Button(function() {
 	fb.Prev();
@@ -229,9 +292,23 @@ bt[2] = new Button(function() {
 });
 // Order
 bt[3] = new Button(function() {
+    var order = fb.PlaybackOrder;
+    switch (true) {
+        case (order < 2):
+            fb.PlaybackOrder += 1;
+            break;
+        case (order == 2):
+           fb.PlaybackOrder = 4; 
+           break;
+        default:
+           fb.PlaybackOrder = 0;
+           break;
+    }
 });
 // Volume
 bt[4] = new Button(function() {
+    vol.visible = !vol.visible;
+    window.Repaint();
 });
 
 if (fb.IsPlaying) {

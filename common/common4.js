@@ -4,7 +4,7 @@ Discriptsion: ...
 Update: 2016-02-12
 */
 
-var VERSION = "0.2.0"
+var VERSION = "0.2.0.2016-02-12"
 
 // ======================================================================
 // Prototype
@@ -245,16 +245,13 @@ Button.prototype.draw = function(gr, img, x, y) {
 	this.y = y;
 	this.w = img.Width;
 	this.h = img.Height;
-	var alpha = 255;
-	if (this.state == 2) {
-		alpha = 100;
-	}
+	var alpha = 0;
+    alpha = (this.state == 2 ? 100 : (this.state == 1 ? 200 : 255));
 	gr.DrawImage(img, x, y, this.w, this.h, 0, 0, this.w, this.h, 0, alpha);
 }
 
 Button.prototype.is_mouse_over = function(x, y) {
-	return (x > this.x && x < this.x + this.w &&
-			y > this.y && y < this.y + this.h);
+	return (x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h);
 }
 
 Button.prototype.change_state = function(s) {
@@ -518,7 +515,18 @@ var IDC_NO = 32648
 var IDC_ARROW = 32512;
 var IDC_IBEAM = 32513;
 
-var DLGC_WANTALLKEYS = 0x0004; /* Control wants all keys           */
+/* Control wants all keys           */
+var DLGC_WANTALLKEYS = 0x0004; 
+
+var MK_LBUTTON  = 0x0001;
+var MK_RBUTTON  = 0x0002;
+// The SHIFT key is down.
+var MK_SHIFT    = 0x0004; 
+// The CTRL key is down.
+var MK_CONTROL  = 0x0008; 
+var MK_MBUTTON  = 0x0010;
+var MK_XBUTTON1 = 0x0020;
+var MK_XBUTTON2 = 0x0040;
 
 var VK_BACK = 0x08;
 var VK_CONTROL = 0x11;
