@@ -4,7 +4,7 @@ Discriptsion: ...
 Update: 2016-02-12
 */
 
-var VERSION = "0.1.0"
+var VERSION = "0.2.0"
 
 // ======================================================================
 // Prototype
@@ -124,6 +124,29 @@ if (!Array.prototype.forEach) {
     }
 }
 
+if (!Array.prototype.find) {
+  Array.prototype.find = function(predicate) {
+    if (this === null) {
+      throw new TypeError('Array.prototype.find called on null or undefined');
+    }
+    if (typeof predicate !== 'function') {
+      throw new TypeError('predicate must be a function');
+    }
+    var list = Object(this);
+    var length = list.length >>> 0;
+    var thisArg = arguments[1];
+    var value;
+
+    for (var i = 0; i < length; i++) {
+      value = list[i];
+      if (predicate.call(thisArg, value, i, list)) {
+        return value;
+      }
+    }
+    return undefined;
+  };
+}
+
 // Refer: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
 if (!Array.isArray) {
 	Array.isArray = function(arg) {
@@ -135,111 +158,153 @@ if (!Array.isArray) {
 // Constructors
 // ======================================================================
 
-/**
- * Button: create buttons on wsh panel.
- * img_arr: [img_normal, img_hover, img_down], array elements are gdi_images.
- * func: on_click event function
- * tooltip_text:
- */
+// Slider Class:
 
-Button = function (img_arr, func, tooltip_text) {
-	this.state = 0;
-	this.is_down = false;
-	this.is_hover = false;
-	this.img;
-	this.w = 0;
-	this.h = 0;
-	this.x = 0;
-	this.y = 0;
-	this.func = func;
-	this.tooltip = window.CreateTooltip();
+function Slider (nob_img, func_get, func_set) {
+    this.nob_img = nob_img ? nob_img : null;
 
-	this.set_tooltip = function (tooltip_text) {
-		this.tooltip_text = tooltip_text;
-		if (this.tooltip_text && tooltip_text.length > 0) {
-			this.tooltip.Text = this.tooltip_text;
-			this.tooltip.Deactivate();
-		} else {
-			this.tooltip = null;
+	this.get = (function () {
+		return typeof func_get == "function" ? func_get : function() {};
+	})();
+
+	this.set = (function () {
+		return typeof func_set == "function" ? func_set : function() {};
+	})();
+
+	this.pos = this.get();
+}
+
+Slider.prototype.draw = function(gr, x, y, w, h, y_offset, active_color, inactive_color) {
+	if (h <= y_offset * 2) {
+		y_offset = 0;
+	}
+	// 进度条背景
+	gr.FillSolidRect(x, y+y_offset, w, h - y_offset * 2, inactive_color);
+	if (this.pos > 0 && this.pos <= 1) {
+		gr.FillSolidRect(x, y+y_offset, w * this.pos, h-y_offset*2, active_color);
+	}
+	// nob 图片
+	if (this.nob_img) {
+		var img_w = this.nob_img.Width;
+		if (!(this.pos >= 0)) {
+			this.pos = 0;
 		}
-	}
+		gr.DrawImage(this.nob_img, x+w*this.pos - img_w/2, (h - img_w)/2+y, img_w, img_w,
+				0, 0, img_w, img_w, 0, 255);
+	};
 
-	this.update_img = function(img_arr_) {
-		this.img = img_arr_;
-		this.w = this.img[0].Width;
-		this.h = this.img[0].Height;
-	}
-
-	this.update_img(img_arr);
-	this.set_tooltip(tooltip_text);
-}
-
-
-Button.prototype.repaint = function() {
-	window.RepaintRect(this.x, this.y, this.w+1, this.h+1);
-}
-
-Button.prototype.set_xy = function(x, y) {
 	this.x = x;
 	this.y = y;
+	this.w = w;
+	this.h = h;
 }
 
-Button.prototype.on_click = function(x, y, extra) {
-	if (!this.is_down) { return; }
-	try {
-		this.func && this.func(x, y, extra)
-	} catch (e) {};
-	this.is_down  = false;
+Slider.prototype.is_mouse_over = function(x, y) {
+    var l = 0;
+    if (this.nob_img) {
+        l = this.nob_img.Width/2;
+    }
+	return (x > this.x - l && x < this.x + this.w + l && y > this.y && y < this.y + this.h);
 }
 
-Button.prototype.draw = function (gr) {
-	var img_ = this.img[this.state];
-	img_ && gr.DrawImage(img_, this.x, this.y + (this.state == 2 ? 1 : 0), this.w, this.h, 0, 0, this.w, this.h, 0, 255);
-}
-
-Button.prototype.reset = function() {
-	if (this.state != 0) {
-		this.state = 0;
-		this.tooltip  && this.tooltip.Deactivate();
-		this.repaint();
+Slider.prototype.down = function(x, y) {
+	if (this.is_mouse_over(x, y)) {
+		this.is_drag = true;
+		this.move(x, y);
 	}
 }
 
-Button.prototype.check_state = function(event, x, y) {
-	this.is_hover = (x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h);
-	var old_state = this.state;
-	switch (event) {
-		case "down":
-			if (this.state == 1) {
-				this.is_down = this.is_hover;
-			}
-			this.state = this.is_hover ? 2 : 0;
-			break;
-		case "up":
-			this.state = this.is_hover ? 1 : 0;
-			if (!this.is_hover) {
-				this.is_down = false;
-			}
-			break;
-		case "move":
-			if (this.state != 2) {
-				this.state = this.is_hover ? 1 : 0;
-			}
-			if (this.tooltip) {
-				if (this.is_hover) {
-					this.tooltip.Activate();
-				} else {
-					this.tooltip.Deactivate();
-				}
-			}
-			break;
-	}
-	if (this.state != old_state) {
-		this.repaint();
-	}
-	return this.state;
+Slider.prototype.up = function(x, y) {
+	this.is_drag = false;
 }
 
+Slider.prototype.move = function(x, y) {
+	if (this.is_drag) {
+		x -= this.x ;
+		this.pos = x < 0 ? 0 : x > this.w ? 1 : x / this.w;
+		this.set(this.pos);
+		window.Repaint();
+	}
+}
+
+Slider.prototype.update = function() {
+	this.pos = this.get();
+	window.Repaint();
+}
+
+
+// Button class
+var Button = function(func) {
+	this.func = func;
+	this.state = 0;
+    this.is_down;
+}
+
+Button.prototype.draw = function(gr, img, x, y) {
+	this.x = x;
+	this.y = y;
+	this.w = img.Width;
+	this.h = img.Height;
+	var alpha = 255;
+	if (this.state == 2) {
+		alpha = 100;
+	}
+	gr.DrawImage(img, x, y, this.w, this.h, 0, 0, this.w, this.h, 0, alpha);
+}
+
+Button.prototype.is_mouse_over = function(x, y) {
+	return (x > this.x && x < this.x + this.w &&
+			y > this.y && y < this.y + this.h);
+}
+
+Button.prototype.change_state = function(s) {
+	if (s == this.state) {
+		return;
+	}
+	this.state = s;
+	window.Repaint();
+}
+Button.prototype.down = function (x, y) {
+	if (this.is_mouse_over(x, y)) {
+		this.change_state(2);
+        return true;
+	} else {
+        return false;
+    }
+}
+
+Button.prototype.up = function(x, y) {
+	if (this.is_mouse_over(x, y)) {
+		this.change_state(1);
+		return true;
+	} else {
+		this.change_state(0);
+		return false;
+	}
+}
+
+Button.prototype.move = function(x, y) {
+	if (this.state == 2) {
+		return;
+	} else {
+		if (this.is_mouse_over(x, y)) {
+			this.change_state(1);
+		} else {
+			this.change_state(0);
+		}
+	}
+}
+
+Button.prototype.leave = function() {
+	this.change_state(0);
+}
+
+Button.prototype.on_click = function(x, y) {
+	if (!this.func || typeof this.func != "function") {
+		return ;
+	}
+	this.func(x, y);
+}
 
 // ======================================================================
 // Functions

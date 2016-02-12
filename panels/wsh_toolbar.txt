@@ -1,6 +1,0 @@
-﻿// ==PREPROCESSOR==
-// @import "E:\GitHub\Foobar2000-WSH-Scripts\common\common2.js"
-// @import "E:\GitHub\Foobar2000-WSH-Scripts\common\inputbox.js"
-// @import "E:\GitHub\Foobar2000-WSH-Scripts\scripts\toolbar.js"
-// ==/PREPROCESSOR==
-

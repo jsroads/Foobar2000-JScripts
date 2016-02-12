@@ -1,0 +1,240 @@
+﻿// vim: ft=javascript fileencoding=utf-8 bomb et:
+
+// ==PREPROCESSOR==
+// @author "elia_is_me"
+// @update "2016-02-12"
+// @import "E:\GitHub\Foobar2000-WSH-Scripts\common\common4.js"
+// ==/PREPROCESSOR==
+
+
+var DT_CC = DT_CENTER | DT_VCENTER | DT_CALCRECT;
+
+var ww = 0,
+	wh = 0;
+
+var back_color = RGB(50, 89, 3),
+	text_color = RGB(255, 255, 255);
+
+var images = {};
+
+var time_font = gdi.Font("Segoe UI Semibold", 12);
+var length_time = "0:00",
+	playback_time = "0:00";
+
+var sk = null,
+	bt = [];
+
+var mouse_x, 
+    mouse_y;
+var mouse_is_down = false;
+
+//>
+
+function prepare_images() {
+	var g;
+	var ico_font = gdi.Font("Segoe MDL2 Assets", 15);
+
+	// nob image
+	images.nob = gdi.CreateImage(14, 14);
+	g = images.nob.GetGraphics();
+	g.SetSmoothingMode(4);
+
+	g.FillEllipse(1, 1, 12, 12, text_color);
+	g.FillEllipse(3, 3, 8, 8, back_color);
+
+	g.SetSmoothingMode(0);
+	images.nob.ReleaseGraphics(g);
+
+	// create button images
+	var ico_name = ["prev", "pause", "play", "next", "volume", "shuffle", "repeat", "repeat1"];
+	// 对应的 unicode 编码
+	var ico_code = ["\uE100", "\uE103", "\uE102", "\uE101", "\uE15D" , "\uE14B", "\uE149", "\uE1CC"];
+	var len = ico_code.length;
+	var w = 30;
+	var sf = StringFormat(1, 1);
+
+	for (var i = 0; i < len; i++) {
+		images[ico_name[i]] = gdi.CreateImage(w, w);
+		g = images[ico_name[i]].GetGraphics();
+
+		g.SetTextRenderingHint(3);
+		g.DrawString(ico_code[i], ico_font, text_color, 0, 0, w, w, sf);
+		g.DrawString(ico_code[i], ico_font, text_color, 0, 0, w, w, sf);
+		g.SetTextRenderingHint(0);
+
+		images[ico_name[i]].ReleaseGraphics(g);
+	}
+
+	// repeat and shuffle bg image
+	images["round"] = gdi.CreateImage(w, w);
+	g = images["round"].GetGraphics();
+	g.SetSmoothingMode(4);
+	g.FillEllipse(0, 0, w, w, 0x30ffffff);
+	g.SetSmoothingMode(0);
+	images["round"].ReleaseGraphics(g);
+}
+
+function reset_time() {
+    length_time = "0:00";
+    playback_time = "0:00";
+    window.Repaint();
+}
+
+
+// >
+
+function on_size() {
+	ww = window.Width;
+	wh = window.Height;
+}
+
+function on_paint(gr) {
+
+	// bg
+	gr.FillSolidRect(0, 0, ww, wh, back_color);
+
+    // seekbar
+    sk.draw(gr, 70, 7, ww-140, 20, 9, text_color & 0xeeffffff, text_color & 0x20ffffff);
+    // time
+    gr.GdiDrawText(playback_time, time_font, text_color, 10, 7, 50, 20, DT_CC);
+    gr.GdiDrawText(length_time, time_font, text_color, ww-60, 7, 50, 20, DT_CC);
+
+    var img_w = images.prev.Width;
+    var pad = 20;
+    var Y = (wh + 22 - img_w) / 2;
+    var X = Math.ceil((ww - img_w * bt.length - pad * (bt.length - 1)) / 2);
+    var pb_order = fb.PlaybackOrder;
+
+    bt[0].draw(gr, images.prev, X, Y, img_w, img_w);
+
+    X += (img_w + pad);
+    bt[1].draw(gr, fb.IsPlaying && !fb.IsPaused ? images.pause : images.play,
+            X, Y, img_w, img_w);
+
+    X += (img_w + pad);
+    bt[2].draw(gr, images.next, X, Y, img_w, img_w);
+
+    X += (img_w + pad);
+    if (pb_order >= 3) {
+        bt[3].draw(gr, images.shuffle, X, Y, img_w, img_w);
+    } else if (pb_order == 2) {
+        bt[3].draw(gr, images.repeat1, X, Y, img_w, img_w);
+    } else if (pb_order == 1) {
+        bt[3].draw(gr, images.repeat, X, Y, img_w, img_w);
+    } else {
+        bt[3].draw(gr, images.repeat, X, Y, img_w, img_w);
+    }
+
+    X += (img_w + pad);
+    bt[4].draw(gr, images.volume, X, Y, img_w, img_w);
+            
+}
+
+function on_mouse_move(x, y) {
+    if (fb.IsPlaying) {
+        sk.move(x, y);
+        if (sk.is_drag) {
+            on_playback_time(fb.PlaybackTime);
+        }
+    }
+
+    bt.map(function(i) {
+        i.move(x, y);
+    });
+
+}
+
+function on_mouse_lbtn_down(x, y, mask) {
+    if (fb.IsPlaying) {
+        sk.down(x, y);
+    }
+
+    bt.find(function(i) {
+        return i.down(x, y);
+    });
+}
+
+function on_mouse_lbtn_up(x, y, mask) {
+    sk.up(x, y);
+    bt.find(function(i) {
+        if (i.up(x, y)) {
+            i.on_click(x, y);
+            return true;
+        }
+    });
+}
+
+on_mouse_lbtn_dblclk = on_mouse_lbtn_down;
+
+function on_mouse_leave() {
+    bt.map(function(i) {
+        i.leave();
+    })
+}
+
+function on_playback_starting() {
+    reset_time();
+    sk.update();
+}
+
+function on_playback_pause(state) {
+    window.Repaint();
+}
+
+function on_playback_order_changed(new_order) {
+    window.Repaint();
+}
+
+function on_playback_new_track(metadb) {
+	length_time = fb.TitleFormat("[%length%]").EvalWithMetadb(metadb);
+    window.Repaint();
+}
+
+function on_playback_stop(reason) {
+    if (reason != 2) {
+        sk.update();
+        reset_time();
+    }
+}
+
+function on_playback_time(time) {
+    playback_time = utils.FormatDuration(time);
+    sk.update();
+}
+
+	
+
+// >
+// Script on load
+
+window.MaxHeight = window.MinHeight = 80;
+prepare_images();
+
+// Seekbar
+sk = new Slider(images.nob, 
+		function() {return fb.PlaybackTime/fb.PlaybackLength;},
+		function(pos) {fb.PlaybackTime = fb.PlaybackLength * pos;});
+
+// Prev
+bt[0] = new Button(function() {
+	fb.Prev();
+});
+// Play or pause
+bt[1] = new Button(function() {
+	fb.PlayOrPause();
+});
+// Next
+bt[2] = new Button(function() {
+	fb.Next();
+});
+// Order
+bt[3] = new Button(function() {
+});
+// Volume
+bt[4] = new Button(function() {
+});
+
+if (fb.IsPlaying) {
+	on_playback_new_track(fb.GetNowPlaying());
+	on_playback_time(fb.PlaybackTime);
+}
