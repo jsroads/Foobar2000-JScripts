@@ -1,0 +1,374 @@
+// vim: ft=javascript fileencoding=utf-8 bomb et:
+
+// ==PREPROCESSOR==
+// @author "elia_is_me"
+// @update "2016-02-12"
+// @import "E:\GitHub\Foobar2000-WSH-Scripts\common\common4.js"
+// @import "E:\GitHub\Foobar2000-WSH-Scripts\common\Inputbox.js"
+// ==/PREPROCESSOR==
+
+
+var DT_CC = DT_CENTER | DT_VCENTER | DT_CALCRECT;
+var DT_LC = DT_VCENTER | DT_CALCRECT;
+var DT_RC = DT_VCENTER | DT_RIGHT | DT_CALCRECT;
+
+var ww = 0,
+	wh = 0;
+
+var images = {};
+
+var tf_track = fb.TitleFormat("$if2(%tracknumber%,-)|||%title%|||[%track artist%]|||[%play_count%]|||[%length%]|||%rating%");
+var tf_album = fb.TitleFormat("%album%|||%album artist%");
+
+var active_pl = null;
+
+var searchbox = null;
+var list = [];
+
+var total_h = 0;
+var total_rows = 0;
+var total_visible_rows = 0;
+var scroll = 0;
+
+var total_tracks = 0;
+
+var cursor_h = 0,
+	cursor_y = 0;
+// 0: normal, 1: hover, 2: down
+var cursor_state = 0;
+
+var row_height = 40,
+	margin_top = 120;
+var begin, end;
+
+var ltimer1 = null;
+
+var list_font = gdi.Font("Segoe UI", 14);
+var list_font2 = gdi.Font("Segoe UI", 12);
+var list_font3 = gdi.Font("Segoe UI", 14, 1);
+
+var textcolor = RGB(0, 0, 0),
+	textcolor_sel = 0,
+	backcolor = RGB(255, 255, 255),
+	backcolor_sel = RGB(235, 235, 235),
+	highcolor = RGB(50, 89, 3);
+
+var ww = 0,
+	wh = 0;
+
+function check_scroll() {
+	if (scroll < 0) {
+		scroll = 0;
+	}
+	if (scroll != 0 && scroll + wh - margin_top > total_h) {
+		scroll = total_h - (wh - margin_top);
+	}
+}
+
+function set_scroll() {
+	var ratio = (cursor_y - margin_top) / (wh-margin_top-cursor_h);
+	scroll = Math.round((total_h - (wh - margin_top)) * ratio);
+}
+
+function init_list(handles) {
+	list = [];
+	scroll = 0;
+	if (handles) {
+		total_tracks = handles.Count;
+		load_list(handles, 0, "!@E");
+	}
+}
+
+function load_list(handles, start, compare) {
+
+	var idx = start;
+	var metadb = null;
+	var timer1 = fb.CreateProfiler("load");
+	var string1 = "",
+		string2 = "";
+
+	while (idx < total_tracks) {
+		if (timer1.Time > 30) {
+			on_load();
+			break;
+		}
+
+		metadb = handles.Item(idx);
+		string1 = tf_track.EvalWithMetadb(metadb).split("|||");
+		string2 = tf_album.EvalWithMetadb(metadb).split("|||");
+		
+		list[idx] = {
+			metadb: metadb,
+			tracknumber: string1[0],
+			title: string1[1],
+			duration: string1[4],
+			album: string2[0],
+			album_artist: string2[1]
+		};
+
+		idx++;
+	}
+
+	if (idx == total_tracks) {
+		on_load();
+	} else {
+		ltimer1 && window.ClearTimeout(ltimer1);
+		ltimer1 = window.SetTimeout(function() {
+			load_list(idx, compare);
+		}, 30);
+	}
+}
+
+function on_load() {
+	total = list.length;
+	total_h = total * row_height;
+	on_size();
+
+	check_scroll();
+	plman.SetActivePlaylistContext();
+	window.Repaint();
+}
+
+function search_func() {
+}
+
+
+function on_size() {
+	///
+	ww = window.Width;
+	wh = window.Height;
+	if (ww < 380) {
+		ww = 380;
+	}
+
+	total_rows = Math.ceil((wh - margin_top) / row_height);
+	total_visible_rows = Math.floor((wh - margin_top) / row_height);
+
+}
+
+function on_paint(gr) {
+
+	// Bg
+	gr.FillSolidRect(0, 0, ww, wh, backcolor);
+
+	//--------------
+	// list
+	//--------------
+	
+	var total = list.length;
+
+	if (total <= total_visible_rows) {
+		begin = 0;
+		end = total - 1;
+	} else {
+		begin = Math.floor(scroll / row_height);
+		end = begin + total_rows;
+		if (begin < 0) {
+			begin = 0;
+		}
+		if (end >= total) {
+			end = total - 1;
+		}
+	}
+
+	var rx = 10,
+		ry = 0,
+		rw = ww - 20,
+		rh = row_height;
+	var list_h = wh - margin_top;
+
+	var txt_color1 = textcolor,
+		txt_color2 = blendColors(textcolor, backcolor, 0.3);
+
+	var obj_item;
+
+	if (wh - margin_top < total_h) {
+		rw -= 12;
+	}
+
+	for (var i = begin; i <= end; i++) {
+
+		ry = margin_top + i * rh - scroll;
+
+		obj_item = list[i];
+
+		gr.FillSolidRect(rx, ry, rw, rh, i % 2 ? 0x10000000 : 0);
+
+		gr.GdiDrawText(obj_item.tracknumber, list_font, txt_color1, rx, ry, 40, rh, DT_CC);
+		gr.GdiDrawText(obj_item.duration, list_font, txt_color2, rx+rw-50, ry, 50, rh, DT_CC);
+		
+		var left_x = rx+40;
+		var left_w = rx+rw-90;
+		if (ww < 580) {
+			gr.GdiDrawText(obj_item.title, list_font, txt_color1, left_x, ry, left_w, rh, DT_LC);
+		} else { // if (ww < 1000) {
+			gr.GdiDrawText(obj_item.title, list_font, txt_color1, left_x, ry, left_w * 0.6, rh, DT_LC);
+			gr.GdiDrawText(obj_item.album_artist, list_font, txt_color1, left_x+left_w*0.6+10, ry, left_w*0.4-10, rh, DT_LC);
+		}
+
+	}
+
+	// 覆盖
+	gr.FillSolidRect(rx, 0, rw, margin_top, backcolor);
+
+	// header
+	var hy = margin_top - row_height;
+
+	gr.GdiDrawText("#", list_font3, txt_color2, rx, hy, 40, rh, DT_CC);
+	gr.GdiDrawText("Title", list_font3, txt_color2, rx+40, hy, rx+rw-90, rh, DT_LC);
+	gr.GdiDrawText("Length", list_font3, txt_color2, rx+rw-50, hy, 50, rh, DT_CC);
+
+	gr.FillSolidRect(rx, margin_top-1, rw, 1, textcolor & 0x20ffffff);
+
+	//-----------
+	// scrollbar
+	//-----------
+	if (list_h < total_h) {
+		// c
+		cursor_h = Math.round(list_h / total_h * list_h);
+		if (cursor_h < 25) {
+			cursor_h = 25;
+		}
+		cursor_y = margin_top + Math.round((list_h - cursor_h) * scroll / (total_h - list_h));
+		// draw
+		var alpha = cursor_state == 2 ? 0x99ffffff : cursor_state == 1 ? 0x55ffffff : 0x33ffffff;
+		gr.FillSolidRect(ww - 11, cursor_y, 10, cursor_h, textcolor & alpha);
+	}
+
+	//------------
+	// searchbox
+	//------------
+	searchbox.w = 140;
+	searchbox.h = 22;
+	gr.FillSolidRect(20, 15, searchbox.w+56, 28, searchbox.backcolor);
+	gr.DrawRect(21, 16, searchbox.w+54, 26, 2, searchbox.edit ? textcolor : textcolor & 0x50ffffff);
+	searchbox.draw(gr, 48, 18);
+	//
+}
+
+function is_hover_cursor (x, y) {
+	return (x > ww - 11 && x < ww -1 && y > cursor_y && y < cursor_y + cursor_h);
+}
+
+
+function on_mouse_move(x, y) {
+	// scrollbar
+	var temp_state;
+	if (cursor_state == 2) {
+		cursor_y = y - cursor_delta;
+		if (cursor_y < margin_top) {
+			cursor_y = margin_top;
+		} else if (cursor_y > wh - cursor_h) {
+			cursor_y = wh - cursor_h;
+		}
+		set_scroll();
+		window.Repaint();
+	} else {
+		temp_state = (is_hover_cursor(x, y) ? 1 : 0);
+		if (temp_state != cursor_state) {
+			cursor_state = temp_state;
+			window.Repaint();
+		}
+	}
+
+	//
+
+}
+
+function on_mouse_lbtn_down(x, y, mask) {
+
+	// scrollbar
+	if  (x > ww-11 && x < ww-1 && y > margin_top && y < wh) {
+		switch (true) {
+			case (y < cursor_y):
+				// page up
+				break;
+			case (is_hover_cursor(x, y)):
+				cursor_state = 2;
+				cursor_delta = y - cursor_y;
+				window.Repaint();
+				break;
+			case (y > cursor_y + cursor_h):
+				// page down
+				break;
+		}
+	}
+
+}
+
+function on_mouse_lbtn_up(x, y, mask) {
+	if (is_hover_cursor(x, y)) {
+		cursor_state = 1;
+	} else {
+		cursor_state = 0;
+	}
+	window.Repaint();
+}
+
+
+function on_mouse_wheel(step) {
+	if (total_h <= wh - margin_top) {
+		return;
+	}
+	scroll -= step * 3 * row_height;
+	check_scroll();
+	window.Repaint();
+}
+
+function on_mouse_leave() {
+	if (cursor_state != 0) {
+		cursor_state = 0;
+		window.Repaint();
+	}
+}
+
+function on_playlists_changed() {
+	// playlist
+	if (active_pl != plman.ActivePlaylist) {
+		active_pl = plman.ActivePlaylist;
+		init_list(plman.GetPlaylistItems(active_pl));
+	}
+}
+
+function on_playlist_switch() {
+	active_pl = plman.ActivePlaylist;
+	scroll = 0;
+	init_list(plman.GetPlaylistItems(active_pl));
+}
+
+function on_playlist_items_reordered(plst) {
+	if (plst != active_pl) {
+		return;
+	}
+	init_list(plman.GetPlaylistItems(active_pl));
+}
+
+function on_playlist_items_removed(plst) {
+	on_playlist_items_reordered(plst);
+}
+
+function on_playlist_items_added(plst) {
+	on_playlist_items_reordered(plst);
+}
+
+function on_playlist_items_selection_change() {
+	window.Repaint();
+}
+
+function on_item_selection_change() {
+	window.Repaint();
+}
+
+function on_item_focus_change(plst, from, to) {
+	window.Repaint();
+}
+
+function on_metadb_changed(handles, fromhook) {
+	window.Repaint();
+}
+
+
+active_pl = plman.ActivePlaylist;
+searchbox = new oInputbox(20, 22,  "", "Library Search", textcolor, backcolor, 0, backcolor_sel, search_func, "window");
+init_list(plman.GetPlaylistItems(active_pl));
+
