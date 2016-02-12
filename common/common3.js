@@ -31,21 +31,205 @@ Array.prototype.unique = function() {
 	return arr;
 };
 
-Object.prototype.getPropertyCount = function() {
-	var c = 0;
-	for (var i in this) {
-		if (this.hasOwnProperty(i)) {
-			c++;
-		};
-	}
-	return c;
-};
 
+// Refer: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter
+if (!Array.prototype.filter) {
+	Array.prototype.filter = function(fun/*, thisArg*/) {
+		'use strict';
+
+		if (this === void 0 || this === null) {
+			throw new TypeError();
+		}
+
+		var t = Object(this);
+		var len = t.length >>> 0;
+		if (typeof fun !== 'function') {
+			throw new TypeError();
+		}
+
+		var res = [];
+		var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+		for (var i = 0; i < len; i++) {
+			if (i in t) {
+				var val = t[i];
+
+				// NOTE: Technically this should Object.defineProperty at
+				//       the next index, as push can be affected by
+				//       properties on Object.prototype and Array.prototype.
+				//       But that method's new, and collisions should be
+				//       rare, so use the more-compatible alternative.
+				if (fun.call(thisArg, val, i, t)) {
+					res.push(val);
+				}
+			}
+		}
+
+		return res;
+	};
+}
+
+// Production steps of ECMA-262, Edition 5, 15.4.4.19
+// Reference: http://es5.github.io/#x15.4.4.19
+if (!Array.prototype.map) {
+
+	Array.prototype.map = function(callback, thisArg) {
+
+		var T, A, k;
+
+		if (this == null) {
+			throw new TypeError(' this is null or not defined');
+		}
+
+		// 1. Let O be the result of calling ToObject passing the |this| 
+		//    value as the argument.
+		var O = Object(this);
+
+		// 2. Let lenValue be the result of calling the Get internal 
+		//    method of O with the argument "length".
+		// 3. Let len be ToUint32(lenValue).
+		var len = O.length >>> 0;
+
+		// 4. If IsCallable(callback) is false, throw a TypeError exception.
+		// See: http://es5.github.com/#x9.11
+		if (typeof callback !== 'function') {
+			throw new TypeError(callback + ' is not a function');
+		}
+
+		// 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+		if (arguments.length > 1) {
+			T = thisArg;
+		}
+
+		// 6. Let A be a new array created as if by the expression new Array(len) 
+		//    where Array is the standard built-in constructor with that name and 
+		//    len is the value of len.
+		A = new Array(len);
+
+		// 7. Let k be 0
+		k = 0;
+
+		// 8. Repeat, while k < len
+		while (k < len) {
+
+			var kValue, mappedValue;
+
+			// a. Let Pk be ToString(k).
+			//   This is implicit for LHS operands of the in operator
+			// b. Let kPresent be the result of calling the HasProperty internal 
+			//    method of O with argument Pk.
+			//   This step can be combined with c
+			// c. If kPresent is true, then
+			if (k in O) {
+
+				// i. Let kValue be the result of calling the Get internal 
+				//    method of O with argument Pk.
+				kValue = O[k];
+
+				// ii. Let mappedValue be the result of calling the Call internal 
+				//     method of callback with T as the this value and argument 
+				//     list containing kValue, k, and O.
+				mappedValue = callback.call(T, kValue, k, O);
+
+				// iii. Call the DefineOwnProperty internal method of A with arguments
+				// Pk, Property Descriptor
+				// { Value: mappedValue,
+				//   Writable: true,
+				//   Enumerable: true,
+				//   Configurable: true },
+				// and false.
+
+				// In browsers that support Object.defineProperty, use the following:
+				// Object.defineProperty(A, k, {
+				//   value: mappedValue,
+				//   writable: true,
+				//   enumerable: true,
+				//   configurable: true
+				// });
+
+				// For best browser support, use the following:
+				A[k] = mappedValue;
+			}
+			// d. Increase k by 1.
+			k++;
+		}
+
+		// 9. return A
+		return A;
+	};
+}
+
+
+// Production steps of ECMA-262, Edition 5, 15.4.4.18
+// Reference: http://es5.github.io/#x15.4.4.18
+if (!Array.prototype.forEach) {
+
+	Array.prototype.forEach = function(callback, thisArg) {
+
+		var T, k;
+
+		if (this == null) {
+			throw new TypeError(' this is null or not defined');
+		}
+
+		// 1. Let O be the result of calling ToObject passing the |this| value as the argument.
+		var O = Object(this);
+
+		// 2. Let lenValue be the result of calling the Get internal method of O with the argument "length".
+		// 3. Let len be ToUint32(lenValue).
+		var len = O.length >>> 0;
+
+		// 4. If IsCallable(callback) is false, throw a TypeError exception.
+		// See: http://es5.github.com/#x9.11
+		if (typeof callback !== "function") {
+			throw new TypeError(callback + ' is not a function');
+		}
+
+		// 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+		if (arguments.length > 1) {
+			T = thisArg;
+		}
+
+		// 6. Let k be 0
+		k = 0;
+
+		// 7. Repeat, while k < len
+		while (k < len) {
+
+			var kValue;
+
+			// a. Let Pk be ToString(k).
+			//   This is implicit for LHS operands of the in operator
+			// b. Let kPresent be the result of calling the HasProperty internal method of O with argument Pk.
+			//   This step can be combined with c
+			// c. If kPresent is true, then
+			if (k in O) {
+
+				// i. Let kValue be the result of calling the Get internal method of O with argument Pk.
+				kValue = O[k];
+
+				// ii. Call the Call internal method of callback with T as the this value and
+				// argument list containing kValue, k, and O.
+				callback.call(T, kValue, k, O);
+			}
+			// d. Increase k by 1.
+			k++;
+		}
+		// 8. return undefined
+	};
+}
+
+// Refer: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
+if (!Array.isArray) {
+	Array.isArray = function(arg) {
+		return Object.prototype.toString.call(arg) === '[object Array]';
+	};
+}
 
 // ======================================================================
 // Constructors
 // ======================================================================
 
+/*
 Button = function(img_arr, func) {
 	this.img = img_arr;
 	this.w = this.img[0].Width;
@@ -60,7 +244,7 @@ Button.prototype = {
 	repaint: function() {
 		window.RepaintRect(this.x, this.y, this.w + 1, this.h + 1);
 	},
-	
+
 	on_click: function(x, y, extra) {
 		if (!this.is_down) return;
 		try { this.func && this.func(x, y, extra) } catch (e) {};
@@ -79,9 +263,15 @@ Button.prototype = {
 	},
 
 	draw: function(gr) {
-		this.img[this.state] && 
-			gr.DrawImage(this.img[this.state], this.x, this.y, this.w, this.h, 
-					0, 0, this.w, this.h, 0, 255);
+		var _img = this.img[this.state];
+		_img && gr.DrawImage(_img, this.x, this.y, this.w, this.h, 0, 0, this.w, this.h, 0, 255);
+	},
+
+	reset: function() {
+		if (this.state != 0) {
+			this.state = 0;
+			this.repaint();
+		};
 	},
 
 	check_state: function(event, x, y) {
@@ -89,29 +279,131 @@ Button.prototype = {
 		this.state_old = this.state;
 		switch (event) {
 			case "down":
-				if (this.state != 2) {
-					this.state = this.is_hover ? 2 : 0;
+				if (this.state == 1) {
 					this.is_down = this.is_hover;
 				};
+				this.state = this.is_hover ? 2 : 0;
 				break;
 			case "up":
 				this.state = this.is_hover ? 1 : 0;
-				if (!this.is_hover)
-				   	this.is_down = false;
+				if (!this.is_hover) this.is_down = false;
 				break;
 			case "move":
 				if (this.state !== 2) {
 					this.state = this.is_hover ? 1 : 0;
 				};
 				break;
-			case "leave":
-				this.state = 0;
-				break;
 		};
 		if (this.state !== this.state_old) this.repaint();
 		return this.state;
 	}
 };
+*/
+
+/**
+ * Button: create buttons on wsh panel.
+ * img_arr: [img_normal, img_hover, img_down], array elements are gdi_images.
+ * func: on_click event function
+ * tooltip_text:
+ */
+
+Button = function (img_arr, func, tooltip_text) {
+	this.state = 0;
+	this.is_down = false;
+	this.is_hover = false;
+	this.img;
+	this.w = 0;
+	this.h = 0;
+	this.x = 0;
+	this.y = 0;
+	this.func = func;
+	this.tooltip = window.CreateTooltip();
+
+	this.set_tooltip = function (tooltip_text) {
+		this.tooltip_text = tooltip_text;
+		if (this.tooltip_text && tooltip_text.length > 0) {
+			this.tooltip.Text = this.tooltip_text;
+			this.tooltip.Deactivate();
+		} else {
+			this.tooltip = null;
+		}
+	}
+
+	this.update_img = function(img_arr_) {
+		this.img = img_arr_;
+		this.w = this.img[0].Width;
+		this.h = this.img[0].Height;
+	}
+
+	this.update_img(img_arr);
+	this.set_tooltip(tooltip_text);
+}
+
+
+Button.prototype.repaint = function() {
+	window.RepaintRect(this.x, this.y, this.w+1, this.h+1);
+}
+
+Button.prototype.set_xy = function(x, y) {
+	this.x = x;
+	this.y = y;
+}
+
+Button.prototype.on_click = function(x, y, extra) {
+	if (!this.is_down) { return; }
+	try {
+		this.func && this.func(x, y, extra)
+	} catch (e) {};
+	this.is_down  = false;
+}
+
+Button.prototype.draw = function (gr) {
+	var img_ = this.img[this.state];
+	img_ && gr.DrawImage(img_, this.x, this.y + (this.state == 2 ? 1 : 0), this.w, this.h, 0, 0, this.w, this.h, 0, 255);
+}
+
+Button.prototype.reset = function() {
+	if (this.state != 0) {
+		this.state = 0;
+		this.tooltip  && this.tooltip.Deactivate();
+		this.repaint();
+	}
+}
+
+Button.prototype.check_state = function(event, x, y) {
+	this.is_hover = (x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h);
+	var old_state = this.state;
+	switch (event) {
+		case "down":
+			if (this.state == 1) {
+				this.is_down = this.is_hover;
+			}
+			this.state = this.is_hover ? 2 : 0;
+			break;
+		case "up":
+			this.state = this.is_hover ? 1 : 0;
+			if (!this.is_hover) {
+				this.is_down = false;
+			}
+			break;
+		case "move":
+			if (this.state != 2) {
+				this.state = this.is_hover ? 1 : 0;
+			}
+			if (this.tooltip) {
+				if (this.is_hover) {
+					this.tooltip.Activate();
+				} else {
+					this.tooltip.Deactivate();
+				}
+			}
+			break;
+	}
+	if (this.state != old_state) {
+		this.repaint();
+	}
+	return this.state;
+}
 
 
 // ======================================================================
@@ -207,6 +499,14 @@ function toRGB(d) {
 	return [r, g, b];
 };
 
+
+function negativeColor(colour) {
+	var R = getRed(colour);
+	var G = getGreen(colour);	
+	var B = getBlue(colour);
+	return RGB(Math.abs(R-255), Math.abs(G-255), Math.abs(B-255));
+};
+
 function blendColors(c1, c2, factor) {
 	var c1 = toRGB(c1);
 	var c2 = toRGB(c2);
@@ -261,6 +561,20 @@ function Luminance(color) {
 	return (0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]) / 255.0;
 };
 
+function GetKeyboardMask() {
+    var c = utils.IsKeyPressed(VK_CONTROL) ? true : false;
+    var a = utils.IsKeyPressed(VK_ALT) ? true : false;
+    var s = utils.IsKeyPressed(VK_SHIFT) ? true : false;
+    var ret = KMask.none;
+    if (c && !a && !s) ret = KMask.ctrl;
+    if (!c && !a && s) ret = KMask.shift;
+    if (c && !a && s) ret = KMask.ctrlshift;
+    if (c && a && !s) ret = KMask.ctrlalt;
+    if (c && a && s) ret = KMask.ctrlaltshift;
+    if (!c && a && !s) ret = KMask.alt;
+    return ret;
+};
+
 // ======================================================================
 // Global Variables
 // ======================================================================
@@ -284,9 +598,10 @@ var IDC_ARROW = 32512;
 var IDC_HAND = 32649;
 var IDC_HELP = 32651;
 var IDC_NO = 32648
+var IDC_ARROW = 32512;
+var IDC_IBEAM = 32513;
 
 var DLGC_WANTALLKEYS = 0x0004; /* Control wants all keys           */
-
 
 var VK_BACK = 0x08;
 var VK_CONTROL = 0x11;
@@ -393,4 +708,28 @@ var ColorTypeCUI={text:0,selection_text:1,inactive_selection_text:2,background:3
 var FontTypeCUI={items:0,labels:1};
 var FontTypeDUI={defaults:0,tabs:1,lists:2,playlists:3,statusbar:4,console:5};
 var ButtonStates = {normal: 0, hover: 1, down: 2};
+var KMask = {
+    none: 0,
+    ctrl: 1,
+    shift: 2,
+    ctrlshift: 3,
+    ctrlalt: 4,
+    ctrlaltshift: 5,
+    alt: 6
+};
 
+function get_system_dpi_percent() {
+    var objShell = new ActiveXObject("WScript.Shell");
+    var temp;
+    try {
+        temp = objShell.RegRead("HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics\\AppliedDPI");
+        console("DPI: " + temp);
+    } catch (e) {
+        temp = 96;
+    }
+    return Math.round(temp / 96 * 100);
+}
+
+function zoom(value, factor) {
+    return Math.round(value * factor / 100);
+}

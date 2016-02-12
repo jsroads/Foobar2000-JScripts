@@ -103,12 +103,14 @@
 	};
 
 	this.checkDownloadVbs = function(force) {
+		/*
 		var path = window.GetProperty("system.Vbs Path");
 		if (!path) {
 			path = FileDialog(0, "Open", "All Files|*.*", "download.vbs");
 			window.SetProperty("system.Vbs Path", path);
 		}
 		this.vbs = "\'" + path + "\'";
+		*/
 		this.vbs = "wget";
 	};
 
