@@ -17,6 +17,7 @@ var ww = 0,
 var back_color = RGB(50, 89, 3),
 	text_color = RGB(255, 255, 255);
 
+var timers = {};
 var images = {};
 
 var time_font = gdi.Font("Segoe UI Semibold", 12);
@@ -26,6 +27,9 @@ var length_time = "0:00",
 var sk = null,
     vol = null,
 	bt = [];
+
+// 0: narrow, 1: wide
+var display_mode = 0;
 
 var mouse_x, 
     mouse_y;
@@ -93,6 +97,11 @@ function vol2pos(v) {
 	return ((Math.pow(10, v / 50) - 0.01) / 0.99);
 };
 
+function apply_height () {
+    var h = (display_mode ? 60 : 80);
+    window.MaxHeight = window.MinHeight = h;
+}
+
 
 // >
 
@@ -102,6 +111,7 @@ function on_size() {
         ww = 380;
     }
 	wh = window.Height;
+
 }
 
 function on_paint(gr) {

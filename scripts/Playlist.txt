@@ -1,4 +1,4 @@
-// vim: ft=javascript fileencoding=utf-8 bomb et:
+﻿// vim: ft=javascript fileencoding=utf-8 bomb et:
 
 // ==PREPROCESSOR==
 // @author "elia_is_me"
@@ -16,14 +16,16 @@ var ww = 0,
 	wh = 0;
 
 var images = {};
+var searchbox = null;
+var bt = [];
 
 var tf_track = fb.TitleFormat("$if2(%tracknumber%,-)|||%title%|||[%track artist%]|||[%play_count%]|||[%length%]|||%rating%");
 var tf_album = fb.TitleFormat("%album%|||%album artist%");
 
 var active_pl = null;
 
-var searchbox = null;
 var list = [];
+var list_hover_id = -1;
 
 var total_h = 0;
 var total_rows = 0;
@@ -50,11 +52,8 @@ var list_font3 = gdi.Font("Segoe UI", 14, 1);
 var textcolor = RGB(0, 0, 0),
 	textcolor_sel = 0,
 	backcolor = RGB(255, 255, 255),
-	backcolor_sel = RGB(235, 235, 235),
+	backcolor_sel = RGB(218, 228, 163),
 	highcolor = RGB(50, 89, 3);
-
-var ww = 0,
-	wh = 0;
 
 function check_scroll() {
 	if (scroll < 0) {
@@ -132,6 +131,28 @@ function on_load() {
 function search_func() {
 }
 
+function prepare_images() {
+
+	var ico_font = gdi.Font("Segoe MDL2 Assets", 15);
+	var ico_name = ["loupe", "reset"];
+	var ico_code =["\uE094", "\uE711"];
+	var sf = StringFormat(1, 1);
+	var img, g, w = 26;
+	var len = ico_code.length;;
+
+	for (var i = 0; i < len; i++) {
+		img = gdi.CreateImage(w, w);
+		g = img.GetGraphics();
+
+		g.SetTextRenderingHint(3);
+		g.DrawString(ico_code[i], ico_font, textcolor, 0, 0, w, w, sf);
+		g.SetTextRenderingHint(0);
+
+		img.ReleaseGraphics(g);
+		images[ico_name[i]] = img;
+	}
+
+}
 
 function on_size() {
 	///
@@ -151,6 +172,7 @@ function on_paint(gr) {
 	// Bg
 	gr.FillSolidRect(0, 0, ww, wh, backcolor);
 
+	var playing_id = (plman.PlayingPlaylist == active_pl) ? plman.GetPlayingItemLocation().PlaylistItemIndex : -1;
 	//--------------
 	// list
 	//--------------
@@ -186,13 +208,28 @@ function on_paint(gr) {
 		rw -= 12;
 	}
 
+
 	for (var i = begin; i <= end; i++) {
 
 		ry = margin_top + i * rh - scroll;
 
 		obj_item = list[i];
 
-		gr.FillSolidRect(rx, ry, rw, rh, i % 2 ? 0x10000000 : 0);
+		if (playing_id == i) {
+			txt_color1 = highcolor;
+			txt_color2 = blendColors(txt_color1, backcolor, 0.3);
+		} else {
+			txt_color1 = textcolor;
+			txt_color2 = blendColors(textcolor, backcolor, 0.3);
+		}
+
+		// selected bg
+		if (plman.IsPlaylistItemSelected(active_pl, i)) {
+			gr.FillSolidRect(rx, ry, rw, rh, backcolor_sel);
+		}
+
+		// odd/even bg
+		gr.FillSolidRect(rx, ry, rw, rh, i % 2 ? 0x08000000 : 0);
 
 		gr.GdiDrawText(obj_item.tracknumber, list_font, txt_color1, rx, ry, 40, rh, DT_CC);
 		gr.GdiDrawText(obj_item.duration, list_font, txt_color2, rx+rw-50, ry, 50, rh, DT_CC);
@@ -201,7 +238,7 @@ function on_paint(gr) {
 		var left_w = rx+rw-90;
 		if (ww < 580) {
 			gr.GdiDrawText(obj_item.title, list_font, txt_color1, left_x, ry, left_w, rh, DT_LC);
-		} else { // if (ww < 1000) {
+		} else {
 			gr.GdiDrawText(obj_item.title, list_font, txt_color1, left_x, ry, left_w * 0.6, rh, DT_LC);
 			gr.GdiDrawText(obj_item.album_artist, list_font, txt_color1, left_x+left_w*0.6+10, ry, left_w*0.4-10, rh, DT_LC);
 		}
@@ -214,9 +251,9 @@ function on_paint(gr) {
 	// header
 	var hy = margin_top - row_height;
 
-	gr.GdiDrawText("#", list_font3, txt_color2, rx, hy, 40, rh, DT_CC);
-	gr.GdiDrawText("Title", list_font3, txt_color2, rx+40, hy, rx+rw-90, rh, DT_LC);
-	gr.GdiDrawText("Length", list_font3, txt_color2, rx+rw-50, hy, 50, rh, DT_CC);
+	gr.GdiDrawText("#", list_font3, textcolor, rx, hy, 40, rh, DT_CC);
+	gr.GdiDrawText("Title", list_font3, textcolor, rx+40, hy, rx+rw-90, rh, DT_LC);
+	gr.GdiDrawText("Length", list_font3, textcolor, rx+rw-50, hy, 50, rh, DT_CC);
 
 	gr.FillSolidRect(rx, margin_top-1, rw, 1, textcolor & 0x20ffffff);
 
@@ -239,11 +276,17 @@ function on_paint(gr) {
 	// searchbox
 	//------------
 	searchbox.w = 140;
-	searchbox.h = 22;
-	gr.FillSolidRect(20, 15, searchbox.w+56, 28, searchbox.backcolor);
-	gr.DrawRect(21, 16, searchbox.w+54, 26, 2, searchbox.edit ? textcolor : textcolor & 0x50ffffff);
-	searchbox.draw(gr, 48, 18);
+	searchbox.h = 26;
+	var y_ = (margin_top - row_height - 32)/2;
+	gr.FillSolidRect(20, y_, searchbox.w+64, 32, searchbox.backcolor);
+	gr.DrawRect(21, y_+1, searchbox.w+62, 30, 2, searchbox.edit ? textcolor : textcolor & 0x50ffffff);
+	searchbox.draw(gr, 48, y_+3);
 	//
+	var w = images.loupe.Width;
+	bt[0].draw(gr, images.loupe, searchbox.x-32+3, y_+3, w, w);
+	if (searchbox.text.length > 0) {
+		bt[1].draw(gr, images.reset, searchbox.x+searchbox.w+3, y_+3, w, w);
+	}
 }
 
 function is_hover_cursor (x, y) {
@@ -271,8 +314,27 @@ function on_mouse_move(x, y) {
 		}
 	}
 
-	//
+	// searchbox
+	searchbox.check("move", x, y);
 
+	get_list_hover_id(x, y);
+
+
+}
+
+function get_list_hover_id(x, y) {
+	if (is_hover_list(x, y)) {
+		list_hover_id = Math.floor((y + scroll - margin_top) / row_height);
+		if (list_hover_id < 0 || list_hover_id >= list.length) {
+			list_hover_id = -1;
+		}
+	} else {
+		list_hover_id = -1;
+	}
+}
+
+function is_hover_list (x, y) {
+	return (x > 10 && x < ww - 10 && y > margin_top && y < wh);
 }
 
 function on_mouse_lbtn_down(x, y, mask) {
@@ -294,15 +356,36 @@ function on_mouse_lbtn_down(x, y, mask) {
 		}
 	}
 
+	// searchbox
+	searchbox.check("down", x, y);
+
+	// list
+
+}
+
+function on_mouse_lbtn_dblclk(x, y, mask){ 
+	// searchbox
+	searchbox.check("dblclk", x, y);
 }
 
 function on_mouse_lbtn_up(x, y, mask) {
+	// scrollbar
 	if (is_hover_cursor(x, y)) {
 		cursor_state = 1;
 	} else {
 		cursor_state = 0;
 	}
+
+	//
+	searchbox.check("up", x, y);
+
 	window.Repaint();
+}
+
+function on_mouse_rbtn_up(x, y, mask) {
+	if (x > searchbox.x && x < searchbox.x+searchbox.w && y > searchbox.y && y < searchbox.y+searchbox.h) {
+		searchbox.check("right", x, y);
+	}
 }
 
 
@@ -367,8 +450,32 @@ function on_metadb_changed(handles, fromhook) {
 	window.Repaint();
 }
 
+function on_key_down(vkey) {
+	searchbox.on_key_down(vkey);
+}
+
+function on_char(code) {
+	searchbox.on_char(code);
+}
+
+function on_focus(is_focused) {
+	searchbox.on_focus(is_focused);
+}
+
+
+window.DlgCode = DLGC_WANTALLKEYS;
+prepare_images();
+
+searchbox = new oInputbox(20, 22,  "", "Library Search", textcolor, backcolor, 0, backcolor_sel, search_func, "window");
+searchbox.font = gdi.Font("Segoe UI", 13);
+searchbox.font_italic = gdi.Font("Segoe UI", 13, 2);
+
+
+bt[0] = new Button(function() {
+});
+bt[1] = new Button(function() {
+});
 
 active_pl = plman.ActivePlaylist;
-searchbox = new oInputbox(20, 22,  "", "Library Search", textcolor, backcolor, 0, backcolor_sel, search_func, "window");
 init_list(plman.GetPlaylistItems(active_pl));
 
