@@ -8,5 +8,7 @@
 by one by yourselves.
 
 > ## 注意
+
 > **Scripts in `scripts' folder will not always ready to use.**
+
 > **这里的东西绝大多数都是不可用的，是一时折腾的产物。**

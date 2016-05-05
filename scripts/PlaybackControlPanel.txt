@@ -119,67 +119,61 @@ function on_paint(gr) {
 	// bg
 	gr.FillSolidRect(0, 0, ww, wh, back_color);
 
-    // time
-    var tl1 = gr.CalcTextWidth(playback_time, time_font)+1;
-    var tl2 = gr.CalcTextWidth(length_time, time_font)+1;
-    gr.GdiDrawText(playback_time, time_font, text_color, 20, 7, tl1, 20, DT_RC);
-    gr.GdiDrawText(length_time, time_font, text_color, ww-tl2-20, 7, tl2, 20, DT_LC);
+    // playback buttons
 
-    // seekbar
-    sk.draw(gr, 20+tl1+10, 7, ww-tl2-20-10 - 20 - tl1 - 10, 20, 9, text_color & 0xeeffffff, text_color & 0x20ffffff);
-
-    // draw buttons
-    var img_w = images.prev.Width;
+    var bw = images.prev.Width;
+    var by = (wh - bw) / 2;
     var pad = 20;
-    var Y = (wh + 22 - img_w) / 2;
-    var X = Math.ceil((ww - img_w * bt.length - pad * (bt.length - 1)) / 2);
-    var pb_order = fb.PlaybackOrder;
+    bt[0].draw(gr, images.prev, 20, by, bw, bw);
+    bt[1].draw(gr, fb.IsPlaying && !fb.IsPaused ? images.pause : images.play, 20+bw+pad, by, bw, bw);
+    bt[2].draw(gr, images.next, 20+bw*2+pad*2, by, bw, bw);
 
-    bt[0].draw(gr, images.prev, X, Y, img_w, img_w);
 
-    X += (img_w + pad);
-    bt[1].draw(gr, fb.IsPlaying && !fb.IsPaused ? images.pause : images.play,
-            X, Y, img_w, img_w);
-
-    X += (img_w + pad);
-    bt[2].draw(gr, images.next, X, Y, img_w, img_w);
-
-    X += (img_w + pad);
-    var img;
+    // extra buttons
+    var bx = ww - pad*3 - bw * 3;
+    var pbo = fb.PlaybackOrder;
+    var img = null;
     switch (true) {
-        case (pb_order == 0):
+        case (pbo == 0):
             img = images.normal;
             break;
-        case (pb_order == 1):
+        case (pbo == 1):
             img = images.repeat;
             break;
-        case (pb_order == 2):
+        case (pbo == 2):
             img = images.repeat1;
             break;
-        case (pb_order >=3):
+        case (pbo >= 3):
             img = images.shuffle;
             break;
         default:
             break;
-    }
-    bt[3].draw(gr, img, X, Y, img_w, img_w);
+    };
+    img && bt[3].draw(gr, img, bx, by, bw, bw);
 
-    X += (img_w + pad);
-    bt[4].draw(gr, images.volume, X, Y, img_w, img_w);
+    // volume
 
-    // volume panel
-    if (vol.visible) {
+    var vol_w = 100;
+    bt[4].draw(gr, images.volume, bt[3].x - vol_w - pad - bw, by, bw, bw);
 
-        var x = bt[4].x + bt[4].w+10;
-        var y = bt[4].y;
-        var h = bt[4].h;
-        var offset = Math.floor((h - 2)/2);
-        var w = Math.max(Math.min(100, ww-20-x), 30);
+    var offset = Math.floor((bw - 2)/2);
+    vol.draw(gr, bt[4].x+bt[4].w+10, by, vol_w, bw, offset, text_color & 0xeeffffff, text_color & 0x20ffffff);
+    
 
-        vol.draw(gr, x, y, w, h, offset, text_color & 0xeeffffff, text_color & 0x20ffffff);
+    var sx = bt[2].x+bt[2].w+pad;
+    // time
+    var tl1 = gr.CalcTextWidth(playback_time, time_font)+1;
+    var tl2 = gr.CalcTextWidth(length_time, time_font)+1;
+    gr.GdiDrawText(playback_time, time_font, text_color, sx, 0, tl1, wh, DT_RC);
+    var sx2 = bt[4].x - 10 - tl2;;
+    gr.GdiDrawText(length_time, time_font, text_color, sx2, 0, tl2, wh, DT_LC);
 
-    }
-            
+
+    // seekbar
+    var sk_x = sx+tl1+10;
+    var sk_w = sx2 - sk_x - 10;;
+    sk.draw(gr, sk_x, (wh-20)/2, sk_w, 20, 9, text_color & 0xeeffffff, text_color & 0x20ffffff);
+
 }
 
 function on_mouse_move(x, y) {
@@ -285,7 +279,7 @@ sk = new Slider(images.nob,
 vol = new Slider(images.nob,
         function() { return vol2pos(fb.Volume); },
         function(pos) { fb.Volume = pos2vol(pos); });
-vol.visible = false;
+vol.visible = true;
 
 
 // Prev
@@ -317,7 +311,7 @@ bt[3] = new Button(function() {
 });
 // Volume
 bt[4] = new Button(function() {
-    vol.visible = !vol.visible;
+    fb.VolumeMute();
     window.Repaint();
 });
 
