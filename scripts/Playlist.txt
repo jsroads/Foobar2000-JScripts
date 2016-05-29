@@ -3,8 +3,8 @@
 // ==PREPROCESSOR==
 // @author "elia_is_me"
 // @update "2016-02-12"
-// @import "E:\GitHub\Foobar2000-WSH-Scripts\common\common4.js"
-// @import "E:\GitHub\Foobar2000-WSH-Scripts\common\Inputbox.js"
+// @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
+// @import "E:\GitHub\Foobar2000-JScripts\common\Inputbox.js"
 // ==/PREPROCESSOR==
 
 
