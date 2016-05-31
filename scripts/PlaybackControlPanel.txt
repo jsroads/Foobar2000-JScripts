@@ -20,7 +20,9 @@ var pb_length = "-:--",
 var ww = 0, wh = 0;
 var double_clicked = false;
 var window_visble = false,
-    repaint_main1 = true, repaint_main2 = true, repaint_main = true;
+    repaint_main1 = true, repaint_main2 = true, repaint_main = true,
+    drag_window = false, 
+    fb_wnd = GetFBWnd();
 
 var images = {}, buttons = [], sk, vol,
     volpanel = { vis: false, x: 0, y: 0, w: 180, h: 30 },
@@ -339,28 +341,42 @@ function is_over_rect (x, y, x1, y1, w1, h1) {
 }
 
 function on_mouse_lbtn_down(x, y, mask) {
+    drag_window = true;
     var over_volpanel = volpanel.vis && is_over_rect(x, y, volpanel.x, volpanel.y, volpanel.w, volpanel.h);
     if (over_volpanel) {
         vol.down(x, y);
+        drag_window = false;
     } else {
         if (fb.IsPlaying)
             sk.down(x, y);
         if (!buttons[4].is_mouse_over(x, y) && volpanel.vis)
             volpanel.vis = false;
         repaint();
+        if (sk.is_drag || vol.is_drag) {
+            drag_window = false;
+        }
     }
 
     buttons.forEach(function (item) {
         if (!over_volpanel) {
-            item.down(x, y);
+            if (item.down(x, y)) {
+                drag_window = false;
+            };
             return true;
         }
     });
+
+    if (drag_window) {
+        utils.ReleaseCapture();
+        fb_wnd.SendMsg(0xA1, 2, 0);
+    }
+
 }
 
 function on_mouse_lbtn_up(x, y, mask) {
     var over_volpanel = volpanel.vis && is_over_rect(x, y, volpanel.x, volpanel.y, volpanel.w, volpanel.h);
 
+    drag_window = false;
     sk.up(x, y);
     vol.up(x, y);
     buttons.forEach(function (item) {
