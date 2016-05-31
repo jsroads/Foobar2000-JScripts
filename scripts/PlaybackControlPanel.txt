@@ -12,6 +12,8 @@ var tf_title = fb.TitleFormat("[%artist% - ]%title%"),
     tf_alb = fb.TitleFormat("$if2([%album%],未知专辑)"),
     tf_len = fb.TitleFormat("[%length%]");
 
+var shuffle_type = window.GetProperty("Shuffle type", 4);
+
 var pb_length = "-:--",
     pb_time = "-:--",
     title_str = "",
@@ -32,6 +34,12 @@ var DT_CC = DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX
 var DT_LC = DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
 
 
+function check_prop() {
+    if (typeof shuffle_type != "number" || shuffle_type < 3 || shuffle_type > 6) {
+        shuffle_type = 4;
+        window.SetProperty("Shuffle type", shuffle_type);
+    }
+}
 
 function get_objects() {
     sk = new Slider(images.nob,
@@ -63,7 +71,7 @@ function get_objects() {
                 fb.PlaybackOrder += 1;
                 break;
             case (od == 2):
-                fb.PlaybackOrder = 4;
+                fb.PlaybackOrder = shuffle_type;
                 break;
             default:
                 fb.PlaybackOrder = 0;
@@ -238,8 +246,8 @@ function on_paint(gr) {
     }
 
     if (volpanel.vis) {
+        var b = buttons[4];
         if (ww < 930) {
-            var b = buttons[4];
             volpanel.x = b.x + b.w/2 - volpanel.w/2;
             if (volpanel.x + volpanel.w + 2 > ww) 
                 volpanel.x = ww - 2 - volpanel.w;
@@ -309,6 +317,10 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
 }
 
 function on_playback_order_changed(new_order) {
+    if (new_order > 2 && new_order != shuffle_type) {
+        fb.PlaybackOrder = shuffle_type;
+        return;
+    }
     window.Repaint();
 }
 
@@ -413,6 +425,7 @@ function on_mouse_leave() {
 on_load();
 
 function on_load() {
+    check_prop();
     get_fonts();
     get_images();
     get_objects();
@@ -422,8 +435,10 @@ function on_load() {
         on_playback_time(fb.PlaybackTime);
     }
     on_metadb_changed();
+    on_playback_order_changed(fb.PlaybackOrder);
 
 }
+
 
 
 var time111 = (new Date()).getTime(),
