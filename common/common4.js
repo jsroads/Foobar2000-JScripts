@@ -1,10 +1,10 @@
 ﻿// vim: set ft=javascript fileencoding=utf-8 bomb et:
-/*
-Discriptsion: ...
-Update: 2016-02-12
-*/
+/////////////////////////////////////////////////////////////////////////
+// Discriptsion: ...
+// Update: 2016-06-02
+/////////////////////////////////////////////////////////////////////////
 
-var VERSION = "0.2.0"
+var VERSION = "0.2.1"
 
 // ======================================================================
 // Prototype
@@ -487,6 +487,27 @@ function get_system_dpi_percent() {
 
 function zoom(value, factor) {
     return Math.round(value * factor / 100);
+}
+
+function get_foobar_colors() {
+    var ret = {};
+    if (window.InstanceType == 1) { // DUI
+        ret = {
+            text: window.GetColorDUI(ColorTypeDUI.text),
+            background: window.GetColorDUI(ColorTypeDUI.background),
+            selection: window.GetColorDUI(ColorTypeDUI.selection),
+            highlight: window.GetColorDUI(ColorTypeDUI.highlight)
+        };
+    } else {
+        ret = {
+            text: window.GetColorCUI(ColorTypeCUI.text),
+            selection_text: window.GetColorCUI(ColorTypeCUI.selection_text),
+            background: window.GetColorCUI(ColorTypeCUI.background),
+            selection_background: window.GetColorCUI(ColorTypeCUI.selection_background),
+            active_item_frame: window.GetColorCUI(ColorTypeCUI.active_item_frame),
+        };
+    }
+    return ret;
 }
 
 // ======================================================================
