@@ -1,0 +1,13 @@
+﻿// vim: ft=javascript fileencoding=utf-8 bomb et:
+
+// ==PREPROCESSOR==
+// @author "Elia >>> http://elia-is-me.github.io"
+// @version "0.0.1"
+// @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
+// @import "E:\GitHub\Foobar2000-JScripts\common\inputbox.js"
+// @import "E:\GitHub\Foobar2000-JScripts\scripts\LibraryBrowser.txt"
+// ==/PREPROCESSOR==
+
+// @import "E:\GitHub\Foobar2000-JScripts\scripts\LibraryBrowser.txt"
+
+// please change files' path by yourselves.
