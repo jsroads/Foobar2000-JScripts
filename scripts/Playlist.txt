@@ -15,6 +15,7 @@ var list_gr = [],
     list_dr = [],
     list = null,
     list_;
+var list_sel = [], last_sel;
 var tf_string = fb.TitleFormat("%album artist%^^%album%^^%discnumber%^^%tracknumber%^^%title%^^%artist%^^%rating%^^%length%");
 
 var m_x = 0, m_y = 0,
@@ -35,6 +36,7 @@ var time_h = fb.CreateProfiler(),
 var window_visible = false,
     hold_shift = false, hold_ctrl = false,
     hold_scroll = false, mouse_in = false,
+    mouse_hold = false,
     repaint_f1 = false, repaint_f2 = false, repaint_f = false,
     repaint_main1 = true, repaint_main2 = true, repaint_main = true;
 
@@ -53,9 +55,10 @@ var g_tooltip = window.CreateTooltip(),
     tooltip_state = false, time_tooltip_ = 0;
 g_tooltip.Text = " ";
 
-var color_txt = RGB(225, 225, 225),
-    color_bg = RGB(34, 34, 34),
-    color_bg_sel = RGB(0, 0, 0);
+var color_txt = eval(window.GetProperty("Color text", "RGB(225, 225, 225)")),
+    color_bg = eval(window.GetProperty("Color bg", "RGB(34, 34, 34)")),
+    color_bg_sel = eval(window.GetProperty("Color bg_sel", "RGB(130, 90, 44)"));
+
 
 var g_font, g_font2
 
@@ -95,6 +98,7 @@ function get_list(start, string_comp, force) {
         list_dr.push({
             metadb: metadb,
             string: temp,
+            sel: false,
         });
         k++;
         if (!force && Time.Time > 30) {
@@ -105,7 +109,7 @@ function get_list(start, string_comp, force) {
         }
     }
 
-    fb.trace("list_dr.length: " + list_dr.length);
+    //fb.trace("list_dr.length: " + list_dr.length);
     repaint_main1 = repaint_main2;
     research_count = 0;
 
@@ -131,15 +135,19 @@ function on_size() {
     }, 500);
 }
 
+function repaint() {
+    repaint_main1 = repaint_main2;
+    //window.Repaint();
+}
 
 function on_paint(gr) {
 
     gr.FillSolidRect(0, 0, ww, wh, color_bg);
 
-    if (!repaint_main && !repaint_f)
-        repaint_main = repaint_f = true;
-    if (repaint_main) {
-        repaint_main = false;
+    //if (!repaint_main && !repaint_f)
+        //repaint_main = repaint_f = true;
+    //if (repaint_main) {
+        //repaint_main = false;
 
         var start_ = 0, end_ = 0;
         var y_, scrb_vis;
@@ -153,7 +161,11 @@ function on_paint(gr) {
         for (var i = start_; i < end_; i++) {
             y_ = margin_top + row_height * i - scroll_;
             // Odd/Even
-            gr.FillSolidRect(10, y_, ww - 20 - (scrb_vis ? 14 : 0), row_height, i%2 ? 0x10ffffff&color_txt : 0);
+            gr.FillSolidRect(10, y_, ww - 20 - (scrb_vis ? 14 : 0), row_height, i%2 ? 0x05ffffff : 0);
+            // Sel
+            if (list_dr[i].sel) {
+                gr.FillSolidRect(10, y_, ww-20-(scrb_vis?14:0), row_height, color_bg_sel);
+            }
 
             gr.GdiDrawText(list_dr[i].string[3], g_font, color_txt, 20, y_, 50, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
             gr.GdiDrawText(list_dr[i].string[7], g_font, color_txt, ww-10-50-(scrb_vis?14:0), y_, 50, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
@@ -175,10 +187,10 @@ function on_paint(gr) {
             cursor_y = margin_top + Math.round((list_h - cursor_h) * scroll_ / (total_h - list_h));
             gr.FillSolidRect(ww - 11, cursor_y, 10, cursor_h, color_txt & 0x33ffffff);
         }
-    }
-    if (repaint_f) {
-        repaint_f = false;
-    }
+    //}
+    //if (repaint_f) {
+        //repaint_f = false;
+    //}
 
 }
     
@@ -191,19 +203,7 @@ function check_scroll(scroll___) {
     return scroll___;
 }
 
-function check_scroll_(scroll___) {
-    scroll___ = Math.round(scroll___ / row_height) * row_height;
-    if (scroll___ > ((list_dr.length + 2) * row_height - wh))
-        scroll___ = Math.round(((list_dr.length + 2) * row_height - wh) / row_height - 0.5) * row_height;
-    if (list_dr.length * row_height < wh - margin_top)
-        scroll___ = 0;
-    if (scroll___ < 0)
-        scroll___ = 0;
-    return scroll___;
-}
-
 function on_timer_(timer233) {
-    //var repaint_1 = false
     time_dl = time_s.Time;
     time_s.Reset();
     if (research) {
@@ -265,6 +265,12 @@ function on_mouse_wheel(step) {
     scroll = check_scroll(scroll);
 }
 
+function check_tiem(obj, x, y) {
+    if (!obj) return false;
+    //return (x > (
+    return true;
+}
+
 function on_mouse_lbtn_down(x, y, mask) {
     mouse_l_hold = true;
     if (y > margin_top) {
@@ -275,19 +281,79 @@ function on_mouse_lbtn_down(x, y, mask) {
     if (list_dr.length * row_height > wh - margin_top && x > ww - 11 && x < ww - 1) {
         hold_scroll = true;
         scroll = Math.round((((y - margin_top) * (list_dr.length * row_height) / (wh - margin_top)) - (wh - margin_top) / 2) / row_height - 0.5) * row_height;
+    } else if (y > margin_top) { 
+        var temp_id = Math.round((y + scroll - margin_top) / row_height - 0.5);
+        if (temp_id < list_dr.length && temp_id >= 0) {
+            var temp_dr = list_dr[temp_id];
+            // ITEM CHOOSE
+            mm_x = x; mm_y = y;
+            mouse_drag = true;
+            if (!temp_dr.sel) {
+                on_chose(temp_id, false);
+                selected_cursor = temp_id;
+                mouse_hold = true;
+            } else if (utils.IsKeyPressed(0x11)) {
+                on_chose(temp_id, temp_dr.sel);
+            }
+        } else {
+            on_chose(-1);
+        }
+        repaint();
+    } else {
+        on_chose(-1);
     }
+
 }
 
 function on_mouse_lbtn_up(x, y, mask) {
-    hold_scroll = false;
+    mouse_drag = mouse_hold = mouse_l_hold = hold_scroll = false;
 }
 
 function on_mouse_move(x, y, mask) {
     if (m_x == x && m_y == y)
         return; // ...
-    mouse_in = false;
+    mouse_in = true;
+    m_x = x; m_y = y;
+    var tam = Math.round((y - margin_top) / row_height - 0.5);
+    if (tam < list_dr.length && tam >= 0) {
+        repaint_main1 = repaint_main2;
+    }
     if (hold_scroll) {
         scroll = Math.round((((y - margin_top) * (list_dr.length * row_height) / (wh - row_height)) - (wh - row_height) / 2) / row_height - 0.5) * row_height;;
+    }
+}
+
+function on_chose(index, mouse_up) {
+    repaint();
+    if (index == -1) {
+        for (var k = 0; k < list_dr.length; k++) {
+            list_dr[k].sel = false;
+        }
+        list_sel = [];
+    } else if ((utils.IsKeyPressed(0x10) || mouse_hold) && last_sel >  -1) { // SHIFT
+        list_sel = [];
+        var dd = (index > last_sel) ? 1 : -1;
+        if (!utils.IsKeyPressed(0x11)) {
+            for (var k = 0; k < list_dr.length; k++) {
+                list_dr[k].sel = false;
+            }
+        }
+        for (var k = last_sel;  ; k+=dd) {
+            list_dr[k].sel = true;
+            //list_sel.push.apply(list_sel, list_dr
+            if (k == index) break;
+        }
+        repaint_main1 = repaint_main2;
+    } else if (utils.IsKeyPressed(0x11)) { // CTRL
+        list_dr[index].sel = !(list_dr[index].sel);
+        last_sel = index;
+    } else if (!mouse_up) {
+        list_sel = [];
+        for (var k = 0; k < list_dr.length; k++) {
+            list_dr[k].sel = false;
+        }
+        list_dr[index].sel = true;
+        last_sel = index;
     }
 }
 
