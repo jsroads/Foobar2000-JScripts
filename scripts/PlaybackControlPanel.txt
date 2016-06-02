@@ -462,6 +462,9 @@ function get_panel_h() {
     return panel_height;
 }
 
+window.SetInterval(function () {
+    on_timer_(0);
+}, 30);
 
 
 function on_timer_(g_timer333) {
@@ -488,12 +491,10 @@ function on_timer_(g_timer333) {
         panel_h[3] += (panel_h[0] - panel_h[3]) * (1 - Math.pow(0.9, time_dl / 4));
         panel_h[2] += (panel_h[3] - panel_h[2]) * (1 - Math.pow(0.9, time_dl / 4));
         panel_h[1] += (panel_h[2] - panel_h[1]) * (1 - Math.pow(0.9, time_dl / 4));
+    } else {
+        panel_h[1] = panel_h[0];
     }
     window.MaxHeight = window.MinHeight = panel_h[1];
-    on_size();
 
 }
 
-window.SetInterval(function () {
-    on_timer_(0);
-}, 30);

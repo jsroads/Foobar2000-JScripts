@@ -1,4 +1,4 @@
-// vim: set ft=javascript fileencoding=utf-8 bomb et:
+﻿// vim: set ft=javascript fileencoding=utf-8 bomb et:
 
 
 var Language = function () {
