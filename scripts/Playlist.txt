@@ -15,8 +15,9 @@ var list_gr = [],
     list_dr = [],
     list = null,
     list_;
+var active_list = plman.ActivePlaylist;
 var list_sel = [], last_sel;
-var tf_string = fb.TitleFormat("%album artist%^^%album%^^%discnumber%^^%tracknumber%^^%title%^^%artist%^^%rating%^^%length%");
+var tf_string = fb.TitleFormat("%album artist%^^%album%^^%discnumber%^^%tracknumber%^^%title%^^[%artist%]^^%rating%^^%length%");
 
 var m_x = 0, m_y = 0,
     ww = 0, wh = 0,
@@ -48,8 +49,10 @@ var group_by = window.GetProperty("Group by", 0), // 0 - no group, 1 - typical
     font_name = window.GetProperty("font_name", "segoe ui"),
     row_height = window.GetProperty("row height", 35),
     //margin_top = row_height * 3;
-    margin_top = row_height;
-    Tooltip = window.GetProperty("Tooltip", false);
+    margin_top = row_height*1.5;
+    Tooltip = window.GetProperty("Tooltip", false),
+    refresh_rate = window.GetProperty("refresh rate", 30),
+    smooth_scroll = window.GetProperty("smooth scroll", true);
 
 var g_tooltip = window.CreateTooltip(),
     tooltip_state = false, time_tooltip_ = 0;
@@ -87,6 +90,7 @@ function get_list(start, string_comp, force) {
     if (start == null) {
         scroll = 0;
         start = 0;
+        list_dr = [];
     }
 
     var k = start, temp = "";
@@ -112,6 +116,7 @@ function get_list(start, string_comp, force) {
     //fb.trace("list_dr.length: " + list_dr.length);
     repaint_main1 = repaint_main2;
     research_count = 0;
+    plman.SetActivePlaylistContext();
 
 }
 
@@ -119,7 +124,7 @@ function get_list(start, string_comp, force) {
 var tmp_out;
 
 function on_size() {
-    ww = window.Width;
+    ww = Math.max(window.Width, 320);
     wh = window.Height;
     if (!ww || !wh)
         return;
@@ -140,14 +145,20 @@ function repaint() {
     //window.Repaint();
 }
 
+var ddd = fb.CreateProfiler();
+var isDark = Luminance(color_bg) <= 0.6;
+var isSelDark = Luminance(color_bg_sel) <= 0.6;
+
 function on_paint(gr) {
+
+    ddd.Reset();
 
     gr.FillSolidRect(0, 0, ww, wh, color_bg);
 
-    //if (!repaint_main && !repaint_f)
-        //repaint_main = repaint_f = true;
-    //if (repaint_main) {
-        //repaint_main = false;
+    if (!repaint_main && !repaint_f)
+        repaint_main = repaint_f = true;
+    if (repaint_main) {
+        repaint_main = false;
 
         var start_ = 0, end_ = 0;
         var y_, scrb_vis;
@@ -160,22 +171,49 @@ function on_paint(gr) {
 
         for (var i = start_; i < end_; i++) {
             y_ = margin_top + row_height * i - scroll_;
+            var is_selected = plman.IsPlaylistItemSelected(active_list, i);
+            var is_playing = (plman.PlayingPlaylist == active_list && plman.GetPlayingItemLocation().PlaylistItemIndex == i);
+            var is_focused = plman.GetPlaylistFocusItemIndex(active_list) == i;
             // Odd/Even
-            gr.FillSolidRect(10, y_, ww - 20 - (scrb_vis ? 14 : 0), row_height, i%2 ? 0x05ffffff : 0);
+            gr.FillSolidRect(10, y_, ww - 20 - (scrb_vis ? 14 : 0), row_height, i%2 ? (isDark ? 0x05ffffff : 0x07000000) : 0);
             // Sel
-            if (list_dr[i].sel) {
+            if (is_selected) {
                 gr.FillSolidRect(10, y_, ww-20-(scrb_vis?14:0), row_height, color_bg_sel);
             }
+            if (dragOverIdx == i) {
+                gr.FillSolidRect(10, y_+row_height-1, ww-20-(scrb_vis?14:0), 2, color_txt);
+            }
 
-            gr.GdiDrawText(list_dr[i].string[3], g_font, color_txt, 20, y_, 50, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-            gr.GdiDrawText(list_dr[i].string[7], g_font, color_txt, ww-10-50-(scrb_vis?14:0), y_, 50, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-            gr.GdiDrawText(list_dr[i].string[4], g_font, color_txt, 20+50, y_, ww-10-50-(scrb_vis?14:0)-20-50, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
+            var colorT = color_txt;
+            if (is_selected) {
+                colorT = (isSelDark == isDark) ? color_txt : negativeColor(color_txt);
+            }
+
+            gr.GdiDrawText(list_dr[i].string[3], g_font, colorT, 20, y_, 50, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
+            gr.GdiDrawText(list_dr[i].string[7], g_font, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), ww-10-50-(scrb_vis?14:0), y_, 50, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
+            var left_w = ww - 10 - 50 - (scrb_vis ? 14 : 0) - 20 - 50;
+            if (ww >= 600) {
+                gr.GdiDrawText(list_dr[i].string[5], g_font, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), 20+50+left_w*0.5+5, y_, left_w*0.2-5, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
+                gr.GdiDrawText(list_dr[i].string[1], g_font, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), 20+50+left_w*0.7+5, y_, left_w*0.3-5, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
+                left_w = left_w * 0.5;
+            //} else if (ww >= 510) {
+                //gr.GdiDrawText(list_dr[i].string[5], g_font, blendColors(colorT, color_bg, 0.5), 20+50+left_w*0.6, y_, left_w*0.4, row_height, DT_RIGHT | DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
+                //left_w = left_w * 0.6;
+            }
+            
+            gr.GdiDrawText(list_dr[i].string[4], g_font, colorT, 20+50, y_, left_w-5, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
         }
 
         var color2 = blendColors(color_txt, color_bg, 0.5);
-        gr.GdiDrawText("#", g_font2, color2, 20, margin_top - row_height, 50, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-        gr.GdiDrawText("Length", g_font2, color2, ww-60-(scrb_vis?14:0), margin_top - row_height, 50, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-        gr.GdiDrawText("Ttile", g_font2, color2, 20+50, margin_top - row_height, ww-10-50-(scrb_vis?14:0)-20-50, row_height, DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS);
+        var left_w = ww - 10 - 50 - (scrb_vis ? 14 : 0) - 20 - 50;
+        gr.GdiDrawText("#", g_font2, color2, 20, 0, 50, margin_top, DT_CENTER | DT_VCENTER | DT_CALCRECT);
+        gr.GdiDrawText("Length", g_font2, color2, ww-60-(scrb_vis?14:0), 0, 50, margin_top, DT_CENTER | DT_VCENTER | DT_CALCRECT);
+        if (ww >= 600) {
+            gr.GdiDrawText("Artist", g_font2, blendColors(color_txt, color_bg, 0.5), 20+50+left_w*0.5+5, 0, left_w*0.2-5, margin_top, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
+            gr.GdiDrawText("Album", g_font2, blendColors(color_txt, color_bg, 0.5), 20+50+left_w*0.7+5, 0, left_w*0.3-5, margin_top, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
+            left_w = left_w * 0.5;
+        }
+        gr.GdiDrawText("Ttile", g_font2, color2, 20+50, 0, ww-10-50-(scrb_vis?14:0)-20-50, margin_top, DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS);
 
         // Scroll Bar
         var list_h = wh - margin_top,
@@ -187,10 +225,12 @@ function on_paint(gr) {
             cursor_y = margin_top + Math.round((list_h - cursor_h) * scroll_ / (total_h - list_h));
             gr.FillSolidRect(ww - 11, cursor_y, 10, cursor_h, color_txt & 0x33ffffff);
         }
-    //}
-    //if (repaint_f) {
-        //repaint_f = false;
-    //}
+    }
+    if (repaint_f) {
+        repaint_f = false;
+    }
+
+    fb.trace(ddd.Time);
 
 }
     
@@ -213,10 +253,11 @@ function on_timer_(timer233) {
     }
 
     var d = new Date();
-    if (d.getTime() - time222 < 15)
+    if (d.getTime() - time222 < refresh_rate -1)
         return;
     else
         time222 = d.getTime();
+
 
     var repaint_1 = false,
         repaint_2 = false;
@@ -233,9 +274,13 @@ function on_timer_(timer233) {
     scroll = check_scroll(scroll);
 
     if (Math.abs(scroll - scroll_) > 0.5) {
-        scroll___ += (scroll - scroll___) * (1 - Math.pow(0.9, time_dl / 4));
-        scroll__ += (scroll___ - scroll__) * (1 - Math.pow(0,9, time_dl / 4));
-        scroll_ += (scroll__ - scroll_) * (1 - Math.pow(0,9, time_dl / 4));
+        if (smooth_scroll) {
+            scroll___ += (scroll - scroll___) * (1 - Math.pow(0.9, time_dl / 4));
+            scroll__ += (scroll___ - scroll__) * (1 - Math.pow(0,9, time_dl / 4));
+            scroll_ += (scroll__ - scroll_) * (1 - Math.pow(0,9, time_dl / 4));
+        } else {
+            scroll_ = scroll;
+        }
         repaint_2 = true;
     }
 
@@ -265,106 +310,292 @@ function on_mouse_wheel(step) {
     scroll = check_scroll(scroll);
 }
 
-function check_tiem(obj, x, y) {
-    if (!obj) return false;
-    //return (x > (
-    return true;
-}
+
+var select_start = -1, selecting;
+var row_drag = false, row_clicked = false;
+var drag_idx = -1, clicked_idx = -1;
 
 function on_mouse_lbtn_down(x, y, mask) {
+    var scrb_vis = (list_dr.length * row_height > wh - margin_top);
     mouse_l_hold = true;
-    if (y > margin_top) {
-        var tam = Math.round((y + scroll - row_height * 1.5) / row_height);
-        if (tam < list_dr.length && tam >= 0) {
-        }
-    }
     if (list_dr.length * row_height > wh - margin_top && x > ww - 11 && x < ww - 1) {
+        // SCROLLBAR
         hold_scroll = true;
         scroll = Math.round((((y - margin_top) * (list_dr.length * row_height) / (wh - margin_top)) - (wh - margin_top) / 2) / row_height - 0.5) * row_height;
-    } else if (y > margin_top) { 
-        var temp_id = Math.round((y + scroll - margin_top) / row_height - 0.5);
-        if (temp_id < list_dr.length && temp_id >= 0) {
-            var temp_dr = list_dr[temp_id];
-            // ITEM CHOOSE
-            mm_x = x; mm_y = y;
-            mouse_drag = true;
-            if (!temp_dr.sel) {
-                on_chose(temp_id, false);
-                selected_cursor = temp_id;
-                mouse_hold = true;
-            } else if (utils.IsKeyPressed(0x11)) {
-                on_chose(temp_id, temp_dr.sel);
+    } else {
+        // LIST
+        var active_idx = Math.round((y + scroll - margin_top) / row_height - 0.5);
+        if (x < 10 || x > ww - (scrb_vis?14:0)-10)
+            active_idx = -1;
+        var focus_idx = plman.GetPlaylistFocusItemIndex(active_list);
+        clicked_idx = -1;
+        row_clicked = false;
+
+        if (active_idx < list_dr.length && active_idx >= 0) {
+            if (utils.IsKeyPressed(VK_SHIFT)) {
+                if (focus_idx != active_idx && plman.IsPlaylistItemSelected(active_list, focus_idx)) {
+                    if (select_start > -1) 
+                        select_range(select_start, active_idx);
+                    else 
+                        select_range(focus_idx, active_idx);
+                } else {
+                    plman.SetPlaylistSelectionSingle(active_list, active_idx, true);
+                    select_start = active_idx;
+                }
+                plman.SetPlaylistFocusItem(active_list, active_idx);
+                selecting = false;
+            } else if (utils.IsKeyPressed(VK_CONTROL)) {
+                if (plman.IsPlaylistItemSelected(active_list, active_idx)) {
+                    plman.SetPlaylistSelectionSingle(active_list, active_idx, false);
+                } else {
+                    plman.SetPlaylistSelectionSingle(active_list, active_idx, true);
+                    plman.SetPlaylistFocusItem(active_list, active_idx);
+                }
+                select_start = active_idx;
+                selecting = false;
+            } else {
+                if (plman.IsPlaylistItemSelected(plman.ActivePlaylist, active_idx)) {
+                    selecting = false;
+                    row_clicked = true;
+                    clicked_idx = active_idx;
+                } else {
+                    selecting = true;
+                    plman.ClearPlaylistSelection(plman.ActivePlaylist);
+                    plman.SetPlaylistSelectionSingle(plman.ActivePlaylist, active_idx, true);
+                }
+                plman.SetPlaylistFocusItem(plman.ActivePlaylist, active_idx);
+                select_start = active_idx;
             }
         } else {
-            on_chose(-1);
+            // ...
         }
-        repaint();
-    } else {
-        on_chose(-1);
     }
 
 }
+
+function select_range(from, to) {
+    var indexes = [];
+    if (from > to) {
+        var c = from;
+        from = to;
+        to = c;
+    }
+
+    for (var i = from; i <= to; i++) {
+        indexes.push(i);
+    }
+
+    plman.ClearPlaylistSelection(active_list);
+    plman.SetPlaylistSelection(active_list, indexes, true);
+}
+
+
+function on_mouse_lbtn_dblclk(x, y, mask) {
+    var scrb_vis = (list_dr.length * row_height > wh - margin_top);
+    var active_idx = Math.round((y + scroll - margin_top) / row_height - 0.5);
+    if (x < 10 || x > ww - (scrb_vis?14:0)-10)
+        active_idx = -1;
+
+    if (active_idx < list_dr.length && active_idx >= 0
+            && x > 10 && x < ww - (scrb_vis?14:0) - 10) {
+        plman.ExecutePlaylistDefaultAction(active_list, active_idx);
+    }
+}
+
+
 
 function on_mouse_lbtn_up(x, y, mask) {
     mouse_drag = mouse_hold = mouse_l_hold = hold_scroll = false;
+    var scrb_vis = (list_dr.length * row_height > wh - margin_top);
+    var active_idx = Math.round((y + scroll - margin_top) / row_height - 0.5);
+    var focus_idx = plman.GetPlaylistFocusItemIndex(active_list);
+
+    if (selecting) {
+        selecting = false;
+    }
+
+    if (row_clicked) {
+        if (row_drag) {
+            if (active_idx > -1) {
+                var sel__ = plman.GetPlaylistSelectedItems(active_list);
+                if (sel__.Count > 1) {
+                    var temp, odd, add;
+                    var sel_ = [];
+                    for (var i = 0; i < list_dr.length; i++) {
+                        if (plman.IsPlaylistItemSelected(active_list, i))
+                            sel_.push(i);
+                    }
+                    for (var i = 0; i < list_dr.length; i++) {
+                        if (plman.IsPlaylistItemSelected(active_list, i)) {
+                            if (temp && ((i - 1) != temp)) {
+                                odd = true;
+                                break;
+                            }
+                            temp = i;
+                        }
+                    }
+                    if (odd) {
+                        for (var i = 0; i < sel_.length; i++) {
+                            if (sel_[i] < active_idx)
+                                add = i + 1;
+                        }
+                        plman.MovePlaylistSelection(active_list, -list_dr.length);
+                    } else {
+                        for (var i = 0; i < sel_.length; i++) {
+                            if (sel_[i] == focus_idx) {
+                                add = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+                var delta;
+                if (focus_idx > active_list) {
+                    (sel__.Count > 1) ? (odd ? delta = active_idx - add : delta = -(focus_idx - active_idx - add)) : delta = -(focus_idx - active_idx);
+                } else {
+                    (sel__.Count > 1) ? (odd ? delta = active_idx - add : delta = (active_idx - focus_idx - (sel__.Count - add))) : delta = (active_idx - 1 - focus_idx);
+                }
+                if (!odd && plman.IsPlaylistItemSelected(active_list, active_idx)) delta = 0;
+                plman.MovePlaylistSelection(active_list, delta);
+            }
+
+        } else {
+            plman.ClearPlaylistSelection(active_list);
+            plman.SetPlaylistSelectionSingle(active_list, active_idx, true);
+            plman.SetPlaylistFocusItem(active_list, active_idx);
+        }
+    }
+    clicked_idx = -1;
+    row_clicked = false;
+    row_drag = false;
+    dragOverIdx = -1;
+    repaint();
 }
+
+var dragOverIdx = -1;
 
 function on_mouse_move(x, y, mask) {
     if (m_x == x && m_y == y)
         return; // ...
     mouse_in = true;
     m_x = x; m_y = y;
-    var tam = Math.round((y - margin_top) / row_height - 0.5);
-    if (tam < list_dr.length && tam >= 0) {
-        repaint_main1 = repaint_main2;
-    }
     if (hold_scroll) {
         scroll = Math.round((((y - margin_top) * (list_dr.length * row_height) / (wh - row_height)) - (wh - row_height) / 2) / row_height - 0.5) * row_height;;
     }
+
+    var scrb_vis = (list_dr.length * row_height > wh - margin_top);
+    var active_idx = Math.round((y + scroll - margin_top) / row_height - 0.5);
+    var focus_idx = plman.GetPlaylistFocusItemIndex(active_list);
+    if (row_clicked) {
+        if (active_idx < 0 || clicked_idx > -1 && active_idx != clicked_idx) {
+            row_drag = true;
+            dragOverIdx = active_idx;
+            repaint();
+        }
+    }
+    if (selecting) {
+        if (active_idx > -1 && focus_idx > -1)
+            select_range(active_idx, focus_idx);
+    }
+
 }
 
-function on_chose(index, mouse_up) {
+
+
+
+function on_mouse_rbtn_up(x, y, mask) {
+    return mask != MK_SHIFT;
+}
+
+function on_playback_pause(state) {
     repaint();
-    if (index == -1) {
-        for (var k = 0; k < list_dr.length; k++) {
-            list_dr[k].sel = false;
-        }
-        list_sel = [];
-    } else if ((utils.IsKeyPressed(0x10) || mouse_hold) && last_sel >  -1) { // SHIFT
-        list_sel = [];
-        var dd = (index > last_sel) ? 1 : -1;
-        if (!utils.IsKeyPressed(0x11)) {
-            for (var k = 0; k < list_dr.length; k++) {
-                list_dr[k].sel = false;
+}
+
+function on_playback_edited(metadb) {
+    repaint();
+}
+
+function show_now_playing() {
+}
+
+function on_playback_new_track(metadb) {
+    //if (fb.GetMainMenuCommandStatus("Playback/Cursor follows playback") == 2) {
+        // show now playing
+        // ...
+        fb.trace("true");
+        if (plman.PlayingPlaylist == plman.ActivePlaylist) {
+            var playingIdx = plman.GetPlayingItemLocation().PlaylistItemIndex;
+            if (playingIdx >= 0) {
+                scroll = playingIdx * row_height - (wh-margin_top)/2+row_height;
+                scroll = check_scroll(scroll);
             }
         }
-        for (var k = last_sel;  ; k+=dd) {
-            list_dr[k].sel = true;
-            //list_sel.push.apply(list_sel, list_dr
-            if (k == index) break;
-        }
-        repaint_main1 = repaint_main2;
-    } else if (utils.IsKeyPressed(0x11)) { // CTRL
-        list_dr[index].sel = !(list_dr[index].sel);
-        last_sel = index;
-    } else if (!mouse_up) {
-        list_sel = [];
-        for (var k = 0; k < list_dr.length; k++) {
-            list_dr[k].sel = false;
-        }
-        list_dr[index].sel = true;
-        last_sel = index;
+    //}
+    repaint();
+}
+
+function on_playback_stop(reason) {
+    if (reason != 2) {
+        repaint();
     }
+}
+
+function on_playback_queue_changed() {
+    repaint();
+}
+
+function on_playlists_changed() {
+    if (active_list != plman.ActivePlaylist) {
+        active_list = plman.ActivePlaylist;
+        list = plman.GetPlaylistItems(active_list);
+        get_list();
+    }
+    //repaint();
+}
+
+function on_playlist_switch() {
+    active_list = plman.ActivePlaylist;
+    list = plman.GetPlaylistItems(active_list);
+    get_list();
+}
+
+
+function on_playlist_items_reordered(playlist) {
+    if (playlist != active_list) {
+        return;
+    }
+    active_list = playlist;
+    list = plman.GetPlaylistItems(active_list);
+    get_list();
+}
+
+function on_playlist_items_removed(playlist) {
+    on_playlist_items_reordered(playlist);
+}
+
+function on_playlist_items_added(playlist) {
+    on_playlist_items_reordered(playlist);
+}
+
+function on_playlist_items_selection_change() {
+    repaint();
+}
+
+function on_selection_change() {
+    repaint();
+}
+
+function on_item_focus_change(playlist, from, to) {
 }
 
 
 
 window.SetTimeout(function () {
-    list = plman.GetPlaylistItems(plman.ActivePlaylist);
+    list = plman.GetPlaylistItems(active_list);
     get_list();
 }, 20);
 
 
 window.SetInterval(function () {
     on_timer_(0);
-}, 15);
+}, refresh_rate);
