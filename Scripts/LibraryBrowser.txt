@@ -43,9 +43,10 @@ var research = false,
 
 var group_by = window.GetProperty("group_by", 0),
     font_name = window.GetProperty("font_name", "segoe ui"),
+    font_size = window.GetProperty("font_size", 12),
     thumb_width= window.GetProperty("thumb_width", 110),
     panel_mode = window.GetProperty("panel_mode", 0); // 0: lib, 1: list
-var refresh_rate = 40,
+var refresh_rate = window.GetProperty("refresh_rate", 16),
     smooth_scroll = true;
 
 
@@ -119,12 +120,12 @@ window.SetTimeout(function () {
     get_list();
     repaint_f1 = repaint_f2;
     repaint_main1 = repaint_main2;
-}, 1000);
+}, 50);
 
 var tmp_out;
 
 function on_size() {
-    ww = Math.max(window.Width, 320);
+    ww = Math.max(window.Width, thumb_width + 20 + 14);
     wh = window.Height;
     if (!ww || !wh) {
         wh = 1;
@@ -148,13 +149,13 @@ var color_txt = eval(window.GetProperty("Color text", "RGB(225, 225, 225)")),
     color_bg_sel = eval(window.GetProperty("Color bg_sel", "RGB(130, 90, 44)"));
 
 var margin_top = 35*1.5;
-var thumb_width = 140;
 var total_columns, total_rows;
 var row_height, cover_width, thumb_width, thumb_width_;
 var scrb_ = false;
 
-var g_font = gdi.Font("Tahoma", 12),
-    g_font2 = gdi.Font("Tahoma", 12, 1);
+var g_font = gdi.Font(font_name, font_size),
+    g_font2 = gdi.Font(font_name, font_size, 1);
+var font_height = g_font.Height;
 
 function on_paint(gr) {
 
@@ -166,7 +167,7 @@ function on_paint(gr) {
         repaint_main = false;
         // Browser
         if (panel_mode == 0) {
-            // Cover wall
+            // Covers
             var margin_lr = 2, 
                 margin_tb = 2, 
                 margin_cover = 16;
@@ -179,7 +180,7 @@ function on_paint(gr) {
             var delta_ = Math.floor(gap_width / total_columns);
             thumb_width_ = thumb_width + delta_;
             cover_width = thumb_width_ - margin_lr * 2 - margin_cover * 2;
-            row_height = 10 + cover_width + 60;
+            row_height = 10 + cover_width + 10+font_height * 2;
 
             scrb_ = total_rows * row_height > wh - margin_top;
 
@@ -205,8 +206,8 @@ function on_paint(gr) {
                     //gr.FillSolidRect(ax, ay, thumb_width_-margin_lr*2, row_height-margin_tb*2, 0x10ffffff);
                     gr.FillSolidRect(ax+margin_cover, ay+margin_cover, cover_width, cover_width, 0xa0ffffff);
                     gr.GdiDrawText(i + "", g_font2, color_txt, ax+margin_cover, ay+margin_cover, cover_width, cover_width, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-                    gr.GdiDrawText(list_dr[i].string[1], g_font2, color_txt, ax+margin_cover, ay+cover_width+margin_cover+5, cover_width, 25, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
-                    gr.GdiDrawText(list_dr[i].string[0], g_font, color2, ax+margin_cover, ay+cover_width+margin_cover+25-5, cover_width, 25, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
+                    gr.GdiDrawText(list_dr[i].string[1], g_font2, color_txt, ax+margin_cover, ay+cover_width+margin_cover+5, cover_width, font_height, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
+                    gr.GdiDrawText(list_dr[i].string[0], g_font, color2, ax+margin_cover, ay+cover_width+margin_cover+5+font_height, cover_width, font_height, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
                 }
             }
         } else if (panel_mode == 1) {
