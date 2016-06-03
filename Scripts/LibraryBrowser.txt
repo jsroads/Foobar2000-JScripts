@@ -11,3 +11,300 @@
 // @import "E:\GitHub\Foobar2000-JScripts\scripts\LibraryBrowser.txt"
 
 // please change files' path by yourselves.
+
+
+var list_dr = [],
+    list = null,
+    list_;
+var tf_group = fb.TitleFormat("%album artist%^^$if2([%album%],未知专辑)^^[%discnumber%]");
+
+var scroll = 0, scroll_ = 0, scroll__ = 0, scroll___ = 0,
+    ww = 0, wh = 0,
+    time_dl = 0;
+
+var time111 = (new Date()).getTime(),
+    time222 = time111,
+    time333 = time111;
+var time_h = fb.CreateProfiler(),
+    time_repaint = fb.CreateProfiler(),
+    time200 = fb.CreateProfiler("aaaa"),
+    time_s = fb.CreateProfiler();
+
+var window_visible = false,
+    repaint_f1 = false, repaint_f2 = false, repaint_f = false,
+    repaint_main1 = true, repaint_main2 = true, repaint_main = true;
+
+var research = false,
+    research_k = 0,
+    research_count = 0;
+
+
+// Properties
+
+var group_by = window.GetProperty("group_by", 0),
+    font_name = window.GetProperty("font_name", "segoe ui"),
+    thumb_width= window.GetProperty("thumb_width", 110),
+    panel_mode = window.GetProperty("panel_mode", 0); // 0: lib, 1: list
+var refresh_rate = 40,
+    smooth_scroll = true;
+
+
+var tf_sort = fb.TitleFormat("%album artist%^^%album%^^%discnumber%^^%tracknumber%^^%title%");
+
+function get_library(reload) {
+    list = fb.GetLibraryItems();
+    list.OrderByFormat(tf_sort, 1);
+}
+
+
+var ob_temp;
+
+function get_list(start, string_compare, force) {
+
+    var Time = fb.CreateProfiler();
+    
+    if (start == null) {
+        scroll = 0;
+        start = 0;
+        string_compare = "!@#";
+        list_ = plman.GetPlaylistItems(-1);
+    }
+
+    var k = start, temp = "";
+    var i = list_dr.length;
+    var total = list.Count, metadb;
+    var temp_compare = "";
+
+    while (k < total) {
+        metadb = list.Item(k);
+        temp_compare = tf_group.EvalWithMetadb(metadb);
+        if (temp_compare != string_compare) {
+            string_compare = temp_compare;
+            ob_temp = list_dr[i] = {
+                metadb: metadb,
+                string: string_compare.split("^^"),
+                pl_arr: [k],
+            };
+            list_dr[i].pl = list_.Clone();
+            list_dr[i].pl.Add(metadb);
+            i++;
+        } else {
+            //ob_temp.pl_arr.push(k);
+            list_dr[i-1].pl.Add(metadb);
+            list_dr[i-1].pl_arr.push(k);
+        }
+        k++;
+        if (!force && Time.Time > 30) {
+            research = true;
+            research_k = k;
+            research_count++;
+            return;
+        }
+    }
+
+    fb.trace(list_dr[0].pl.Count);
+    fb.trace(list_dr[0].pl_arr.length);
+    repaint_f1 = repaint_f2;
+    fb.trace(list_dr.length);
+
+}
+
+function repaint() {
+    repaint_main1 = repaint_main2;
+}
+
+
+window.SetTimeout(function () {
+    get_library();
+    get_list();
+    repaint_f1 = repaint_f2;
+    repaint_main1 = repaint_main2;
+}, 1000);
+
+var tmp_out;
+
+function on_size() {
+    ww = Math.max(window.Width, 320);
+    wh = window.Height;
+    if (!ww || !wh) {
+        wh = 1;
+    }
+    repaint_main1 = repaint_main2;
+    repaint_f1 = repaint_f2;
+    tmp_out && window.ClearInterval(tmp_out);
+    tmp_out = window.SetInterval(function () {
+        if (window.IsVisible) {
+            repaint_main1 = repaint_main2;
+            repaint_f1 = repaint_f2;
+            tmp_out && window.ClearInterval(tmp_out);
+        }
+    }, 500);
+}
+
+
+
+var color_txt = eval(window.GetProperty("Color text", "RGB(225, 225, 225)")),
+    color_bg = eval(window.GetProperty("Color bg", "RGB(34, 34, 34)")),
+    color_bg_sel = eval(window.GetProperty("Color bg_sel", "RGB(130, 90, 44)"));
+
+var margin_top = 35*1.5;
+var thumb_width = 140;
+var total_columns, total_rows;
+var row_height, cover_width, thumb_width, thumb_width_;
+var scrb_ = false;
+
+var g_font = gdi.Font("Tahoma", 12),
+    g_font2 = gdi.Font("Tahoma", 12, 1);
+
+function on_paint(gr) {
+
+    gr.FillSolidRect(0, 0, ww, wh, color_bg);
+    
+    if (!repaint_main && !repaint_f)
+        repaint_main = repaint_f = true;
+    if (repaint_main) {
+        repaint_main = false;
+        // Browser
+        var margin_lr = 2, 
+            margin_tb = 2, 
+            margin_cover = 16;
+        total_columns = Math.floor((ww - 20 - 14) / thumb_width);
+        if (total_columns < 1) 
+            total_columns = 1;
+        total_rows = Math.ceil(list_dr.length / total_columns);
+        //
+        var gap_width = (ww - 20 - 14) - total_columns * thumb_width;
+        var delta_ = Math.floor(gap_width / total_columns);
+        thumb_width_ = thumb_width + delta_;
+        cover_width = thumb_width_ - margin_lr * 2 - margin_cover * 2;
+        row_height = 10 + cover_width + 60;
+
+        scrb_ = total_rows * row_height > wh - margin_top;
+
+        var start_, end_;
+        if (list_dr.length <= total_columns * total_rows) {
+            start_ = 0;
+            end_ = list_dr.length;
+        } else {
+            start_ = Math.round(scroll_ / row_height) * total_columns;
+            end_ = Math.round((scroll_ + wh + row_height) / row_height) * total_columns;
+            end_ = list_dr.length < end_ ? list_dr.length : end_;
+            start_ = start_ > 0 ? start_ - total_columns : (start_ < 0 ? 0 : start_);
+        }
+
+        for (var i = start_; i < end_; i++) {
+            var row = Math.floor(i / total_columns);
+            var ax = 10 + (i % total_columns) * thumb_width_ + margin_lr;
+            var ay = Math.floor(margin_top + row * row_height - scroll_ + margin_tb);
+
+            if (ay >= (0 - row_height) && ay < wh) {
+                gr.FillSolidRect(ax, ay, thumb_width_-margin_lr*2, row_height-margin_tb*2, 0x10ffffff);
+                gr.FillSolidRect(ax+margin_cover, ay+margin_cover, cover_width, cover_width, 0xa0ffffff);
+                gr.GdiDrawText(i + "", g_font2, color_txt, ax+margin_cover, ay+margin_cover, cover_width, cover_width, DT_CENTER | DT_VCENTER | DT_CALCRECT);
+            }
+        }
+
+        // Scroll Bar
+        var list_h = wh - margin_top,
+            total_h = total_rows * row_height + (list_h % row_height),
+            cursor_y, cursor_h;
+        if (list_h < total_h) {
+            cursor_h = Math.round(list_h / total_h * list_h);
+            cursor_h = cursor_h < 15 ? 15 : cursor_h;
+            cursor_y = margin_top + Math.round((list_h - cursor_h) * scroll_ / (total_h - list_h));
+            gr.FillSolidRect(ww - 11, cursor_y, 10, cursor_h, color_txt & 0x33ffffff);
+        }
+
+
+    }
+    if (repaint_f) {
+        repaint_f = false;
+
+        //
+        gr.FillSolidRect(0, 0, ww, margin_top, 0xffffffff & color_txt);
+    }
+
+}
+
+function check_scroll(scroll___) {
+    scroll___ = Math.round(scroll___ / row_height) * row_height;
+    if (scroll___ > (total_rows * row_height - (wh - margin_top) + row_height))
+        scroll___ = Math.round((total_rows * row_height - (wh - margin_top) + row_height) / row_height - 0.5) * row_height;
+    if (total_rows * row_height < wh - margin_top || scroll___ < 0)
+        scroll___ = 0;
+    return scroll___;
+}
+
+function on_timer_() {
+    time_dl = time_s.Time;
+    time_s.Reset();
+
+    if (research) {
+        research = false;
+        get_list(research_k, "");
+        return;
+    }
+
+    var d = new Date();
+    if (d.getTime() - time222 < refresh_rate - 1)
+        return;
+    else 
+        time222 = d.getTime();
+
+    var repaint_1 = false,
+        repaint_2 = false;
+    if (repaint_f1 == repaint_f2) {
+        repaint_f2 = !repaint_f1;
+        repaint_1 = true;
+    }
+    if (repaint_main1 == repaint_main2) {
+        repaint_main2 = !repaint_main1;
+        repaint_2 = true;
+    }
+
+    scroll = check_scroll(scroll);
+
+    if (Math.abs(scroll - scroll_) > 0.5) {
+        if (smooth_scroll) {
+            scroll___ += (scroll - scroll___) * (1 - Math.pow(0.9, time_dl / 4));
+            scroll__ += (scroll___ - scroll__) * (1 - Math.pow(0,9, time_dl / 4));
+            scroll_ += (scroll__ - scroll_) * (1 - Math.pow(0,9, time_dl / 4));
+        } else {
+            scroll_ = scroll;
+        }
+        repaint_2 = true;
+    }
+
+
+    if (repaint_1 && repaint_2) {
+        time_s.Reset();
+        repaint_main = true;
+        repaint_f = true;
+        window.Repaint();
+    } else if (repaint_1) {
+        repaint_f = true;
+        time_s.Reset();
+        window.RepaintRect(0, 0, ww, margin_top, true);
+    } else if (repaint_2) {
+        repaint_main = true;
+        time_s.Reset();
+        window.RepaintRect(0, margin_top, ww, wh-margin_top);
+    }
+
+}
+
+window.SetInterval(function () {
+    on_timer_();
+}, refresh_rate);
+
+
+
+
+
+function on_mouse_wheel(step) {
+    repaint_main1 = repaint_main2;
+    scroll -= step * row_height;
+    scroll = check_scroll(scroll);
+}
+
+
