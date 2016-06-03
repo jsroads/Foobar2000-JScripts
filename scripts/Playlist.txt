@@ -126,8 +126,10 @@ var tmp_out;
 function on_size() {
     ww = Math.max(window.Width, 320);
     wh = window.Height;
-    if (!ww || !wh)
+    if (!ww || !wh) {
+        wh = 1;
         return;
+    }
     repaint_main1 = repaint_main2;
     repaint_f1 = repaint_f2;
     tmp_out && window.ClearInterval(tmp_out);
@@ -158,6 +160,7 @@ function on_paint(gr) {
     if (!repaint_main && !repaint_f)
         repaint_main = repaint_f = true;
     if (repaint_main) {
+        //fb.trace("repaint_main");
         repaint_main = false;
 
         var start_ = 0, end_ = 0;
@@ -230,7 +233,7 @@ function on_paint(gr) {
         repaint_f = false;
     }
 
-    fb.trace(ddd.Time);
+    //fb.trace(ddd.Time);
 
 }
     
@@ -279,7 +282,7 @@ function on_timer_(timer233) {
             scroll__ += (scroll___ - scroll__) * (1 - Math.pow(0,9, time_dl / 4));
             scroll_ += (scroll__ - scroll_) * (1 - Math.pow(0,9, time_dl / 4));
         } else {
-            scroll_ = scroll;
+            //scroll_ = scroll;
         }
         repaint_2 = true;
     }
@@ -291,11 +294,19 @@ function on_timer_(timer233) {
         window.Repaint();
     } else if (repaint_1) {
         repaint_f = true;
-        window.RepaintRect(0, 0, ww, margin_top - row_height, true);
+        window.RepaintRect(0, 0, ww, margin_top, true);
     } else if (repaint_2) {
         repaint_main = true;
         time_s.Reset();
-        window.RepaintRect(0, margin_top - row_height, ww, wh - margin_top + row_height, true);
+        //try {
+        wh - margin_top > 0 && 
+            window.RepaintRect(0, margin_top, ww, wh - margin_top, true);
+        //} catch (e) {
+            //fb.trace(margin_top);
+            //fb.trace(ww);
+            //fb.trace(wh);
+            //fb.trace(wh - margin_top);
+        //}
     }
 
 }
@@ -522,7 +533,6 @@ function on_playback_new_track(metadb) {
     //if (fb.GetMainMenuCommandStatus("Playback/Cursor follows playback") == 2) {
         // show now playing
         // ...
-        fb.trace("true");
         if (plman.PlayingPlaylist == plman.ActivePlaylist) {
             var playingIdx = plman.GetPlayingItemLocation().PlaylistItemIndex;
             if (playingIdx >= 0) {
@@ -593,7 +603,7 @@ function on_item_focus_change(playlist, from, to) {
 window.SetTimeout(function () {
     list = plman.GetPlaylistItems(active_list);
     get_list();
-}, 20);
+}, 5);
 
 
 window.SetInterval(function () {
