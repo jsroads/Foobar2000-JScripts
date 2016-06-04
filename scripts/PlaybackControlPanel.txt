@@ -1,5 +1,10 @@
 ﻿// vim: set ft=javascript fileencoding=utf-8 bomb et:
 
+// ==PREPROCESSOR==
+// @author "Elia >>> http://elia-is-me.github.io"
+// @version "0.0.2"
+// @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
+// ==/PREPROCESSOR==
 
 var font_name = "Segoe UI Semibold",
     font_name_b = "Segoe UI",
@@ -12,7 +17,9 @@ var tf_title = fb.TitleFormat("[%artist% - ]%title%"),
     tf_alb = fb.TitleFormat("$if2([%album%],未知专辑)"),
     tf_len = fb.TitleFormat("[%length%]");
 
-var shuffle_type = window.GetProperty("Shuffle type", 4);
+var shuffle_type = window.GetProperty("Shuffle type", 4),
+    auto_mode = window.GetProperty("auto_mode", false),
+    ww_mode = window.GetProperty("ww_mode", 0);
 
 var pb_length = "-:--",
     pb_time = "-:--",
@@ -44,9 +51,13 @@ function check_prop() {
 function get_objects() {
     sk = new Slider(images.nob,
             function () {
-                return fb.PlaybackTime / fb.PlaybackLength;
+                try {
+                    return fb.PlaybackTime / fb.PlaybackLength;
+                } catch (e) { return 0 };
             }, function (pos) {
-                fb.PlaybackTime = fb.PlaybackLength * pos;
+                try {
+                    fb.PlaybackTime = fb.PlaybackLength * pos;
+                } catch (e) {};
             });
     vol = new Slider(images.nob,
             function () {
@@ -105,14 +116,14 @@ function get_images() {
 	var ico_name = ["prev", "pause", "play", "next", "volume", "shuffle", "repeat", "repeat1", "normal"],
         ico_code = ["\uE100", "\uE103", "\uE102", "\uE101", "\uE15D" , "\uE14B", "\uE149", "\uE1CC", "\uE8AB"];
 
-    w = 30;
+    w = 40;
     for (var i = 0; i < ico_name.length; i++) {
         img = gdi.CreateImage(w, w);
         g  = img.GetGraphics();
 
         g.SetTextRenderingHint(3);
 		g.DrawString(ico_code[i], font_ico, color_txt, 0, 0, w, w, sf);
-		g.DrawString(ico_code[i], font_ico, color_txt, 0, 0, w, w, sf);
+		g.DrawString(ico_code[i], font_ico, color_txt, 0+0.0, 0, w, w, sf);
         g.SetTextRenderingHint(0);
         img.ReleaseGraphics(g);
         images[ico_name[i]] = img;
@@ -127,10 +138,27 @@ function get_images() {
     g.SetSmoothingMode(0);
     images.nob.ReleaseGraphics(g);
 
+    w = 40;
+    images.pbo_bg = gdi.CreateImage(w, w);
+    //var font_bg = gdi.Font(font_ico.Name, 36);
+    g = images.pbo_bg.GetGraphics();
+    g.SetSmoothingMode(4);
+    g.FillEllipse(1, 1, w-4, w-4, color_txt & 0x40ffffff);
+    g.SetSmoothingMode(0);
+    //g.SetTextRenderingHint(4);
+    //g.DrawString("\uE91F", font_bg, color_txt & 0x40ffffff, 0, 0, w, w, StringFormat(1, 1));
+    //g.SetTextRenderingHint(0);
+    images.pbo_bg.ReleaseGraphics(g);
+
+    font_ico.Dispose();
+    //font_bg.Dispose();
+
 }
 
+
+
 function get_fonts() {
-    font_time = gdi.Font(font_name, 12);
+    font_time = gdi.Font(font_name, 14);
     font_cover = gdi.Font("segoe mdl2 assets", 32);
     font_alb = gdi.Font(font_name, 12);
     font_title = gdi.Font(font_name, 14);
@@ -138,11 +166,9 @@ function get_fonts() {
 
 
 
-var temp_h = get_panel_h();
-var panel_h = [temp_h, temp_h, temp_h, temp_h];
-window.MaxHeight = window.MinHeight = panel_h[1];
 
 function on_size() {
+    window.MaxHeight = window.MinHeight = get_panel_height();
     ww = Math.max(320, window.Width);
     wh = window.Height;
     //adjust_height();
@@ -173,93 +199,99 @@ function on_paint(gr) {
     // bg
     gr.FillSolidRect(0, 0, ww, wh, color_bg);
 
+    var color_txt2 = blendColors(color_txt, color_bg, 0.3);
 
-    // Time & Seek
-    var time_w1 = gr.CalcTextWidth(pb_time, font_time)+1, 
-        time_w2 = gr.CalcTextWidth(pb_length, font_time)+1;
-    if (ww < 930) {
-        gr.GdiDrawText(pb_time, font_time, color_txt, 15, 7, time_w1, 20, DT_CC);
-        gr.GdiDrawText(pb_length, font_time, color_txt, ww-time_w2-15, 7, time_w2, 20, DT_CC);
-        sk.draw(gr, 20+time_w1+10, 7, ww-time_w2-time_w1-20*2-10*2, 20, 9, color_txt, color_txt & 0x50ffffff);
-    } else {
-        gr.GdiDrawText(pb_time, font_time, color_txt, cover.w+20+240+10, (wh-20)/2, time_w1, 20, DT_CC);
-        gr.GdiDrawText(pb_length, font_time, color_txt, ww-270-time_w2, (wh-20)/2, time_w2, 20,  DT_CC);
-        sk.draw(gr, cover.w+280+time_w1, (wh-20)/2, ww-cover.w-280-time_w1-time_w2-270-10, 20, 9, color_txt, color_txt & 0x50ffffff);
-    }
 
 
     // Buttons
-    var pad = 20,
+    var pad = 10,
         bt_w = images.prev.Width,
-        bt_y = Math.round((wh + 22 - bt_w) / 2),
-        bt_x = Math.round((ww - bt_w * 5 - pad * 4) / 2);
-    var bt_imgs = [
-        images.prev, fb.IsPlaying && !fb.IsPaused ? images.pause : images.play,
+        bt_x, bt_y;
+    var bt_imgs = [ images.prev, fb.IsPlaying && !fb.IsPaused ? images.pause : images.play,
         images.next, get_pbo_image(fb.PlaybackOrder), images.volume];
 
-    if (ww < 510) {
-        bt_x = Math.round((ww - bt_w * 5 - pad * 4) / 2);
-    } else {
-        bt_x = ww - bt_w * 5 - pad * 5;
-    }
-    if (ww < 930) {
-        bt_y = Math.round((wh + 22 -bt_w) / 2);
-    } else {
-        bt_y = Math.round((wh - bt_w) / 2);
-    }
+    bt_x = (ww_mode == 0) ? Math.round((ww - bt_w * 5 - pad * 4) / 2) : bt_x = ww - bt_w * 5 - pad * 5;
+    bt_y = (ww_mode < 2) ? Math.round((wh + 22 -bt_w) / 2) : Math.round((wh - bt_w) / 2);
+
     // DRAW
     for (var i = 0; i < buttons.length; i++) {
         buttons[i].draw(gr, bt_imgs[i], bt_x, bt_y, bt_w, bt_w);
         bt_x += (bt_w + pad);
     }
+    // DRAW PBO BG
+    if (fb.PlaybackOrder > 0) {
+        var b = buttons[3];
+        var img = images.pbo_bg;
+        gr.DrawImage(img, b.x, b.y, b.w, b.h, 0, 0, img.Width, img.Height, 0, 255);
+    }
 
     // Cover & Info
-    cover.vis = (ww >= 510);
+    cover.vis = (ww_mode > 0);
     if (cover.vis && fb.IsPlaying) {
         cover.x = 10;
-        if (ww < 930) {
+        var alb_w, alb_x, alb_y;
+        if (ww_mode < 2) {
             cover.y = 35;
-            cover.w = cover.h = wh - 45;
+            cover.w = cover.h = wh - cover.y - 10;
+            alb_w = buttons[0].x - cover.x - cover.w - 30;
         } else {
             cover.y = 10;
             cover.w = cover.h = wh - 20;
-        }
-
-        var alb_w;
-        if (ww < 930) {
-            alb_w = buttons[0].x - cover.x - cover.w - 30;
-        } else {
-            alb_w = 240;
+            alb_w = Math.min(200, buttons[0].x - cover.x - cover.w - 30);
         }
 
         if (cover.img) {
             gr.DrawImage(cover.img, cover.x, cover.y, cover.w, cover.h, 0, 0, cover.img.Width, cover.img.Height, 0, 255);
         } else {
             gr.SetTextRenderingHint(3);
-            gr.DrawString("\uE958", font_cover, blendColors(color_txt, color_bg, 0.3), cover.x, cover.y, cover.w, cover.h, StringFormat(1, 1));
+            gr.DrawString("\uE958", font_cover, color_txt2, cover.x, cover.y, cover.w, cover.h, StringFormat(1, 1));
             gr.SetTextRenderingHint(0);
         }
 
         // INFO
-        gr.GdiDrawText(title_str, font_title, color_txt, cover.x+cover.w+10, cover.y, alb_w, 25, DT_LC);
-        gr.GdiDrawText(alb_str, font_alb, blendColors(color_txt, color_bg, 0.3), cover.x+cover.w+10, cover.y+20, alb_w, 25, DT_LC);
+        if (alb_w > 100) {
+            alb_x = cover.x + cover.w + 10;
+            var alb_y = cover.y + (cover.h - font_title.Height - font_alb.Height - 2) / 2 | 0;
+            gr.GdiDrawText(title_str, font_title, color_txt, alb_x, alb_y, alb_w, font_title.Height, DT_LC);
+            gr.GdiDrawText(alb_str, font_alb, color_txt2, alb_x, alb_y+font_title.Height+2, alb_w, font_alb.Height, DT_LC);
+        }
     }
+
+    // Time & Seek
+    if (fb.IsPlaying) {
+        var time_w1 = gr.CalcTextWidth(pb_time, font_time)+1, 
+            time_w2 = gr.CalcTextWidth(pb_length, font_time)+1;
+        if (ww_mode < 2) {
+            gr.GdiDrawText(pb_time, font_time, color_txt, 15, 7, time_w1, 20, DT_CC);
+            gr.GdiDrawText(pb_length, font_time, color_txt, ww-time_w2-15, 7, time_w2, 20, DT_CC);
+            sk.draw(gr, 20+time_w1+20, 7, ww-time_w2-time_w1-20*2-20*2, 20, 9, color_txt, color_txt & 0x50ffffff);
+        } else {
+            if (buttons[0].x-20-time_w2-20-cover.w-240-time_w1-20 > 120) {
+                gr.GdiDrawText(pb_time, font_time, color_txt, cover.w+20+200+20, (wh-20)/2, time_w1, 20, DT_CC);
+                gr.GdiDrawText(pb_length, font_time, color_txt, buttons[0].x-20-time_w2, (wh-20)/2, time_w2, 20,  DT_CC);
+                sk.draw(gr, cover.w+240+time_w1+20, (wh-20)/2, buttons[0].x-20-time_w2-20-cover.w-240-time_w1-20, 20, 9, color_txt, color_txt & 0x50ffffff);
+            }
+        }
+    }
+
 
     if (volpanel.vis) {
         var b = buttons[4];
-        if (ww < 930) {
+        if (ww_mode < 2) {
             volpanel.x = b.x + b.w/2 - volpanel.w/2;
             if (volpanel.x + volpanel.w + 2 > ww) 
                 volpanel.x = ww - 2 - volpanel.w;
             volpanel.y = 2;
+            volpanel.h = 30;
         } else {
-            volpanel.x = b.x - volpanel.w - b.w/2;
+            volpanel.x = b.x - volpanel.w - pad;
             volpanel.y = (wh - volpanel.h) /2;
+            volpanel.h = 40;
         }
         gr.FillSolidRect(volpanel.x-2, volpanel.y-2, volpanel.w+4, volpanel.h+4, color_bg);
         gr.FillSolidRect(volpanel.x, volpanel.y, volpanel.w, volpanel.h, color_txt);
         gr.GdiDrawText(Math.round(fb.Volume+100), font_time, color_bg, volpanel.x, volpanel.y, 40, volpanel.h, DT_CC);
-        vol.draw(gr, volpanel.x+40, volpanel.y+5, volpanel.w-40-15, 20, 9, color_bg, color_bg & 0x50ffffff);
+        vol.draw(gr, volpanel.x+40, volpanel.y+(volpanel.h-20)/2, volpanel.w-40-15, 20, 9, color_bg, color_bg & 0x50ffffff);
     }
 
 }
@@ -450,14 +482,19 @@ var time_h = fb.CreateProfiler(),
     time200 = fb.CreateProfiler("aaaa"),
     time_s = fb.CreateProfiler();
 
-function get_panel_h() {
+function get_panel_height() {
     var panel_height;
-    if (ww < 510) {
-        panel_height = 80;
-    } else if (ww < 930) {
-        panel_height = 90;
-    } else {
-        panel_height = 65;
+    switch (ww_mode) {
+        case 0:
+            panel_height = 80;
+            break;
+        case 1:
+            panel_height = 90;
+            break;
+        case 2:
+        default:
+            panel_height = 65;
+            break;
     }
     return panel_height;
 }
@@ -483,18 +520,6 @@ function on_timer_(g_timer333) {
         repaint_main2 = !repaint_main1;
         repaint_1 = true;
     }
-
-    // Resize panel height
-    panel_h[0] = get_panel_h();
-
-    if (Math.abs(panel_h[0] - panel_h[1]) > 0.5) {
-        panel_h[3] += (panel_h[0] - panel_h[3]) * (1 - Math.pow(0.9, time_dl / 4));
-        panel_h[2] += (panel_h[3] - panel_h[2]) * (1 - Math.pow(0.9, time_dl / 4));
-        panel_h[1] += (panel_h[2] - panel_h[1]) * (1 - Math.pow(0.9, time_dl / 4));
-    } else {
-        panel_h[1] = panel_h[0];
-    }
-    window.MaxHeight = window.MinHeight = panel_h[1];
 
 }
 
