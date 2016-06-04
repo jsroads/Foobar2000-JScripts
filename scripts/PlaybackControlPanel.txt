@@ -5,13 +5,16 @@
 // @version "0.0.2"
 // @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
 // ==/PREPROCESSOR==
+//
+// foobar2000 v1.3.3+ and WSH Panel Mod Plus 1.5.7+ required.
 
 var font_name = "Segoe UI Semibold",
     font_name_b = "Segoe UI",
     font_time, font_cover, font_title, font_alb;
 
 var color_bg = eval(window.GetProperty("Color bg", "RGB(25, 25, 25)")),
-    color_txt = eval(window.GetProperty("Color txt", "RGB(236, 236, 236)"));
+    color_txt = eval(window.GetProperty("Color txt", "RGB(236, 236, 236)")),
+    color_txt2 = blendColors(color_txt, color_bg, 0.3);
 
 var tf_title = fb.TitleFormat("[%artist% - ]%title%"),
     tf_alb = fb.TitleFormat("$if2([%album%],未知专辑)"),
@@ -19,7 +22,7 @@ var tf_title = fb.TitleFormat("[%artist% - ]%title%"),
 
 var shuffle_type = window.GetProperty("Shuffle type", 4),
     auto_mode = window.GetProperty("auto_mode", false),
-    ww_mode = window.GetProperty("ww_mode", 0);
+    ww_mode = window.GetProperty("ww_mode", 2);
 
 var pb_length = "-:--",
     pb_time = "-:--",
@@ -42,7 +45,8 @@ var DT_LC = DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
 
 
 function check_prop() {
-    if (typeof shuffle_type != "number" || shuffle_type < 3 || shuffle_type > 6) {
+    shuffle_type = parseInt(shuffle_type);
+    if (shuffle_type < 3 || shuffle_type > 6) {
         shuffle_type = 4;
         window.SetProperty("Shuffle type", shuffle_type);
     }
@@ -165,9 +169,24 @@ function get_fonts() {
 }
 
 
+function check_mode() {
+    switch (true) {
+        case (ww < 510):
+            ww_mode = 0;
+            break;
+        case (ww < 930):
+            ww_mode = 1;
+            break;
+        default:
+            ww_mode = 2;
+            break;
+    }
+}
 
 
 function on_size() {
+    if (auto_mode) 
+        check_mode();
     window.MaxHeight = window.MinHeight = get_panel_height();
     ww = Math.max(320, window.Width);
     wh = window.Height;
@@ -199,7 +218,7 @@ function on_paint(gr) {
     // bg
     gr.FillSolidRect(0, 0, ww, wh, color_bg);
 
-    var color_txt2 = blendColors(color_txt, color_bg, 0.3);
+    //var color_txt2 = blendColors(color_txt, color_bg, 0.3);
 
 
 
@@ -343,8 +362,18 @@ function on_playback_stop(reason) {
 
 function on_get_album_art_done(metadb, art_id, image, image_path) {
     cover.img = image;
-    if (cover.img)
+    if (cover.img) {
         cover.img = cover.img.Resize(40, 40);
+        var objcolor = get_colorsheme_from_image(image);
+        color_txt = objcolor.text;
+        color_bg = objcolor.background;
+        color_txt2 = objcolor.text2;
+    } else {
+        color_bg = eval(window.GetProperty("Color bg", "RGB(25, 25, 25)"));
+        color_txt = eval(window.GetProperty("Color txt", "RGB(236, 236, 236)"));
+        color_txt2 = blendColors(color_txt, color_bg, 0.3);
+    }
+    refresh_colors();
     repaint();
 }
 
@@ -473,6 +502,7 @@ function on_load() {
 
 
 
+/*
 var time111 = (new Date()).getTime(),
     time222 = time111,
     time333 = time111;
@@ -481,6 +511,7 @@ var time_h = fb.CreateProfiler(),
     time_repaint = fb.CreateProfiler(),
     time200 = fb.CreateProfiler("aaaa"),
     time_s = fb.CreateProfiler();
+    */
 
 function get_panel_height() {
     var panel_height;
@@ -499,6 +530,7 @@ function get_panel_height() {
     return panel_height;
 }
 
+/*
 window.SetInterval(function () {
     on_timer_(0);
 }, 30);
@@ -522,4 +554,193 @@ function on_timer_(g_timer333) {
     }
 
 }
+*/
 
+
+function refresh_colors() {
+    get_images();
+    get_objects();
+}
+
+/*
+
+window.SetTimeout(function () {
+
+    var Time = fb.CreateProfiler();
+
+    var scheme_img = gdi.Image("D:\\image.jpg");
+    var obj_color = get_colorsheme_from_image(scheme_img);
+    color_txt = obj_color.background;
+    color_bg = obj_color.text;
+    get_images();
+    get_objects();
+    window.Repaint();
+    fb.trace("Time: " + Time.Time);
+}, 1000);
+*/
+
+
+function get_colorsheme_from_image(img) {
+
+    img = img.Resize(10, 10, 5);
+    var color_arr = [],
+        Color = {};
+    color_arr = img.GetColorScheme(img.Width * img.Height).toArray();
+    var len = color_arr.length;
+
+    for (var i = 0; i < len; i++)
+        color_arr[i] = toRGB(color_arr[i]);
+
+    Color.background = dominantColor(color_arr, .1);
+    var hol = inverseColors(Color.background, color_arr);
+
+    var coltxt1 = colorDistance(Color.background, hol[0]),
+        coltxt2 = colorDistance(Color.background, hol[1]),
+        coltxtA = [coltxt1, coltxt2].sort();
+
+    if (Luminance(Color.background) > 0.6) {
+        Color.background_invert = RGB(35, 35, 35);
+    } else {
+        Color.background_invert = RGB(235, 235, 235);
+    }
+
+    if (coltxtA[0] == coltxt2) {
+        Color.text = eval("RGB(" + hol[0] + ")");
+        Color.text2 = eval("RGB("  + hol[1] + ")");
+        Color.text_selection = (Luminance(Color.background) > 0.6) ? RGB(235, 235, 235) : RGB(10, 10, 10);
+    } else {
+        Color.text = eval("RGB(" + hol[1] + ")");
+        Color.text2 = eval("RGB("  + hol[0] + ")");
+        Color.text_selection = (Luminance(Color.background) > 0.6) ? RGB(235, 235, 235) : RGB(10, 10, 10);
+    }
+    Color.background = eval("RGB(" + Color.background + ")");
+
+    try {
+        img.Dispose();
+    } catch (e) {};
+
+    return Color;
+
+}
+
+
+function sqrt(n) {
+	return Math.sqrt(n);
+};
+
+function pow(n) {
+	return Math.pow(n, 2);
+};
+
+function rgbToYuv(rgb) {
+	return [rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114, rgb[0] * -0.147 + rgb[1] * 0.289 + rgb[2] * 0.436, rgb[0] * 0.615 + rgb[1] * 0.515 + rgb[2] * 0.100];
+};
+
+function colorDistance(rgb1, rgb2) {
+	var yuv1 = rgbToYuv(rgb1),
+	yuv2 = rgbToYuv(rgb2);
+	return sqrt(pow(yuv1[0] - yuv2[0])
+		 + pow(yuv1[1] - yuv2[1])
+		 + pow(yuv1[2] - yuv2[2]));
+};
+
+function gatherSimilarElements(list, comparator) {
+
+	var subsets = [];
+
+	for (var u = 0, U = list.length; u < U; ++u) {
+
+		var element = list[u];
+		var closest = null;
+
+		for (var v = 0, V = subsets.length; v < V; ++v)
+			if (comparator(subsets[v][0], element))
+				break;
+
+		if (v === V) {
+			closest = [];
+			subsets.push(closest);
+		} else {
+			closest = subsets[v];
+		}
+
+		closest.push(element);
+
+	}
+
+	return subsets;
+
+};
+
+function meanColor(colorList) {
+
+	var finalColor = [0, 0, 0];
+
+	for (var t = 0, T = colorList.length; t < T; ++t) {
+
+		var color = colorList[t];
+
+		finalColor[0] += color[0];
+		finalColor[1] += color[1];
+		finalColor[2] += color[2];
+
+	}
+
+	finalColor[0] /= colorList.length;
+	finalColor[1] /= colorList.length;
+	finalColor[2] /= colorList.length;
+
+	return finalColor;
+
+};
+
+function dominantColor(colorList, treshold) {
+
+	if (typeof treshold === 'undefined')
+		treshold = 0.1;
+
+	var buckets = gatherSimilarElements(colorList, function (colorA, colorB) {
+			return colorDistance(colorA, colorB) < treshold;
+		}).sort(function (bucketA, bucketB) {
+			return bucketB.length - bucketA.length;
+		});
+
+	var color = meanColor(buckets.shift());
+	return color;
+
+};
+
+function getContrastYIQ(color) {
+	var r = color[0],
+	g = color[1],
+	b = color[2];
+
+	var yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+
+	// return (yiq >= 128) ? 'light' : 'dark';
+	return yiq;
+};
+
+function getDefaultColor(yiq) {
+	return (yiq >= 128) ? [0, 0, 0] : [235, 235, 235];
+};
+
+function inverseColors(color, palette) {
+
+	var yiq = getContrastYIQ(color);
+	var colors = [],
+	primaryColor,
+	secondaryColor;
+
+	for (var i = 0; i < palette.length; i++) {
+
+		if (Math.abs(getContrastYIQ(palette[i]) - yiq) > 80) {
+			colors.push(palette[i]);
+		}
+	}
+
+	primaryColor = colors[0] ? colors[0] : getDefaultColor(yiq);
+	secondaryColor = colors[1] ? colors[1] : getDefaultColor(yiq);
+
+	return [primaryColor, secondaryColor];
+};
