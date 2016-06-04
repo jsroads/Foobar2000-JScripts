@@ -8,8 +8,6 @@
 // @import "E:\GitHub\Foobar2000-JScripts\scripts\LibraryBrowser.txt"
 // ==/PREPROCESSOR==
 
-// @import "E:\GitHub\Foobar2000-JScripts\scripts\LibraryBrowser.txt"
-
 // please change files' path by yourselves.
 
 
@@ -17,6 +15,7 @@ var list_dr = [],
     list = null,
     list_;
 var tf_group = fb.TitleFormat("$if2([%album artist%],未知艺术家)^^$if2([%album%],未知专辑)^^[%discnumber%]");
+var tf_sort = fb.TitleFormat("%album artist%^^%album%^^%discnumber%^^%tracknumber%^^%title%");
 
 var scroll = 0, scroll_ = 0, scroll__ = 0, scroll___ = 0,
     ww = 0, wh = 0,
@@ -44,13 +43,12 @@ var research = false,
 var group_by = window.GetProperty("group_by", 0),
     font_name = window.GetProperty("font_name", "segoe ui"),
     font_size = window.GetProperty("font_size", 12),
-    thumb_width= window.GetProperty("thumb_width", 110),
+    thumb_width= window.GetProperty("thumb_width", 140),
     panel_mode = window.GetProperty("panel_mode", 0); // 0: lib, 1: list
 var refresh_rate = window.GetProperty("refresh_rate", 16),
     smooth_scroll = true;
 
 
-var tf_sort = fb.TitleFormat("%album artist%^^%album%^^%discnumber%^^%tracknumber%^^%title%");
 
 function get_library(reload) {
     list = fb.GetLibraryItems();
@@ -148,7 +146,7 @@ var color_txt = eval(window.GetProperty("Color text", "RGB(225, 225, 225)")),
     color_bg = eval(window.GetProperty("Color bg", "RGB(34, 34, 34)")),
     color_bg_sel = eval(window.GetProperty("Color bg_sel", "RGB(130, 90, 44)"));
 
-var margin_top = 35*1.5;
+var margin_top = 35;
 var total_columns, total_rows;
 var row_height, cover_width, thumb_width, thumb_width_;
 var scrb_ = false;
@@ -170,17 +168,21 @@ function on_paint(gr) {
             // Covers
             var margin_lr = 2, 
                 margin_tb = 2, 
-                margin_cover = 16;
-            total_columns = Math.floor((ww - 4 - 14) / thumb_width);
+                margin_cover = 2;
+            var total_w = ww - 14 - 20,
+                gap = 24;
+            total_columns = Math.floor((total_w + gap) / (thumb_width + gap));
+            //total_columns = Math.floor((ww - 4 - 14) / thumb_width);
             if (total_columns < 1) 
                 total_columns = 1;
             total_rows = Math.ceil(list_dr.length / total_columns);
             //
-            var gap_width = (ww - 4 - 14) - total_columns * thumb_width;
+            var gap_width = ((ww - 4 - 14) - total_columns * thumb_width) / total_columns;
             var delta_ = Math.floor(gap_width / total_columns);
-            thumb_width_ = thumb_width + delta_;
-            cover_width = thumb_width_ - margin_lr * 2 - margin_cover * 2;
-            row_height = 10 + cover_width + 10+font_height * 2;
+            //thumb_width_ = thumb_width + delta_;
+            thumb_width_ = thumb_width;
+            cover_width = thumb_width_ - margin_cover * 2;
+            row_height = 10 + cover_width + 15+font_height * 3;
 
             scrb_ = total_rows * row_height > wh - margin_top;
 
@@ -199,15 +201,29 @@ function on_paint(gr) {
 
             for (var i = start_; i < end_; i++) {
                 var row = Math.floor(i / total_columns);
-                var ax = 2 + (i % total_columns) * thumb_width_ + margin_lr;
+                var ax = 10 + 10 + (i % total_columns) * (thumb_width_+gap) - margin_cover;
                 var ay = Math.floor(margin_top + row * row_height - scroll_ + margin_tb);
 
                 if (ay >= (0 - row_height) && ay < wh) {
-                    //gr.FillSolidRect(ax, ay, thumb_width_-margin_lr*2, row_height-margin_tb*2, 0x10ffffff);
+                    //gr.FillSolidRect(ax, ay, thumb_width_, row_height-margin_tb*2, 0x10ffffff);
                     gr.FillSolidRect(ax+margin_cover, ay+margin_cover, cover_width, cover_width, 0xa0ffffff);
                     gr.GdiDrawText(i + "", g_font2, color_txt, ax+margin_cover, ay+margin_cover, cover_width, cover_width, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-                    gr.GdiDrawText(list_dr[i].string[1], g_font2, color_txt, ax+margin_cover, ay+cover_width+margin_cover+5, cover_width, font_height, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
-                    gr.GdiDrawText(list_dr[i].string[0], g_font, color2, ax+margin_cover, ay+cover_width+margin_cover+5+font_height, cover_width, font_height, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
+                    var arr = gr.EstimateLineWrap(list_dr[i].string[1], g_font2, cover_width).toArray();
+                    if (arr.length > 4) {
+                        arr[2] = arr[2] + "...";
+                    }
+                    var line_y = ay + cover_width+margin_cover+5;
+                    for (var j = 0; j < Math.min(2, arr.length/2); j++) {
+                        gr.GdiDrawText(arr[2*j], g_font2, color_txt, ax+margin_cover, line_y, cover_width, font_height, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
+                        line_y += (font_height);
+                    }
+                    /*
+                    if (arr.length == 2) {
+                        gr.GdiDrawText(arr[0], g_font2, color_txt, ax+margin_cover, ay+cover_width+margin_cover+5, cover_width, font_height, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
+                    } else if (arr.length == 4) {
+                    */
+
+                    gr.GdiDrawText(list_dr[i].string[0], g_font, color2, ax+margin_cover, line_y, cover_width, font_height, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
                 }
             }
         } else if (panel_mode == 1) {
@@ -232,7 +248,7 @@ function on_paint(gr) {
         repaint_f = false;
 
         //
-        gr.FillSolidRect(0, 0, ww, margin_top, blendColors(0xff000000, color_bg, 0.5));
+        gr.FillSolidRect(20, 0, ww-40, margin_top, blendColors(0xff000000, color_bg, 0.5));
     }
 
 }
