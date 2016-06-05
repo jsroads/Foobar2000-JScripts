@@ -15,10 +15,13 @@ var font_name = "Segoe UI Semibold",
 var color_bg = eval(window.GetProperty("Color bg", "RGB(25, 25, 25)")),
     color_txt = eval(window.GetProperty("Color txt", "RGB(236, 236, 236)")),
     color_txt2 = blendColors(color_txt, color_bg, 0.3);
+var color_bg_ = 0, 
+    color_txt_ = 0;
 
 var tf_title = fb.TitleFormat("[%artist% - ]%title%"),
     tf_alb = fb.TitleFormat("$if2([%album%],未知专辑)"),
-    tf_len = fb.TitleFormat("[%length%]");
+    tf_len = fb.TitleFormat("[%length%]"),
+    tf_art_alb = fb.TitleFormat("%album artist%^^%album%");
 
 var shuffle_type = window.GetProperty("Shuffle type", 4),
     auto_mode = window.GetProperty("auto_mode", false),
@@ -190,7 +193,6 @@ function on_size() {
     window.MaxHeight = window.MinHeight = get_panel_height();
     ww = Math.max(320, window.Width);
     wh = window.Height;
-    //adjust_height();
 }
 
 function get_pbo_image(order) {
@@ -217,6 +219,7 @@ function on_paint(gr) {
 
     // bg
     gr.FillSolidRect(0, 0, ww, wh, color_bg);
+    gr.FillSolidRect(0, 0, ww, wh, color_bg_);
 
     //var color_txt2 = blendColors(color_txt, color_bg, 0.3);
 
@@ -315,18 +318,28 @@ function on_paint(gr) {
 
 }
 
+
+var album_old = "!@#";
+
 function on_metadb_changed (handlelist, fromhook) {
     var metadb;
 
     metadb = fb.IsPlaying ? fb.GetNowPlaying() : null;
     if (metadb) {
-        utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
+        //utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
         alb_str = tf_alb.EvalWithMetadb(metadb);
         title_str = tf_title.EvalWithMetadb(metadb);
     } else {
         cover.img = null;
         alb_str = "";
         title_str = "";
+    }
+    if (metadb) {
+        var album = tf_art_alb.EvalWithMetadb(metadb);
+        if (album != album_old) {
+            utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
+            album_old = album;
+        }
     }
     repaint();
 }
@@ -360,11 +373,15 @@ function on_playback_stop(reason) {
     }
 }
 
+var color_timer = null;
+
 function on_get_album_art_done(metadb, art_id, image, image_path) {
     cover.img = image;
+    color_bg_ = color_bg;
     if (cover.img) {
         cover.img = cover.img.Resize(40, 40);
-        var objcolor = get_colorsheme_from_image(image);
+
+        var objcolor = get_color_scheme_from_image(image);
         color_txt = objcolor.text;
         color_bg = objcolor.background;
         color_txt2 = objcolor.text2;
@@ -374,6 +391,20 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
         color_txt2 = blendColors(color_txt, color_bg, 0.3);
     }
     refresh_colors();
+
+    var alpha1 = 255;
+    color_timer && window.ClearInterval(color_timer);
+    color_timer = window.SetInterval(function () {
+        alpha1 -= 30;
+        alpha1 = alpha1 < 0 ? 0 : alpha1;
+        color_bg_ = setAlpha(color_bg_, alpha1);
+        color_bg = setAlpha(color_bg, 255 - alpha1);
+        window.Repaint();
+        if (alpha1 == 0) {
+            window.ClearInterval(color_timer);
+        }
+    }, 100);
+    
     repaint();
 }
 
@@ -569,7 +600,7 @@ window.SetTimeout(function () {
     var Time = fb.CreateProfiler();
 
     var scheme_img = gdi.Image("D:\\image.jpg");
-    var obj_color = get_colorsheme_from_image(scheme_img);
+    var obj_color = get_color_scheme_from_image(scheme_img);
     color_txt = obj_color.background;
     color_bg = obj_color.text;
     get_images();
@@ -580,7 +611,7 @@ window.SetTimeout(function () {
 */
 
 
-function get_colorsheme_from_image(img) {
+function get_color_scheme_from_image(img) {
 
     img = img.Resize(10, 10, 5);
     var color_arr = [],

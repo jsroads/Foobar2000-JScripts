@@ -164,11 +164,11 @@ function Slider (nob_img, func_get, func_set) {
     this.nob_img = nob_img ? nob_img : null;
 
 	this.get = (function () {
-		return typeof func_get == "function" ? func_get : function() {};
+		return func_get instanceof Function ? func_get : function() {};
 	})();
 
 	this.set = (function () {
-		return typeof func_set == "function" ? func_set : function() {};
+		return func_set instanceof Function ? func_set : function() {};
 	})();
 
 	this.pos = this.get();
@@ -178,19 +178,16 @@ Slider.prototype.draw = function(gr, x, y, w, h, y_offset, active_color, inactiv
 	if (h <= y_offset * 2) {
 		y_offset = 0;
 	}
+
 	// 进度条背景
 	gr.FillSolidRect(x, y+y_offset, w, h - y_offset * 2, inactive_color);
 	if (this.pos > 0 && this.pos <= 1) {
 		gr.FillSolidRect(x, y+y_offset, w * this.pos, h-y_offset*2, active_color);
 	}
 	// nob 图片
-	if (this.nob_img) {
+	if (this.nob_img && this.pos >= 0) {
 		var img_w = this.nob_img.Width;
-		if (!(this.pos >= 0)) {
-			this.pos = 0;
-		}
-		gr.DrawImage(this.nob_img, x+w*this.pos - img_w/2, (h - img_w)/2+y, img_w, img_w,
-				0, 0, img_w, img_w, 0, 255);
+        gr.DrawImage(this.nob_img, x+w*this.pos - img_w/2, (h - img_w)/2+y, img_w, img_w, 0, 0, img_w, img_w, 0, 255);
 	};
 
 	this.x = x;
