@@ -2,7 +2,7 @@
 
 // ==PREPROCESSOR==
 // @author "Elia >>> http://elia-is-me.github.io"
-// @version "0.0.2"
+// @version "0.0.3"
 // @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
 // ==/PREPROCESSOR==
 //
