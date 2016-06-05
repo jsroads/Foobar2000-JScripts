@@ -18,6 +18,7 @@ var color_bg = eval(window.GetProperty("Color bg", "RGB(25, 25, 25)")),
 var color_bg_ = 0, 
     color_txt_ = 0;
 
+
 var tf_title = fb.TitleFormat("[%artist% - ]%title%"),
     tf_alb = fb.TitleFormat("$if2([%album%],未知专辑)"),
     tf_len = fb.TitleFormat("[%length%]"),
@@ -26,6 +27,13 @@ var tf_title = fb.TitleFormat("[%artist% - ]%title%"),
 var shuffle_type = window.GetProperty("Shuffle type", 4),
     auto_mode = window.GetProperty("auto_mode", false),
     ww_mode = window.GetProperty("ww_mode", 2);
+var background_mode = window.GetProperty("bg_mode", 1); 
+var win10_color = window.GetProperty("Enable win10 color", false);
+
+if (background_mode == 1 && win10_color && IsWin10OrGreater()) {
+    color_txt = RGB(235, 235, 235);
+    color_bg = get_win10_color();
+}
 
 var pb_length = "-:--",
     pb_time = "-:--",
@@ -133,10 +141,12 @@ function get_images() {
 		g.DrawString(ico_code[i], font_ico, color_txt, 0+0.0, 0, w, w, sf);
         g.SetTextRenderingHint(0);
         img.ReleaseGraphics(g);
+        images[ico_name[i]] && images[ico_name[i]].Dispose();
         images[ico_name[i]] = img;
     }
 
     w = 16;
+    images.nob && images.nob.Dispose();
     images.nob = gdi.CreateImage(w, w);
     g = images.nob.GetGraphics();
     g.SetSmoothingMode(2);
@@ -146,6 +156,7 @@ function get_images() {
     images.nob.ReleaseGraphics(g);
 
     w = 40;
+    images.pbo_bg && images.pbo_bg.Dispose();
     images.pbo_bg = gdi.CreateImage(w, w);
     //var font_bg = gdi.Font(font_ico.Name, 36);
     g = images.pbo_bg.GetGraphics();
@@ -186,6 +197,7 @@ function check_mode() {
     }
 }
 
+var tmp_out;
 
 function on_size() {
     if (auto_mode) 
@@ -193,6 +205,23 @@ function on_size() {
     window.MaxHeight = window.MinHeight = get_panel_height();
     ww = Math.max(320, window.Width);
     wh = window.Height;
+
+    tmp_out && window.ClearInterval(tmp_out);
+    tmp_out = window.SetInterval(function () {
+        refreshWallpaper();
+        tmp_out && window.ClearInterval(tmp_out);
+    }, 500);
+}
+
+function refreshWallpaper() {
+    if (cover.img_large) {
+        //var img = cover.img_large;
+        //cover.img_large = cover.img_large.Clone(0, img.Height/3*2, img.Width, img.Height/3-2);
+        Wpp.image = getWallpaper(cover.img_large);
+    } else {
+        Wpp.image = null;
+    }
+    window.Repaint();
 }
 
 function get_pbo_image(order) {
@@ -215,14 +244,19 @@ function get_pbo_image(order) {
     return img;
 }
 
+var wpp_blurred_alpha = window.GetProperty("blurred alpha", 100);
+
 function on_paint(gr) {
 
     // bg
-    gr.FillSolidRect(0, 0, ww, wh, color_bg);
-    gr.FillSolidRect(0, 0, ww, wh, color_bg_);
-
-    //var color_txt2 = blendColors(color_txt, color_bg, 0.3);
-
+    if (fb.IsPlaying && Wpp.image && (background_mode == 2)) {
+        gr.GdiDrawBitmap(Wpp.image, 0, 0, ww, wh, 0, 0, Wpp.image.Width, Wpp.image.Height);
+        gr.FillSolidRect(0, 0, ww, wh, setAlpha(color_bg, wpp_blurred_alpha));
+    } else {
+        gr.FillSolidRect(0, 0, ww, wh, color_bg);
+        if (background_mode == 1)
+            gr.FillSolidRect(0, 0, ww, wh, color_bg_);
+    }
 
 
     // Buttons
@@ -322,25 +356,33 @@ function on_paint(gr) {
 var album_old = "!@#";
 
 function on_metadb_changed (handlelist, fromhook) {
-    var metadb;
 
-    metadb = fb.IsPlaying ? fb.GetNowPlaying() : null;
+    var metadb = fb.IsPlaying ? fb.GetNowPlaying() : null;
+
     if (metadb) {
-        //utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
         alb_str = tf_alb.EvalWithMetadb(metadb);
         title_str = tf_title.EvalWithMetadb(metadb);
+
+        var album = tf_art_alb.EvalWithMetadb(metadb);
+        if (album != album_old) {
+            utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
+            album_old = album;
+        }
     } else {
         cover.img = null;
         alb_str = "";
         title_str = "";
     }
     if (metadb) {
+        /*
         var album = tf_art_alb.EvalWithMetadb(metadb);
         if (album != album_old) {
             utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
             album_old = album;
         }
+        */
     }
+
     repaint();
 }
 
@@ -375,37 +417,60 @@ function on_playback_stop(reason) {
 
 var color_timer = null;
 
+var Wpp = {};
+
+function getWallpaper(img) {
+    if (!img) {
+        return img;
+    }
+    Wpp.image && Wpp.image.Dispose();
+    var img = FormatWallpaper(img, ww, wh, 2, 0, 0, "", true);
+    return img;
+}
+
+
+
 function on_get_album_art_done(metadb, art_id, image, image_path) {
     cover.img = image;
-    color_bg_ = color_bg;
+    cover.img_large = image;
+    // GET COVER
     if (cover.img) {
+        cover.img_large = image;
         cover.img = cover.img.Resize(40, 40);
-
-        var objcolor = get_color_scheme_from_image(image);
-        color_txt = objcolor.text;
-        color_bg = objcolor.background;
-        color_txt2 = objcolor.text2;
-    } else {
-        color_bg = eval(window.GetProperty("Color bg", "RGB(25, 25, 25)"));
-        color_txt = eval(window.GetProperty("Color txt", "RGB(236, 236, 236)"));
-        color_txt2 = blendColors(color_txt, color_bg, 0.3);
     }
-    refresh_colors();
-
-    var alpha1 = 255;
-    color_timer && window.ClearInterval(color_timer);
-    color_timer = window.SetInterval(function () {
-        alpha1 -= 30;
-        alpha1 = alpha1 < 0 ? 0 : alpha1;
-        color_bg_ = setAlpha(color_bg_, alpha1);
-        color_bg = setAlpha(color_bg, 255 - alpha1);
-        window.Repaint();
-        if (alpha1 == 0) {
-            window.ClearInterval(color_timer);
+    //  GET BACKGROUND
+    if (background_mode > 0) {
+        color_bg_ = color_bg;
+        if (cover.img && background_mode == 1) {
+            var objcolor = get_color_scheme_from_image(cover.img);
+            color_txt = objcolor.text;
+            color_txt2 = objcolor.text2;
+            color_bg = objcolor.background;
+        } else {
+            color_txt = eval(window.GetProperty("Color txt", "RGB(236, 236, 236)"));
+            color_txt2 = blendColors(color_txt, color_bg, 0.3);
+            color_bg = eval(window.GetProperty("Color bg", "RGB(25, 25, 25)"));
         }
-    }, 100);
+    }
+    if (background_mode == 2)
+        refresh_colors();
+    else if (background_mode == 1) {
+        var alpha1 = 255;
+        color_timer && window.ClearInterval(color_timer);
+        color_timer = window.SetInterval(function () {
+            alpha1 -= 30;
+            alpha1 = alpha1 < 0 ? 0 : alpha1;
+            color_bg_ = setAlpha(color_bg_, alpha1);
+            color_bg = setAlpha(color_bg, 255 - alpha1);
+            refresh_colors();
+            window.Repaint();
+            if (alpha1 == 0) {
+                window.ClearInterval(color_timer);
+            }
+        }, 60);
+    }
     
-    repaint();
+    refreshWallpaper();
 }
 
 function on_playback_order_changed(new_order) {
@@ -611,6 +676,8 @@ window.SetTimeout(function () {
 */
 
 
+// FROM NADIRP's FUSION
+
 function get_color_scheme_from_image(img) {
 
     img = img.Resize(10, 10, 5);
@@ -775,3 +842,205 @@ function inverseColors(color, palette) {
 
 	return [primaryColor, secondaryColor];
 };
+
+
+// FROM BR3TT's JSSMOOTHPLAYLIST
+    
+var wpp_img_info = {orient: 0, cut: 0, cut_offset: 0, ratio: 0, x: 0, y: 0, w: 0, h: 0};
+var wpp_mode = 0;
+var wpp_image = null;
+
+function draw_blurred_image(image,ix,iy,iw,ih,bx,by,bw,bh,blur_value,overlay_color) {
+    var blurValue = blur_value;
+    var imgA = image.Resize(iw*blurValue/100,ih*blurValue/100,2);
+    var imgB = imgA.resize(iw, ih, 2);
+    
+    var bbox = gdi.CreateImage(bw, bh);
+    // Get graphics interface like "gr" in on_paint
+    var gb = bbox.GetGraphics();
+    var offset = 90-blurValue;
+    gb.DrawImage(imgB, 0-offset, 0-(ih-bh)-offset, iw+offset*2, ih+offset*2, 0, 0, imgB.Width, imgB.Height, 0, 255);
+    bbox.ReleaseGraphics(gb);
+
+    var newImg = gdi.CreateImage(iw, ih);
+    var gb = newImg.GetGraphics();
+
+    if(ix!=bx || iy!=by || iw!=bw || ih!=bh) {
+        gb.DrawImage(image, ix, iy, iw, ih, 0, 0, image.Width, image.Height, 0, 255);
+        gb.FillSolidRect(bx,by,bw,bh,0xffffffff);
+    };
+    gb.DrawImage(bbox, bx, by, bw, bh, 0, 0, bbox.Width, bbox.Height, 0, 255);
+    
+    // overlay
+    if(overlay_color!=null) {
+        gb.FillSolidRect(bx,by,bw,bh,overlay_color);
+    };
+    
+    // top border of blur area
+    if(ix!=bx || iy!=by || iw!=bw || ih!=bh) {
+        gb.FillSolidRect(bx,by,bw,1,0x22ffffff);
+        gb.FillSolidRect(bx,by-1,bw,1,0x22000000);
+    };
+    newImg.ReleaseGraphics(gb);
+    
+    return newImg;
+};
+
+function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle, txt, rawBitmap) {
+	if(!image||!iw||!ih) return image;
+    //image = image.Clone(0, image.Height / 2, image.Width, image.Height / 2-1);
+    var i, j;
+
+    var panel_ratio = iw / ih;
+    wpp_img_info.ratio = image.Width / image.Height;
+    wpp_img_info.orient = 0;
+
+    if(wpp_img_info.ratio > panel_ratio) {
+        wpp_img_info.orient = 1;
+        // 1/3 : default image is in landscape mode    
+        switch(display_mode) {
+            case 0:     // Filling
+                //wpp_img_info.w = iw * wpp_img_info.ratio / panel_ratio;
+                wpp_img_info.w = ih * wpp_img_info.ratio;
+                wpp_img_info.h = ih;
+                wpp_img_info.cut = wpp_img_info.w - iw;
+                wpp_img_info.x = 0 - (wpp_img_info.cut / 2);
+                wpp_img_info.y = 0;
+                break;
+            case 1:     // Adjust
+                wpp_img_info.w = iw;
+                wpp_img_info.h = ih / wpp_img_info.ratio * panel_ratio;
+                wpp_img_info.cut = ih - wpp_img_info.h;
+                wpp_img_info.x = 0;
+                wpp_img_info.y = wpp_img_info.cut / 2;
+                break;
+            case 2:     // Stretch
+                wpp_img_info.w = iw;
+                wpp_img_info.h = ih;
+                wpp_img_info.cut = 0;
+                wpp_img_info.x = 0;
+                wpp_img_info.y = 0;
+                break;
+        };
+    }; else if(wpp_img_info.ratio < panel_ratio) {
+        wpp_img_info.orient = 2;
+        // 2/3 : default image is in portrait mode
+        switch(display_mode) {
+            case 0:     // Filling
+                wpp_img_info.w = iw;
+                //wpp_img_info.h = ih / wpp_img_info.ratio * panel_ratio;
+                wpp_img_info.h = iw / wpp_img_info.ratio;
+                wpp_img_info.cut = wpp_img_info.h - ih;
+                wpp_img_info.x = 0;
+                wpp_img_info.y = 0 - (wpp_img_info.cut / 4);
+                break;
+            case 1:     // Adjust
+                wpp_img_info.h = ih;
+                wpp_img_info.w = iw * wpp_img_info.ratio / panel_ratio;
+                wpp_img_info.cut = iw - wpp_img_info.w;
+                wpp_img_info.y = 0;
+                wpp_img_info.x = wpp_img_info.cut / 2;
+                break;
+            case 2:     // Stretch
+                wpp_img_info.w = iw;
+                wpp_img_info.h = ih;
+                wpp_img_info.cut = 0;
+                wpp_img_info.x = 0;
+                wpp_img_info.y = 0;
+                break;
+        };
+    }; else {
+        // 3/3 : default image is a square picture, ratio = 1
+        wpp_img_info.w = iw;
+        wpp_img_info.h = ih;
+        wpp_img_info.cut = 0;
+        wpp_img_info.x = 0;
+        wpp_img_info.y = 0;
+    };
+
+    var tmp_img = gdi.CreateImage(iw, ih);
+    var gp = tmp_img.GetGraphics();
+	gp.SetInterpolationMode(interpolation_mode);
+    gp.DrawImage(image, wpp_img_info.x, wpp_img_info.y, wpp_img_info.w, wpp_img_info.h, 0, 0, image.Width, image.Height, angle, 255);
+	tmp_img.ReleaseGraphics(gp);
+    
+    // blur it!
+    if(wpp_blurred) {
+        var blur_factor = wpp_blur_val;
+        tmp_img = draw_blurred_image(tmp_img,0,0,tmp_img.Width,tmp_img.Height,0,0,tmp_img.Width,tmp_img.Height,blur_factor,0x00ffffff);
+    };
+    
+	CollectGarbage();
+    if(rawBitmap) {
+        return tmp_img.CreateRawBitmap();
+    }; else {
+        return tmp_img;
+    };
+};
+
+var wpp_blurred = window.GetProperty("wallpaper blurred", false),
+    wpp_blur_val = window.GetProperty("wallpaper blur value", 1.05);
+
+
+function setWallpaperImg(path, metadb) {
+
+    var fmt_path = fb.TitleFormat(path).Eval(true);
+    var fmt_path_arr = utils.Glob(fmt_path).toArray();
+    if(fmt_path_arr.length > 0) {
+        var final_path = fmt_path_arr[0];
+    }; else {
+        var final_path = null;
+    };
+    
+    if(metadb && wpp_mode == 0) {
+        var tmp_img = utils.GetAlbumArtV2(metadb, wpp_mode);
+    }; else {
+        if(final_path) {
+            tmp_img = gdi.Image(final_path);
+        }; else {
+            tmp_img = null;
+        };
+    };
+    if(!tmp_img) {
+        if(final_path) {
+            tmp_img = gdi.Image(final_path);
+        }; else {
+            tmp_img = null;
+        };
+    };
+
+    wpp_image && wpp_image.Dispose();
+    var img = FormatWallpaper(tmp_img, ww, wh, 2, 0, 0, "", true);
+    return img;
+};
+
+function get_win10_color() {
+    var objShell = new ActiveXObject("WScript.Shell");
+    var temp;
+    try {
+        temp = objShell.RegRead("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\SpecialColor");
+        var c = toRGB2(temp);
+        temp = RGB(c[0], c[1], c[2]);
+    } catch (e) {
+        fb.trace("Fail to load win10 color");
+        temp = 0xff000000;
+    }
+    return temp;
+}
+
+
+function toRGB2(d) {
+	//var d = d - 0xff000000;
+    var d = d & 0x00ffffff;
+	var b = d >> 16;
+	var g = d >> 8 & 0xFF;
+	var r = d & 0xFF;
+	return [r, g, b];
+};
+
+fb.trace("get_win10_color: " + toRGB(get_win10_color()));
+
+function IsWin10OrGreater() {
+    var arr = utils.GetWindowsVersion().toArray();
+    return arr[0] > 5 && arr[1] > 2 && arr[3] >= 9600;
+}
