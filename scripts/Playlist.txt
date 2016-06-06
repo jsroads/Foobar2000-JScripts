@@ -152,6 +152,7 @@ function repaint() {
 var ddd = fb.CreateProfiler();
 var isDark = Luminance(color_bg) <= 0.6;
 var isSelDark = Luminance(color_bg_sel) <= 0.6;
+var is_playing = false;
 
 function on_paint(gr) {
 
@@ -173,11 +174,21 @@ function on_paint(gr) {
         end_ = (list_dr.length < end_) ? list_dr.length : end_;
 
         scrb_vis = (list_dr.length * row_height > wh - row_height);
+        var playing_item = plman.GetPlayingItemLocation();
+        var playing_idx = -1;
+        if (playing_item.IsValid && playing_item.PlaylistIndex == active_list) {
+            playing_idx = playing_item.PlaylistItemIndex;
+        }
+        for (var i = start_; i < end_; i++) {
+            is_playing = (playing_idx == i);
+            if (is_playing) 
+                break;
+        }
+
 
         for (var i = start_; i < end_; i++) {
             y_ = margin_top + row_height * i - scroll_;
             var is_selected = plman.IsPlaylistItemSelected(active_list, i);
-            var is_playing = (plman.PlayingPlaylist == active_list && plman.GetPlayingItemLocation().PlaylistItemIndex == i);
             var is_focused = plman.GetPlaylistFocusItemIndex(active_list) == i;
             // Odd/Even
             gr.FillSolidRect(10, y_, ww - 20 - (scrb_vis ? 14 : 0), row_height, i%2 ? (isDark ? 0x09ffffff : 0x09000000) : 0);
@@ -196,7 +207,7 @@ function on_paint(gr) {
 
             var num_w = gr.CalcTextWidth("00", g_font);
             gr.GdiDrawText(list_dr[i].string[3], g_font, colorT, 20+20, y_, num_w, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-            gr.GdiDrawText(list_dr[i].string[7], g_font3, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), ww-10-50-(scrb_vis?10:0), y_, 50, row_height, DT_VCENTER | DT_CALCRECT);
+            gr.GdiDrawText((is_playing && playing_idx == i) ? utils.FormatDuration(fb.Playbacktime) : list_dr[i].string[7], g_font3, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), ww-10-50-(scrb_vis?10:0), y_, 50, row_height, DT_VCENTER | DT_CALCRECT);
             var left_w = ww - 10 - 50 - (scrb_vis ? 14 : 0) - 20 - 50;
             if (ww >= 625 && ww < 1000) {
                 gr.GdiDrawText(list_dr[i].string[5], g_font, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), 20+50+left_w*0.5+5, y_, left_w*0.2-5, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
@@ -559,6 +570,12 @@ function on_playback_stop(reason) {
 
 function on_playback_queue_changed() {
     repaint();
+}
+
+function on_playback_time() {
+    if (!is_playing || !fb.IsPlaying || fb.IsPaused) 
+        return;
+    repaint_main1 = repaint_main2;
 }
 
 function on_playlists_changed() {
