@@ -163,13 +163,14 @@ if (!Array.isArray) {
 function Slider (nob_img, func_get, func_set) {
     this.nob_img = nob_img ? nob_img : null;
 
-	this.get = (function () {
-		return func_get instanceof Function ? func_get : function() {};
-	})();
+	this.get = func_get instanceof Function ? func_get : function() {};
+	this.set = func_set instanceof Function ? func_set : function() {};
+		//return func_get instanceof Function ? func_get : function() {};
+	//})();
 
-	this.set = (function () {
-		return func_set instanceof Function ? func_set : function() {};
-	})();
+	//this.set = (function () {
+		//return func_set instanceof Function ? func_set : function() {};
+	//})();
 
 	this.pos = this.get();
 }
@@ -185,7 +186,8 @@ Slider.prototype.draw = function(gr, x, y, w, h, y_offset, active_color, inactiv
 		gr.FillSolidRect(x, y+y_offset, w * this.pos, h-y_offset*2, active_color);
 	}
 	// nob 图片
-	if (this.nob_img && this.pos >= 0) {
+	if (this.nob_img && typeof this.pos == "number" && this.pos >= 0) {
+        //fb.trace(this.pos instanceof Number);
 		var img_w = this.nob_img.Width;
         gr.DrawImage(this.nob_img, x+w*this.pos - img_w/2, (h - img_w)/2+y, img_w, img_w, 0, 0, img_w, img_w, 0, 255);
 	};
@@ -312,13 +314,15 @@ function alert(msg) {
 	fb.ShowPopupMessage(msg, "WSH Panel Mod", 0);
 };
 
+/*
 function caller() {
 	var caller = /^function\s+([^(]+)/.exec(arguments.callee.caller.caller);
 	if (caller) return caller[1];
 	else return 0;
 };
+*/
 
-// Note: Not recommented to use this in `on_paint' callback, .
+// Note: Not recommented to use this in `on_paint';
 function GetTextWidth(str, font, type) {
 	var temp_gr = gdi.CreateImage(1, 1);
 	var g = temp_gr.GetGraphics();
@@ -482,6 +486,27 @@ function get_system_dpi_percent() {
     return Math.round(temp / 96 * 100);
 }
 
+
+
+function get_windows_version() {
+    // get windows version
+    var wbemFlagReturnImmediately = 0x10;
+    var wbemFlagForwardOnly = 0x20;
+    var objWMIService = GetObject("winmgmts:\\\\.\\root\\CIMV2");
+    var colItems = objWMIService.ExecQuery("SELECT * FROM Win32_OperatingSystem", "WQL",
+                                          wbemFlagReturnImmediately | wbemFlagForwardOnly);
+    var enumItems = new Enumerator(colItems);
+    var objItem = enumItems.item();
+    var version_number = 0;
+    if(objItem.Caption.toUpperCase().indexOf("XP")!=-1) version_number = 5;
+    if(objItem.Caption.toUpperCase().indexOf("VISTA")!=-1) version_number = 6;
+    if(objItem.Caption.toUpperCase().indexOf("7")!=-1) version_number = 7;
+    if(objItem.Caption.toUpperCase().indexOf("8")!=-1) version_number = 8;
+    if(objItem.Caption.toUpperCase().indexOf("10")!=-1) version_number = 10;
+    return version_number;
+}
+
+
 function zoom(value, factor) {
     return Math.round(value * factor / 100);
 }
@@ -613,22 +638,7 @@ var VK_KEY_Y = 0x59 //	Y
 var VK_KEY_Z = 0x5A //	Z
  
 var VK_F1	= 0x70 //	F1
-var VK_F10	= 0x79 //	F10
-var VK_F11	= 0x7A //	F11
-var VK_F12	= 0x7B //	F12
-var VK_F13	= 0x7C //	F13
-var VK_F14	= 0x7D //	F14
-var VK_F15	= 0x7E //	F15
-var VK_F16	= 0x7F //	F16
-var VK_F17	= 0x80 //	F17
-var VK_F18	= 0x81 //	F18
-var VK_F19	= 0x82 //	F19
 var VK_F2	= 0x71 //	F2
-var VK_F20	= 0x83 //	F20
-var VK_F21	= 0x84 //	F21
-var VK_F22	= 0x85 //	F22
-var VK_F23	= 0x86 //	F23
-var VK_F24	= 0x87 // F24
 var VK_F3	= 0x72 //	F3
 var VK_F4	= 0x73 //	F4
 var VK_F5	= 0x74 // F5
@@ -636,6 +646,23 @@ var VK_F6	= 0x75 // F6
 var VK_F7	= 0x76 // F7
 var VK_F8	= 0x77 // F8
 var VK_F9	= 0x78 // F9
+var VK_F10	= 0x79 //	F10
+var VK_F11	= 0x7A //	F11
+var VK_F12	= 0x7B //	F12
+/*
+var VK_F13	= 0x7C //	F13
+var VK_F14	= 0x7D //	F14
+var VK_F15	= 0x7E //	F15
+var VK_F16	= 0x7F //	F16
+var VK_F17	= 0x80 //	F17
+var VK_F18	= 0x81 //	F18
+var VK_F19	= 0x82 //	F19
+var VK_F20	= 0x83 //	F20
+var VK_F21	= 0x84 //	F21
+var VK_F22	= 0x85 //	F22
+var VK_F23	= 0x86 //	F23
+var VK_F24	= 0x87 // F24
+*/
 
 
 var FontStyle={Regular:0,Bold:1,Italic:2,BoldItalic:3,Underline:4,Strikeout:8};
