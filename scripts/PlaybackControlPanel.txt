@@ -26,8 +26,8 @@ var tf_title = fb.TitleFormat("[%artist% - ]%title%"),
 
 var shuffle_type = window.GetProperty("Shuffle type", 4),
     auto_mode = window.GetProperty("auto_mode", false),
-    ww_mode = window.GetProperty("ww_mode", 2);
-var background_mode = window.GetProperty("bg_mode", 1); 
+    ww_mode = window.GetProperty("ww_mode(0-2)", 2);
+var background_mode = window.GetProperty("bg_mode(0-2)", 1); 
 //var win10_color = window.GetProperty("Enable win10 color", false);
 
 /*
