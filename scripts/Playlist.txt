@@ -39,7 +39,7 @@ var window_visible = false,
     hold_scroll = false, mouse_in = false,
     mouse_hold = false,
     repaint_f1 = false, repaint_f2 = false, repaint_f = false,
-    repaint_main1 = true, repaint_main2 = true, repaint_main = true;
+    repaint_main1 = false, repaint_main2 = false, repaint_main = false;
 
 // Properties
 
@@ -164,7 +164,6 @@ function on_paint(gr) {
     if (!repaint_main && !repaint_f)
         repaint_main = repaint_f = true;
     if (repaint_main) {
-        //fb.trace("repaint_main");
         repaint_main = false;
 
         var start_ = 0, end_ = 0;
@@ -192,26 +191,28 @@ function on_paint(gr) {
             var is_selected = plman.IsPlaylistItemSelected(active_list, i);
             var is_focused = plman.GetPlaylistFocusItemIndex(active_list) == i;
             // Odd/Even
-            gr.FillSolidRect(10, y_, ww - 20 - (scrb_vis ? 14 : 0), row_height, i%2 ? (isDark ? 0x09ffffff : 0x09000000) : 0);
+            gr.FillSolidRect(10, y_, ww - 20 - (scrb_vis ? 10 : 0), row_height, i%2 ? (isDark ? 0x09ffffff : 0x09000000) : 0);
             // Sel
             if (is_selected) {
-                gr.FillSolidRect(10, y_, ww-20-(scrb_vis?14:0), row_height, color_bg_sel);
+                gr.FillSolidRect(10, y_, ww-20-(scrb_vis?10:0), row_height, color_bg_sel);
             }
             if (dragOverIdx == i) {
-                gr.FillSolidRect(10, y_+row_height-1, ww-20-(scrb_vis?14:0), 2, color_txt);
+                gr.FillSolidRect(10, y_+row_height-1, ww-20-(scrb_vis?10:0), 2, color_txt);
             }
 
             var colorT = color_txt;
             if (is_selected) {
                 colorT = (isSelDark == isDark) ? color_txt : negativeColor(color_txt);
+            } else if (is_playing && playing_idx == i) {
+                colorT = color_bg_sel;
             }
 
             var num_w = gr.CalcTextWidth("00", g_font);
             gr.GdiDrawText(list_dr[i].string[3], g_font, colorT, 20+20, y_, num_w, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
             gr.GdiDrawText((is_playing && playing_idx == i) ? utils.FormatDuration(fb.Playbacktime) : list_dr[i].string[7], g_font3, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), ww-10-50-(scrb_vis?10:0), y_, 50, row_height, DT_VCENTER | DT_CALCRECT);
-            var left_w = ww - 10 - 50 - (scrb_vis ? 14 : 0) - 20 - 50;
+            var left_w = ww - 10 - 50 - (scrb_vis ? 10 : 0) - 20 - 50;
             if (ww >= 625 && ww < 1000) {
-                gr.GdiDrawText(list_dr[i].string[5], g_font, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), 20+50+left_w*0.5+5, y_, left_w*0.2-5, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
+                gr.GdiDrawText(list_dr[i].string[5], g_font3, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), 20+50+left_w*0.5+5, y_, left_w*0.2-5, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
                 //gr.GdiDrawText(list_dr[i].string[1], g_font, is_selected ? colorT : blendColors(colorT, color_bg, 0.5), 20+50+left_w*0.7+5, y_, left_w*0.3-5, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
                 left_w = left_w * 0.51;
             } else if (ww >= 1000) {
@@ -226,15 +227,15 @@ function on_paint(gr) {
 
         /*
         var color2 = blendColors(color_txt, color_bg, 0.5);
-        var left_w = ww - 10 - 50 - (scrb_vis ? 14 : 0) - 20 - 50;
+        var left_w = ww - 10 - 50 - (scrb_vis ? 10 : 0) - 20 - 50;
         gr.GdiDrawText("#", g_font2, color2, 20, 0, 50, margin_top, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-        gr.GdiDrawText("Length", g_font2, color2, ww-60-(scrb_vis?14:0), 0, 50, margin_top, DT_CENTER | DT_VCENTER | DT_CALCRECT);
+        gr.GdiDrawText("Length", g_font2, color2, ww-60-(scrb_vis?10:0), 0, 50, margin_top, DT_CENTER | DT_VCENTER | DT_CALCRECT);
         if (ww >= 600) {
             gr.GdiDrawText("Artist", g_font2, blendColors(color_txt, color_bg, 0.5), 20+50+left_w*0.5+5, 0, left_w*0.2-5, margin_top, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
             gr.GdiDrawText("Album", g_font2, blendColors(color_txt, color_bg, 0.5), 20+50+left_w*0.7+5, 0, left_w*0.3-5, margin_top, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
             left_w = left_w * 0.5;
         }
-        gr.GdiDrawText("Ttile", g_font2, color2, 20+50, 0, ww-10-50-(scrb_vis?14:0)-20-50, margin_top, DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS);
+        gr.GdiDrawText("Ttile", g_font2, color2, 20+50, 0, ww-10-50-(scrb_vis?10:0)-20-50, margin_top, DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS);
         */
 
         // Scroll Bar
@@ -283,6 +284,11 @@ function on_timer_(timer233) {
     else
         time222 = d.getTime();
 
+    if (!window.IsVisible) {
+        repaint_main = false;
+        repaint_f = false;
+        return;
+    }
 
     var repaint_1 = false,
         repaint_2 = false;
@@ -290,7 +296,6 @@ function on_timer_(timer233) {
         repaint_f2 = !repaint_f1;
         repaint_1 = true;
     }
-
     if (repaint_main1 == repaint_main2) {
         repaint_main2 = !repaint_main1;
         repaint_2 = true;
@@ -320,20 +325,11 @@ function on_timer_(timer233) {
     } else if (repaint_2) {
         repaint_main = true;
         time_s.Reset();
-        //try {
         wh - margin_top > 0 && 
             window.RepaintRect(0, margin_top, ww, wh - margin_top, true);
-        //} catch (e) {
-            //fb.trace(margin_top);
-            //fb.trace(ww);
-            //fb.trace(wh);
-            //fb.trace(wh - margin_top);
-        //}
     }
 
 }
-
-
 
 
 
@@ -358,7 +354,7 @@ function on_mouse_lbtn_down(x, y, mask) {
     } else {
         // LIST
         var active_idx = Math.round((y + scroll - margin_top) / row_height - 0.5);
-        if (x < 10 || x > ww - (scrb_vis?14:0)-10)
+        if (x < 10 || x > ww - (scrb_vis?10:0)-10)
             active_idx = -1;
         var focus_idx = plman.GetPlaylistFocusItemIndex(active_list);
         clicked_idx = -1;
@@ -426,11 +422,11 @@ function select_range(from, to) {
 function on_mouse_lbtn_dblclk(x, y, mask) {
     var scrb_vis = (list_dr.length * row_height > wh - margin_top);
     var active_idx = Math.round((y + scroll - margin_top) / row_height - 0.5);
-    if (x < 10 || x > ww - (scrb_vis?14:0)-10 || y <= margin_top)
+    if (x < 10 || x > ww - (scrb_vis?10:0)-10 || y <= margin_top)
         active_idx = -1;
 
     if (active_idx < list_dr.length && active_idx >= 0
-            && x > 10 && x < ww - (scrb_vis?14:0) - 10) {
+            && x > 10 && x < ww - (scrb_vis?10:0) - 10) {
         plman.ExecutePlaylistDefaultAction(active_list, active_idx);
     }
 }
@@ -596,6 +592,7 @@ function on_playlist_switch() {
     list = plman.GetPlaylistItems(active_list);
     get_list();
     repaint_f1 = repaint_f2;
+    utils.PlaySound(fb.ProfilePath + "se_plst00.wav", 0);
 }
 
 function on_playlists_changed() {
@@ -637,6 +634,9 @@ function on_item_focus_change(playlist, from, to) {
 window.SetTimeout(function () {
     list = plman.GetPlaylistItems(active_list);
     get_list();
+    if (fb.IsPlaying) {
+        on_playback_new_track(fb.GetNowPlaying());
+    }
 }, 5);
 
 
