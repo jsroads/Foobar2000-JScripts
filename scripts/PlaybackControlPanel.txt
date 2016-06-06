@@ -28,12 +28,15 @@ var shuffle_type = window.GetProperty("Shuffle type", 4),
     auto_mode = window.GetProperty("auto_mode", false),
     ww_mode = window.GetProperty("ww_mode", 2);
 var background_mode = window.GetProperty("bg_mode", 1); 
-var win10_color = window.GetProperty("Enable win10 color", false);
+//var win10_color = window.GetProperty("Enable win10 color", false);
 
-if (background_mode == 1 && win10_color && IsWin10OrGreater()) {
-    color_txt = RGB(235, 235, 235);
+/*
+if (background_mode == 0 && win10_color && IsWin10OrGreater()) {
+    color_txt = RGB(255, 255, 255);
     color_bg = get_win10_color();
+    color_txt2 = blendColors(color_txt, color_bg, 0.3);
 }
+*/
 
 var pb_length = "-:--",
     pb_time = "-:--",
@@ -128,8 +131,9 @@ function get_images() {
         sf = StringFormat(1, 1);
     var font_ico = gdi.Font("Segoe MDL2 Assets", 15);
 
-	var ico_name = ["prev", "pause", "play", "next", "volume", "shuffle", "repeat", "repeat1", "normal"],
-        ico_code = ["\uE100", "\uE103", "\uE102", "\uE101", "\uE15D" , "\uE14B", "\uE149", "\uE1CC", "\uE8AB"];
+	var ico_name = ["prev", "pause", "play", "next", "volume", "shuffle", "repeat", "repeat1", "normal",
+    "volume0", "volume1", "volume2", "volume3", "volume_mute"],
+        ico_code = ["\uE100", "\uE103", "\uE102", "\uE101", "\uE15D" , "\uE14B", "\uE149", "\uE1CC", "\uE13C"];
 
     w = 40;
     for (var i = 0; i < ico_name.length; i++) {
@@ -423,7 +427,7 @@ function getWallpaper(img) {
     if (!img) {
         return img;
     }
-    Wpp.image && Wpp.image.Dispose();
+    //Wpp.image && Wpp.image.Dispose();
     var img = FormatWallpaper(img, ww, wh, 2, 0, 0, "", true);
     return img;
 }
@@ -1014,23 +1018,27 @@ function setWallpaperImg(path, metadb) {
     return img;
 };
 
+/*
 function get_win10_color() {
+    if (!IsWin10OrGreater())
+        return 0xff000000;
     var objShell = new ActiveXObject("WScript.Shell");
     var temp;
     try {
-        temp = objShell.RegRead("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\SpecialColor");
+        //temp = objShell.RegRead("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\SpecialColor");
+        temp = objShell.RegRead("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\DWM\\ColorizationColor");
         var c = toRGB2(temp);
         temp = RGB(c[0], c[1], c[2]);
     } catch (e) {
-        fb.trace("Fail to load win10 color");
-        temp = 0xff000000;
+        fb.trace("WIN10 COLOR: Fail to get win10 color");
+        temp = 0xff0078d7;
     }
     return temp;
 }
+*/
 
 
 function toRGB2(d) {
-	//var d = d - 0xff000000;
     var d = d & 0x00ffffff;
 	var b = d >> 16;
 	var g = d >> 8 & 0xFF;
@@ -1038,9 +1046,8 @@ function toRGB2(d) {
 	return [r, g, b];
 };
 
-fb.trace("get_win10_color: " + toRGB(get_win10_color()));
+//fb.trace("get_win10_color: " + toRGB(get_win10_color()));
 
 function IsWin10OrGreater() {
-    var arr = utils.GetWindowsVersion().toArray();
-    return arr[0] > 5 && arr[1] > 2 && arr[3] >= 9600;
+    return get_windows_version() >= 10;
 }
