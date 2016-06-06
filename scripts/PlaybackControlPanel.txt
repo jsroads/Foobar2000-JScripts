@@ -204,11 +204,11 @@ function check_mode() {
 var tmp_out;
 
 function on_size() {
+    ww = Math.max(320, window.Width);
+    wh = window.Height;
     if (auto_mode) 
         check_mode();
     window.MaxHeight = window.MinHeight = get_panel_height();
-    ww = Math.max(320, window.Width);
-    wh = window.Height;
 
     tmp_out && window.ClearInterval(tmp_out);
     tmp_out = window.SetInterval(function () {
@@ -343,10 +343,13 @@ function on_paint(gr) {
                 volpanel.x = ww - 2 - volpanel.w;
             volpanel.y = 2;
             volpanel.h = 30;
+            if (b.y - volpanel.y - volpanel.h > 10) {
+                volpanel.y = b.y - volpanel.h - 10;
+            }
         } else {
             volpanel.x = b.x - volpanel.w - pad;
-            volpanel.y = (wh - volpanel.h) /2;
             volpanel.h = 40;
+            volpanel.y = (wh - volpanel.h) /2;
         }
         gr.FillSolidRect(volpanel.x-2, volpanel.y-2, volpanel.w+4, volpanel.h+4, color_bg);
         gr.FillSolidRect(volpanel.x, volpanel.y, volpanel.w, volpanel.h, color_txt);
