@@ -64,7 +64,7 @@ var color_txt = eval(window.GetProperty("Color text", "RGB(225, 225, 225)")),
     color_bg_sel = eval(window.GetProperty("Color bg_sel", "RGB(130, 90, 44)"));
 
 
-var g_font, g_font2, g_font3;
+var g_font, g_font2, g_font3, g_font4;
 
 
 var research = false,
@@ -81,6 +81,7 @@ function setfont() {
     g_font = gdi.Font(font_name, font_size, 0);
     g_font2 = gdi.Font(font_name, font_size, 1);
     g_font3 = gdi.Font(font_name, font_size-2, 0);
+    g_font4 = gdi.Font(font_name, 32);
 }
 
 
@@ -249,6 +250,9 @@ function on_paint(gr) {
     }
     if (repaint_f) {
         repaint_f = false;
+        gr.GdiDrawText(plman.GetPlaylistName(active_list), g_font4, color_txt, 40, 20, ww - 60, 65, DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
+        list_dr.length &&
+            gr.GdiDrawText("List: " +list_dr.length + " items", g_font, color_txt, 40, 80, ww-60, 40, DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
     }
 
     //fb.trace(ddd.Time);
@@ -591,6 +595,11 @@ function on_playlist_switch() {
     active_list = plman.ActivePlaylist;
     list = plman.GetPlaylistItems(active_list);
     get_list();
+    repaint_f1 = repaint_f2;
+}
+
+function on_playlists_changed() {
+    repaint_f1 = repaint_f2;
 }
 
 
@@ -621,6 +630,7 @@ function on_selection_change() {
 
 function on_item_focus_change(playlist, from, to) {
 }
+
 
 
 
