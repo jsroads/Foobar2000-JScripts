@@ -26,8 +26,10 @@ var tf_title = fb.TitleFormat("[%artist% - ]%title%"),
 
 var shuffle_type = window.GetProperty("Shuffle type", 4),
     auto_mode = window.GetProperty("auto_mode", false),
-    ww_mode = window.GetProperty("ww_mode(0-2)", 2);
+    ww_mode = window.GetProperty("ww_mode(0-2)", 1);
 var background_mode = window.GetProperty("bg_mode(0-2)", 1); 
+var wpp_blurred = window.GetProperty("wallpaper blurred", false),
+    wpp_blur_val = window.GetProperty("wallpaper blur value", 1.05);
 //var win10_color = window.GetProperty("Enable win10 color", false);
 
 /*
@@ -415,7 +417,6 @@ function on_playback_stop(reason) {
 }
 
 var color_timer = null;
-
 var Wpp = {};
 
 function getWallpaper(img) {
@@ -843,8 +844,8 @@ function inverseColors(color, palette) {
 // FROM BR3TT's JSSMOOTHPLAYLIST
     
 var wpp_img_info = {orient: 0, cut: 0, cut_offset: 0, ratio: 0, x: 0, y: 0, w: 0, h: 0};
-var wpp_mode = 0;
-var wpp_image = null;
+//var wpp_mode = 0;
+//var wpp_image = null;
 
 function draw_blurred_image(image,ix,iy,iw,ih,bx,by,bw,bh,blur_value,overlay_color) {
     var blurValue = blur_value;
@@ -974,10 +975,9 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
     };
 };
 
-var wpp_blurred = window.GetProperty("wallpaper blurred", false),
-    wpp_blur_val = window.GetProperty("wallpaper blur value", 1.05);
 
 
+/*
 function setWallpaperImg(path, metadb) {
 
     var fmt_path = fb.TitleFormat(path).Eval(true);
@@ -1009,6 +1009,7 @@ function setWallpaperImg(path, metadb) {
     var img = FormatWallpaper(tmp_img, ww, wh, 2, 0, 0, "", true);
     return img;
 };
+*/
 
 /*
 function get_win10_color() {
@@ -1030,6 +1031,7 @@ function get_win10_color() {
 */
 
 
+/*
 function toRGB2(d) {
     var d = d & 0x00ffffff;
 	var b = d >> 16;
@@ -1037,6 +1039,7 @@ function toRGB2(d) {
 	var r = d & 0xFF;
 	return [r, g, b];
 };
+*/
 
 //fb.trace("get_win10_color: " + toRGB(get_win10_color()));
 
