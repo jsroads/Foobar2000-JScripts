@@ -256,7 +256,6 @@ function on_paint(gr) {
             gr.GdiDrawText("List: " +list_dr.length + " items", g_font, color_txt, 40, 80, ww-60, 40, DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
     }
 
-    //fb.trace(ddd.Time);
 
 }
     
@@ -268,6 +267,7 @@ function check_scroll(scroll___) {
         scroll___ = 0;
     return scroll___;
 }
+
 
 function on_timer_(timer233) {
     time_dl = time_s.Time;
@@ -284,11 +284,6 @@ function on_timer_(timer233) {
     else
         time222 = d.getTime();
 
-    if (!window.IsVisible) {
-        repaint_main = false;
-        repaint_f = false;
-        return;
-    }
 
     var repaint_1 = false,
         repaint_2 = false;
@@ -576,6 +571,7 @@ function on_playback_time() {
     if (!is_playing || !fb.IsPlaying || fb.IsPaused) 
         return;
     repaint_main1 = repaint_main2;
+    repaint_f1 = repaint_f2;
 }
 
 function on_playlists_changed() {
