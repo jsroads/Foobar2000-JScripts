@@ -360,7 +360,7 @@ function on_paint(gr) {
 }
 
 
-var album_old = "!@#";
+var alb_old = "!@#";
 
 function on_metadb_changed (handlelist, fromhook) {
 
@@ -370,24 +370,15 @@ function on_metadb_changed (handlelist, fromhook) {
         alb_str = tf_alb.EvalWithMetadb(metadb);
         title_str = tf_title.EvalWithMetadb(metadb);
 
-        var album = tf_art_alb.EvalWithMetadb(metadb);
-        if (album != album_old) {
+        var alb = tf_art_alb.EvalWithMetadb(metadb);
+        if (alb != alb_old) {
             utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
-            album_old = album;
+            alb_old = alb;
         }
     } else {
         cover.img = null;
         alb_str = "";
         title_str = "";
-    }
-    if (metadb) {
-        /*
-        var album = tf_art_alb.EvalWithMetadb(metadb);
-        if (album != album_old) {
-            utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
-            album_old = album;
-        }
-        */
     }
 
     repaint();
@@ -419,6 +410,7 @@ function on_playback_stop(reason) {
         pb_length = "-:--";
         sk.update();
         on_metadb_changed();
+        on_get_album_art_done();
     }
 }
 
@@ -427,10 +419,7 @@ var color_timer = null;
 var Wpp = {};
 
 function getWallpaper(img) {
-    if (!img) {
-        return img;
-    }
-    //Wpp.image && Wpp.image.Dispose();
+    if (!img) { return img; }
     var img = FormatWallpaper(img, ww, wh, 2, 0, 0, "", true);
     return img;
 }
