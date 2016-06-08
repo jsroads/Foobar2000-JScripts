@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Foobar2000-jscripts by elia-is-me</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-dark.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/elia-is-me/Foobar2000-JScripts">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/elia-is-me/Foobar2000-JScripts/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/elia-is-me/Foobar2000-JScripts/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Foobar2000-jscripts</h1>
+          <p>My foobar2000&#39;s WSH scripts(Jscripts)</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/elia-is-me">elia-is-me</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h3>
+<a id="简介" class="anchor" href="#%E7%AE%80%E4%BB%8B" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>简介</h3>
+
+<p><strong><a href="">WSH Panel Mod Plus</a></strong> 是 foobar2000 最好的插件之一，Elia 本人折服于其强大的功能，从一穷二白中开始自学 JScript 以自定义自己的 foobar2000。在不断的重复与自我推翻过程中，一些脚本被留下来了，本人将其整理于此，以飨众人。</p>
+
+<h3>
+<a id="文件" class="anchor" href="#%E6%96%87%E4%BB%B6" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>文件</h3>
+
+<h4>
+<a id="eslyric" class="anchor" href="#eslyric" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>ESLyric</h4>
+
+<p><a href=""><strong>ESLyric</strong>(foo_uie_eslyric.dll)</a> 是 ttsping (aka ohyeah) 为 foobar2000 写的歌词插件，简介与教程见这里。</p>
+
+<p>ESLyric 目录里的 <code>*.js</code> 文件是 ESLyric 的歌词抓取文件，都是独立文件。</p>
+
+<p>使用方法：</p>
+
+<ul>
+<li>File &gt; Preferences &gt; Tools &gt; ESLyric 打开 ESLyric 的设置页面，</li>
+<li>切换到 <code>搜索</code> 标签页下，单击 <code>添加</code> 按钮，弹出 ESLyric 的脚本编辑器窗口，</li>
+</ul>
+
+<h4>
+<a id="common-文件夹" class="anchor" href="#common-%E6%96%87%E4%BB%B6%E5%A4%B9" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Common 文件夹</h4>
+
+<p><strong>Common</strong> 目录里是一些公共文件，通常会在脚本开始根据需要通过 <code>@import</code> 导入到脚本中。各个文件说明：</p>
+
+<ul>
+<li>common4.js: 里面是一些常用的常量、函数、对象等</li>
+<li>lang.js: 多语言化功能</li>
+<li>inputbox.js (by <a href="">br3tt</a>): 输入框功能</li>
+</ul>
+
+<p>例如：</p>
+
+<pre><code>// ==PREPROCESSOR==
+// @import "path\to\common4.js"
+// @import "path\to\lang.js"
+// ==/PREPROCESSOR==
+</code></pre>
+
+<p><strong>Scripts</strong> 目录中则为一些已完成的脚本，它们<strong>应当</strong>是可以直接导入到 WSH Panel Mod Plus 面板中并直接使用的。</p>
+
+<blockquote>
+<p>然而本人没有良好的开发习惯，导致里面的文件经常无法处于可使用状态……</p>
+</blockquote>
+
+<ul>
+<li>PlaybackControlPanel.txt: 播放控制面板，提供播放控制按钮（播放、暂停、前一首等）、进度条、音量条及简单的音轨信息显示。仿照的是 WIN10 默认播放器 Groove 的底部面板。WIN10 之前的操作系统需要安装额外的字体 <strong>Segoe MDL2 Assets</strong>。</li>
+</ul>
+
+<h3>
+<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+
+<p>...</p>
+
+<h3>
+<a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support or Contact</h3>
+
+<p>...</p>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
