@@ -1,0 +1,1455 @@
+﻿// @version "0.4.1"
+// @author "Eric Chu (eric@mozest.com)"
+// @modby "Elia"
+
+
+
+//////////////////////////////////////////////////////////////////////
+var script_name = "foobar2000 Scrobbler",
+    user_agent = "foo_scrobbler";
+//////////////////////////////////////////////////////////////////////
+var lastfm_api_key = "0569de53d40d0345d45fda779c06c6e4",
+    lastfm_api_secret = "f18ca48d57fe6f0dfff313713f818f3e",
+    lastfm_retry_delay = 10;
+
+var themes_path = fb.ProfilePath + "themes\\",
+    skin_path = themes_path + "groove\\",
+    lastfm_path = skin_path + "last.fm\\";
+
+var lastfm_sqlite_exe = lastfm_path + "sqlite3.exe";
+var lastfm_import_cmd = lastfm_path + "import.cmd";
+
+var lastfm_profile_path = lastfm_path + "profile\\";
+var lastfm_username_file = lastfm_profile_path + "username";
+var lastfm_sk_file = lastfm_profile_path + "sk";
+
+var lastfm_data_path = lastfm_path + "data\\";
+var lastfm_database_file = fb.ProfilePath + "customdb_sqlite.db";
+var lastfm_scrobble_cache_file = lastfm_data_path + "scrobble.cache";
+var lastfm_sql_file = lastfm_data_path + "datebase.sql";
+//////////////////////////////////////////////////////////////////////
+var WshShell = new ActiveXObject("WScript.Shell");
+var fso      = new ActiveXObject("Scripting.FileSystemObject");
+var doc      = new ActiveXObject("htmlfile");
+if (!fso.FolderExists(themes_path)) {
+    fso.CreateFolder(themes_path);
+}
+if (!fso.FolderExists(skin_path)) {
+    fso.CreateFolder(skin_path);
+}
+if (!fso.FolderExists(lastfm_path)) {
+    fso.CreateFolder(lastfm_path);
+}
+if (!fso.FolderExists(lastfm_profile_path)) {
+    fso.CreateFolder(lastfm_profile_path);
+}
+if (!fso.FolderExists(lastfm_data_path)) {
+    fso.CreateFolder(lastfm_data_path);
+}
+
+var fb_wnd = GetFBWnd();
+
+var auto_love    = window.GetProperty("auto_love", false),
+	auto_love_tf = window.GetProperty("auto_love_tf", ""),
+	show_console = window.GetProperty("show_console", true);
+
+function sprintf () {
+    // http://kevin.vanzonneveld.net
+    // +   original by: Ash Searle (http://hexmen.com/blog/)
+    // + namespaced by: Michael White (http://getsprink.com)
+    // +    tweaked by: Jack
+    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // +      input by: Paulo Freitas
+    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // +      input by: Brett Zamir (http://brett-zamir.me)
+    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // *     example 1: sprintf("%01.2f", 123.1);
+    // *     returns 1: 123.10
+    // *     example 2: sprintf("[%10s]", 'monkey');
+    // *     returns 2: '[    monkey]'
+    // *     example 3: sprintf("[%'#10s]", 'monkey');
+    // *     returns 3: '[####monkey]'
+    var regex = /%%|%(\d+\$)?([-+\'#0 ]*)(\*\d+\$|\*|\d+)?(\.(\*\d+\$|\*|\d+))?([scboxXuidfegEG])/g;
+    var a = arguments,
+        i = 0,
+        format = a[i++];
+
+    // pad()
+    var pad = function (str, len, chr, leftJustify) {
+        if (!chr) {
+            chr = ' ';
+        }
+        var padding = (str.length >= len) ? '' : Array(1 + len - str.length >>> 0).join(chr);
+        return leftJustify ? str + padding : padding + str;
+    };
+
+    // justify()
+    var justify = function (value, prefix, leftJustify, minWidth, zeroPad, customPadChar) {
+        var diff = minWidth - value.length;
+        if (diff > 0) {
+            if (leftJustify || !zeroPad) {
+                value = pad(value, minWidth, customPadChar, leftJustify);
+            } else {
+                value = value.slice(0, prefix.length) + pad('', diff, '0', true) + value.slice(prefix.length);
+            }
+        }
+        return value;
+    };
+
+    // formatBaseX()
+    var formatBaseX = function (value, base, prefix, leftJustify, minWidth, precision, zeroPad) {
+        // Note: casts negative numbers to positive ones
+        var number = value >>> 0;
+        prefix = prefix && number && {
+            '2': '0b',
+            '8': '0',
+            '16': '0x'
+        }[base] || '';
+        value = prefix + pad(number.toString(base), precision || 0, '0', false);
+        return justify(value, prefix, leftJustify, minWidth, zeroPad);
+    };
+
+    // formatString()
+    var formatString = function (value, leftJustify, minWidth, precision, zeroPad, customPadChar) {
+        if (precision != null) {
+            value = value.slice(0, precision);
+        }
+        return justify(value, '', leftJustify, minWidth, zeroPad, customPadChar);
+    };
+
+    // doFormat()
+    var doFormat = function (substring, valueIndex, flags, minWidth, _, precision, type) {
+        var number;
+        var prefix;
+        var method;
+        var textTransform;
+        var value;
+
+        if (substring == '%%') {
+            return '%';
+        }
+
+        // parse flags
+        var leftJustify = false,
+            positivePrefix = '',
+            zeroPad = false,
+            prefixBaseX = false,
+            customPadChar = ' ';
+        var flagsl = flags.length;
+        for (var j = 0; flags && j < flagsl; j++) {
+            switch (flags.charAt(j)) {
+            case ' ':
+                positivePrefix = ' ';
+                break;
+            case '+':
+                positivePrefix = '+';
+                break;
+            case '-':
+                leftJustify = true;
+                break;
+            case "'":
+                customPadChar = flags.charAt(j + 1);
+                break;
+            case '0':
+                zeroPad = true;
+                break;
+            case '#':
+                prefixBaseX = true;
+                break;
+            }
+        }
+
+        // parameters may be null, undefined, empty-string or real valued
+        // we want to ignore null, undefined and empty-string values
+        if (!minWidth) {
+            minWidth = 0;
+        } else if (minWidth == '*') {
+            minWidth = +a[i++];
+        } else if (minWidth.charAt(0) == '*') {
+            minWidth = +a[minWidth.slice(1, -1)];
+        } else {
+            minWidth = +minWidth;
+        }
+
+        // Note: undocumented perl feature:
+        if (minWidth < 0) {
+            minWidth = -minWidth;
+            leftJustify = true;
+        }
+
+        if (!isFinite(minWidth)) {
+            throw new Error('sprintf: (minimum-)width must be finite');
+        }
+
+        if (!precision) {
+            precision = 'fFeE'.indexOf(type) > -1 ? 6 : (type == 'd') ? 0 : undefined;
+        } else if (precision == '*') {
+            precision = +a[i++];
+        } else if (precision.charAt(0) == '*') {
+            precision = +a[precision.slice(1, -1)];
+        } else {
+            precision = +precision;
+        }
+
+        // grab value using valueIndex if required?
+        value = valueIndex ? a[valueIndex.slice(0, -1)] : a[i++];
+
+        switch (type) {
+        case 's':
+            return formatString(String(value), leftJustify, minWidth, precision, zeroPad, customPadChar);
+        case 'c':
+            return formatString(String.fromCharCode(+value), leftJustify, minWidth, precision, zeroPad);
+        case 'b':
+            return formatBaseX(value, 2, prefixBaseX, leftJustify, minWidth, precision, zeroPad);
+        case 'o':
+            return formatBaseX(value, 8, prefixBaseX, leftJustify, minWidth, precision, zeroPad);
+        case 'x':
+            return formatBaseX(value, 16, prefixBaseX, leftJustify, minWidth, precision, zeroPad);
+        case 'X':
+            return formatBaseX(value, 16, prefixBaseX, leftJustify, minWidth, precision, zeroPad).toUpperCase();
+        case 'u':
+            return formatBaseX(value, 10, prefixBaseX, leftJustify, minWidth, precision, zeroPad);
+        case 'i':
+        case 'd':
+            number = (+value) | 0;
+            prefix = number < 0 ? '-' : positivePrefix;
+            value = prefix + pad(String(Math.abs(number)), precision, '0', false);
+            return justify(value, prefix, leftJustify, minWidth, zeroPad);
+        case 'e':
+        case 'E':
+        case 'f':
+        case 'F':
+        case 'g':
+        case 'G':
+            number = +value;
+            prefix = number < 0 ? '-' : positivePrefix;
+            method = ['toExponential', 'toFixed', 'toPrecision']['efg'.indexOf(type.toLowerCase())];
+            textTransform = ['toString', 'toUpperCase']['eEfFgG'.indexOf(type) % 2];
+            value = prefix + Math.abs(number)[method](precision);
+            return justify(value, prefix, leftJustify, minWidth, zeroPad)[textTransform]();
+        default:
+            return substring;
+        }
+    };
+
+    return format.replace(regex, doFormat);
+}
+
+function __(message) {
+    if (typeof mo == "undefined" || typeof mo[lang] == "undefined" || typeof mo[lang][message] == "undefined") {
+        return message;
+    } else {
+        return mo[lang][message];
+    }
+}
+
+function RGBA(r, g, b, a) {
+    return ((a << 24) | (r << 16) | (g << 8) | (b));
+}
+
+function RGB(r, g, b) {
+    return (0xff000000 | (r << 16) | (g << 8) | (b));
+}
+
+function StringFormat() {
+    var h_align = 0, v_align = 0, trimming = 0, flags = 0;
+    switch (arguments.length)
+    {
+    case 4:
+        flags    = arguments[3];
+    case 3:
+        trimming = arguments[2];
+    case 2:
+        v_align  = arguments[1];
+    case 1:
+        h_align  = arguments[0];
+        break;
+    default:
+        return 0;
+    }
+    return ((h_align << 28) | (v_align << 24) | (trimming << 20) | flags);
+}
+
+function TimeFmt(t){
+    var zpad = function(n){
+        var str = n.toString();
+        return (str.length<2) ? "0"+str : str;
+    }
+    var h = Math.floor(t/3600); t-=h*3600;
+    var m = Math.floor(t/60); t-=m*60;
+    var s = Math.floor(t);
+    if(h>0) return h.toString()+":"+zpad(m)+":"+zpad(s);
+    return m.toString()+":"+zpad(s);
+}
+
+function on_mouse_rbtn_up(x, y, vkey){
+    if (vkey == MK_SHIFT) {
+        return;
+    } else {
+        return true;
+    }
+}
+
+
+function read(fn) {
+	try {
+		var f = fso.OpenTextFile(fn, 1, false, -1);
+		var s = f.Readline();
+		f.Close();
+		return s;
+	} catch(e) {
+		return '';
+	}
+}
+
+function save_text_file(t, f) {
+	try {
+		var ts = fso.OpenTextFile(f, 2, true, -1);
+		ts.WriteLine(t);
+		ts.close();
+	} catch(e) {
+		fb.trace(sprintf(__("保存文本文件失败：\n%s"), e.message + " | " + e.number + " | " + e.name));
+	}
+}
+
+function save_binary_file(filename, content) {
+	try {   
+		var ostream = new ActiveXObject("adodb.stream");
+		ostream.Type = 1 //binary 
+		ostream.Open(); 
+		ostream.Write(content);
+		ostream.SaveToFile(filename,  2); 
+	} catch(e) {
+		fb.trace(sprintf(__("保存二进制文件失败：\n%s"), e.message + " | " + e.number + " | " + e.name));
+	}
+}
+
+
+
+
+/*j
+function lastfm(params) {
+    var api_key = params.api_key;
+    var api_secret = params.secret;
+    var username = params.username;
+    var sk = params.sk;
+    var username_file = params.username_file;
+    var sk_file = params.sk_file;
+    var retry_delay = params.retry_delay;
+    
+    var scrobble_cache_file = params.scrobble_cache_file;
+	var scrobble_cache = params.scrobble_cache.length > 0 ? JSON.parse(params.scrobble_cache) : [];
+
+    this.import_cmd = params.import_cmd;
+    this.sql_file = params.sql_file;
+
+    this.sqlite_exe = params.sqlite_exe;
+    this.database_file = params.database_file;
+
+    var send_now_playing_next = 0;
+    var send_scrobble_next = 0;
+    var send_scrobble_working = false;
+
+    this.auto_correct = params.auto_correct;
+    this.now_playing_loved_working = false;
+    this.sync_track_working = false;
+    this.sync_loved_working = false;
+    this.sync_playcount_working = false;
+
+	var api_method_prop = {
+			"auth.getMobileSession" : {
+				"sig_required" : true,
+				"http_method"  : "GET"
+			},
+			"track.updateNowPlaying" : {
+				"sig_required" : true,
+				"http_method"  : "POST"
+			},
+			"track.scrobble" : {
+				"sig_required" : true,
+				"http_method"  : "POST"
+			},
+		
+			"track.love" : {
+				"sig_required" : true,
+				"http_method"  : "POST"
+			},
+			"track.unlove" : {
+				"sig_required" : true,
+				"http_method"  : "POST"
+			},
+			"track.getinfo" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			},
+			"user.getlovedtracks" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			},
+			"library.gettracks" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			},
+			"album.getInfo" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			},
+			"artist.getImages" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			}
+		},
+
+        build_api_sig = function (params) {
+            var params_temp = {},
+                params_keys = [],
+                api_sig_str = "";
+            for (var key in params) {
+                params_temp[key] = decodeURIComponent(params[key]);
+                params_keys.push(key);
+            }
+            params_keys.sort();
+            for (var index in params_keys) {
+                var key = params_keys[index];
+                api_sig_str += key + params_temp[key];
+            }
+            api_sig_str += api_secret;
+            return md5(api_sig_str);
+        },
+
+        connect = function (params, on_success, on_error) {
+			var api_url = "http://ws.audioscrobbler.com/2.0/?format=json";
+            params.api_key = api_key;
+            if (params.method != "auth.getMobileSession") {
+                if (api_method_prop[params.method]["sig_required"]) {
+                    params.sk = sk;
+                    api_url += "&api_sig=" + build_api_sig(params);
+                } else {
+                    params.user = username;
+                    api_url += "&s=" + Math.random();
+                }
+            } else {
+                api_url += "&api_sig=" + build_api_sig(params);
+            }
+            for (var key in params) {
+                api_url += "&" + key + "=" + params[key];
+            }
+            fb.trace(api_url);
+			var xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            xmlhttp.open(api_method_prop[params.method]["http_method"], api_url, true);
+			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+			xmlhttp.setRequestHeader('User-Agent', user_agent);
+            xmlhttp.onreadystatechange = function () {
+                on_ready_state_change(xmlhttp, on_success, on_error);
+            }
+            xmlhttp.send();
+        },
+
+        on_ready_state_change = function(xmlhttp, on_success, on_error) {
+            on_success = on_success || function () {};
+            on_error = on_error || function () {};
+            if (xmlhttp.readyState == 4) {
+                if (xmlhttp.status == 200) {
+                    try {
+                        data = JSON.parse(xmlhttp.responseText);
+                    } catch (e) {
+                        data = {
+                            "error": -100,
+                            "message": "未知错误"
+                        };
+                    }
+                    fb.trace("ON SUCCESS");
+                    (on_success)(data, xmlhttp);
+                } else {
+					var message = "与 Last.fm 服务器连接时发生错误。" + "\n" + (xmlhttp.responseText || "HTTP 错误: " + xmlhttp.status);
+                    fb.trace("ON ERROR");
+                    (on_error)(message, xmlhttp);
+                }
+            }
+        },
+
+        merge_track_to_params = function (params, track, track_order) {
+            if (typeof track_order != "undefined") {
+                track_order_str = "[" + track_order + "]";
+            } else {
+                track_order_str = "";
+            }
+            for (var key in track) {
+                params[key + track_order_str] = encodeURIComponent(track[key]);
+            }
+            return params;
+        };
+
+    this.check_env = function (show_msgbox) {
+        var error_message = "";
+        switch (true) {
+            case username.length == 0:
+            case sk.length == 0:
+                error_message = "未设置 Last.fm 账户。\n";
+                break;
+            case api_key.length != 32:
+            case api_secret.length != 32:
+                error_message = "未设置 Last.fm API key 或 secret。";
+                break;
+        }
+        if (error_message.length > 0) {
+            if (show_msgbox) {
+                fb_wnd.MsgBox("LAST FM", error_message);
+            }
+            return false;
+        } 
+        return true;
+    }
+
+    this.auth = function (username_temp, password_temp) {
+        var params = {
+                "method": "auth.getMobileSession",
+                "username": username_temp,
+                "authToken": md5(username_temp + " " + md5(password_temp))
+            },
+            msgbox_title = "设置 Last.fm 账户";
+        connect(params, function(data) {
+            if (typeof data.error != undefined) {
+                message = data.message;
+                fb.trace("data error");
+            } else {
+                username = username_temp;
+                sk = data.session.key;
+                save_text_file(username, username_file);
+                save_text_file(sk, sk_file);
+                message = "账户设置成功";
+            }
+            fb_wnd.MsgBox(msgbox_title, message, 0);
+        }, function (message) {
+            fb_wnd.MsgBox(msgbox_title, message, 0);
+        });
+    }
+
+    this.set_account = function () {
+        function set_username() {
+            username_temp = fb_wnd.InputBox("设置 Last.fm 账户", "用户名", username);
+            fb.trace(username_temp);
+            if (username_temp != "") {
+                set_password(username_temp);
+            }
+        }
+        function set_password(username_temp) {
+            password_temp = fb_wnd.InputBox("设置 Last.fm 账户", "密码（不保存）", "");
+            fb.trace(password_temp);
+            if (password_temp != '') {
+                lastfm.auth(username_temp, password_temp);
+            }
+        }
+        set_username();
+    }
+
+}
+*/
+
+
+function lastfm(params) {
+	var api_key                   = params.api_key;
+	var api_secret                = params.api_secret;
+	var username                  = params.username;
+	var sk                        = params.sk;
+	var username_file             = params.username_file;
+	var sk_file                   = params.sk_file;
+	var retry_delay               = params.retry_delay;
+
+	var scrobble_cache_file       = params.scrobble_cache_file;
+	var scrobble_cache            = scrobble_cache = params.scrobble_cache.length > 0 ? JSON.parse(params.scrobble_cache) : [];
+
+	this.import_cmd           = params.import_cmd;
+	this.sql_file                  = params.sql_file;
+
+	this.sqlite_exe               = params.sqlite_exe;
+	this.database_file             = params.database_file;
+
+	var send_now_playing_next     = 0;
+	var send_scrobble_next        = 0;
+	var send_scrobble_working     = false;
+
+	this.auto_correct              = params.auto_correct;
+	this.now_playing_loved_working = false;
+	this.sync_track_working        = false;
+	this.sync_loved_working        = false;
+	this.sync_playcount_working    = false;
+
+	var api_method_prop = {
+			"auth.getMobileSession" : {
+				"sig_required" : true,
+				"http_method"  : "GET"
+			},
+			"track.updateNowPlaying" : {
+				"sig_required" : true,
+				"http_method"  : "POST"
+			},
+			"track.scrobble" : {
+				"sig_required" : true,
+				"http_method"  : "POST"
+			},
+		
+			"track.love" : {
+				"sig_required" : true,
+				"http_method"  : "POST"
+			},
+			"track.unlove" : {
+				"sig_required" : true,
+				"http_method"  : "POST"
+			},
+			"track.getinfo" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			},
+			"user.getlovedtracks" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			},
+			"library.gettracks" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			},
+			"album.getInfo" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			},
+			"artist.getImages" : {
+				"sig_required" : false,
+				"http_method"  : "GET"
+			}
+		},
+		
+		build_api_sig = function(params) {
+			var params_temp = {},
+				params_keys = [],
+				api_sig_str = '';
+			for (var key in params) {
+				params_temp[key] = decodeURIComponent(params[key]);
+				params_keys.push(key);
+			}
+			params_keys.sort();
+			for (var index in params_keys) {
+				var key = params_keys[index];
+				api_sig_str += key + params_temp[key];
+			}
+			api_sig_str += api_secret;
+			return md5(api_sig_str);
+		},
+
+		connect = function(params, on_success, on_error) {
+			var api_url = "http://ws.audioscrobbler.com/2.0/?format=json";
+			params.api_key = api_key;
+			if (params.method != "auth.getMobileSession") {
+				if (api_method_prop[params.method]["sig_required"]) {
+					params.sk = sk;
+					api_url += "&api_sig=" + build_api_sig(params);
+				} else {
+					params.user = username;
+					api_url += "&s=" + Math.random();
+				}
+			} else {
+				api_url += "&api_sig=" + build_api_sig(params);
+			}
+			for (var key in params) {
+				api_url += "&" + key + "=" + params[key];
+			}
+			fb.trace(api_url);
+			var xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			xmlhttp.open(api_method_prop[params.method]["http_method"], api_url, true);
+			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+			xmlhttp.setRequestHeader('User-Agent', user_agent);
+			xmlhttp.onreadystatechange = function() {
+				on_ready_state_change(xmlhttp, on_success, on_error);
+			}
+			xmlhttp.send();
+		},
+
+		on_ready_state_change = function(xmlhttp, on_success, on_error) {
+			on_success = on_success || function() {};
+			on_error   = on_error   || function() {};
+			if (xmlhttp.readyState == 4) {
+				if (xmlhttp.status == 200) {
+					fb.trace(xmlhttp.responsetext);
+					try {
+						data = JSON.parse(xmlhttp.responsetext);
+					} catch(e) {
+						data = {
+							"error"   : -100,
+							"message" : __("未知错误。")
+						};
+					}
+					fb.trace(JSON.stringify(data));
+					(on_success)(data, xmlhttp);
+				} else {
+					message = __("与 Last.fm 服务器连接时发生错误。") + "\n" + (xmlhttp.responsetext || __("HTTP 错误: ") + xmlhttp.status);
+					fb.trace(message);
+					(on_error)(message, xmlhttp);
+				}
+			}
+		},
+
+		merge_track_to_params = function(params, track, track_order) {
+			if (typeof track_order != "undefined") {
+				track_order_str = "[" + track_order + "]";
+			} else {
+				track_order_str = "";
+			}
+			for (var key in track) {
+				params[key + track_order_str] = encodeURIComponent(track[key]);
+			}
+			return params;
+		}
+
+	this.check_env = function(show_msgbox) {
+		show_msgbox   = typeof show_msgbox == "undefined" ? false : (show_msgbox == true ? true : false);
+		error_message = "";
+		switch(true) {
+			case !utils.CheckComponent("foo_customdb", true):
+				error_message += __("未安装 \"foo_customdb\" 插件。") + "\n";
+				break;
+			case username.length == 0:
+			case sk.length == 0:
+				error_message += __("未设置 Last.fm 账户。") + "\n";
+				break;
+			case api_key.length != 32:
+			case api_secret.length != 32:
+				error_message += __("未设置 Last.fm API Key 或 secret。") + "\n";
+				break;
+		}
+		if (error_message.length > 0) {
+			if (show_msgbox) {
+				fb_wnd.MsgBox("", error_message, 0);
+			}
+			return false;
+		}
+		return true;
+	}
+
+	this.auth = function(username_temp, password_temp) {
+		var params = {
+				"method"    : "auth.getMobileSession",
+				"username"  : username_temp,
+				"authToken" : md5(username_temp + '' + md5(password_temp))
+			},
+			msgbox_title = __("设置 Last.fm 账户");
+		connect(params, function(data) {
+			if (typeof data.error != "undefined") {
+				message = data.message;
+			} else {
+				username = username_temp;
+				sk       = data.session.key;
+				save_text_file(username, username_file);
+				save_text_file(sk, sk_file);
+				window.NotifyOthers("lastfm_update", 1);
+				message = __("账户设置成功。");
+			}
+			fb_wnd.MsgBox(msgbox_title, message, 0);
+		}, function(message) {
+			fb_wnd.MsgBox(msgbox_title, message, 0);
+		});
+	}
+
+	this.sync_track = function(track, track_prop, metadb) {
+		if (lastfm.sync_loved_working || lastfm.sync_playcount_working) {
+			return;
+		} else {
+			var params = {
+					"method"      : "track.getinfo",
+					"artist"      : encodeURIComponent(track.artist),
+					"track"       : encodeURIComponent(track.track),
+					"autocorrect" : lastfm.auto_correct ? 1 : 0
+				}
+			connect(params, function(data) {
+				if (data.error > 0) {
+					if (data.error == 6) {
+						fb.trace(sprintf(__("同步曲目「%1$s」的「%2$s」的统计信息时发生错误，艺术家或曲目不存在。"), track.artist, track.track));
+					} else {
+						fb.trace(sprintf(__("同步曲目「%1$s」的「%2$s」的统计信息时发生错误。\n返回信息：%3$s"), track.artist, track.track, data.message));
+					}
+					return;
+				}
+				lastfm_playcount = data.track.userplaycount > 0 ? data.track.userplaycount : 0;
+				lastfm_loved     = data.track.userloved == 1 ? 1 : 0;
+				if (track_prop.playcount == lastfm_playcount && track_prop.loved == lastfm_loved) {
+					fb.trace(sprintf(__("未同步曲目「%1$s」的「%2$s」的统计信息，没有发现数据变动。"), track.artist, track.track));
+				} else if (!metadb) {
+					fb.trace(__("未知错误。"));
+				} else {
+					if (track_prop.playcount != lastfm_playcount) {
+						fb.RunContextCommandWithMetadb(__("重置播放次数"), metadb);
+						var sql = '\"INSERT OR REPLACE INTO quicktag(url,subsong,fieldname,value) VALUES(\\"' + track_prop.crc32 + '\\",\\"-1\\",\\"LASTFM_PLAYCOUNT\\",\\"' + lastfm_playcount + '\\")\";';
+						WshShell.Run(fso.GetFile(lastfm.sqlite_exe).ShortPath + " " + fso.GetFile(lastfm.database_file).ShortPath + " " + sql, 0, true);
+						fb.RunContextCommandWithMetadb(__("刷新播放次数"), metadb);
+						fb.trace(sprintf(__("同步曲目「%1$s」的「%2$s」的统计信息成功。（播放次数）"), track.artist, track.track));
+					}
+					if (track_prop.loved != lastfm_loved) {
+						lastfm.sync_track_working = true;
+						fb.RunContextCommandWithMetadb(lastfm_loved == 1 ? __("设为喜爱曲目") : __("从喜爱曲目中删除"), metadb);
+						fb.trace(sprintf(__("同步曲目「%1$s」的「%2$s」的统计信息成功。（喜爱曲目）"), track.artist, track.track));
+					}
+				}
+			}, function(message) {
+				fb.trace(sprintf(__("同步曲目「%1$s」的「%2$s」的统计信息时发生错误。\n返回信息：%3$s"), track.artist, track.track, message));
+			});
+		}
+	}
+
+	this.send_now_playing = function(track, track_prop, metadb) {
+		if (!lastfm.check_env()) {
+			return;
+		}
+		var next_timestamp = get_timestamp() + retry_delay;
+		var params = {
+				"method" : "track.updateNowPlaying"
+			}
+		params = merge_track_to_params(params, track);
+		fb.trace(sprintf(__("正在连接 Last.fm，准备发送正在收听的曲目「%1$s」的「%2$s」..."), track.artist, track.track));
+		connect(params, function(data) {
+			if (typeof data.error != "undefined") {
+				send_now_playing_next = next_timestamp;
+				fb.trace(sprintf(__("向 Last.fm 发送正在收听的曲目「%1$s」的「%2$s」时发生错误，%3$s 秒后将重试。\n返回信息：%4$s"), track.artist, track.track, retry_delay, data.message));
+			} else {
+				send_now_playing_next = 0;
+				fb.trace(sprintf(__("向 Last.fm 发送正在收听的曲目「%1$s」的「%2$s」成功。"), track.artist, track.track));
+				lastfm.sync_track(track, track_prop, metadb);
+			}
+		}, function(message) {
+			send_now_playing_next = next_timestamp;
+			fb.trace(sprintf(__("向 Last.fm 发送正在收听的曲目「%1$s」的「%2$s」时遇到网络问题，%3$s 秒后将重试。\n返回信息：%4$s"), track.artist, track.track, retry_delay, message));
+		});
+	}
+
+	this.send_scrobble = function() {
+		if (!lastfm.check_env()) {
+			return;
+		}
+		var next_timestamp = get_timestamp() + retry_delay;
+		var count = scrobble_cache.length;
+		if (!count) {
+			return;
+		}
+		if (send_scrobble_working) {
+			send_scrobble_next = next_timestamp;
+			fb.trace(sprintf(__("上一个向 Last.fm 发送 Scrobble 的操作尚未结束，%s 秒后将重试。"), retry_delay));
+			return;
+		}
+		send_scrobble_working = true;
+		fb.trace(__("正在向 Last.fm 发送 Scrobble..."));
+		
+		end = count >= 50 ? 49 : count;
+		var params = {
+				"method" : "track.scrobble"
+			}
+		for (i=0; i<=end; i++) {
+			params = merge_track_to_params(params, scrobble_cache[i], i);
+		}
+		connect(params, function(data) {
+			if (typeof data.error != "undefined") {
+				send_scrobble_working = false;
+				send_scrobble_next = next_timestamp;
+				fb.trace(sprintf(__("向 Last.fm 发送 Scrobble 时发生错误，%1$s 秒后将重试。\n返回信息：%2$s"), retry_delay, data.message));
+			} else {
+				scrobble_cache.splice(0, count >= 50 ? 50 : count)
+				lastfm.save_scrobble_queue_cache();
+				send_scrobble_working = false;
+				send_scrobble_next = 0;
+				fb.trace(__("向 Last.fm 发送 Scrobble 成功。"));
+				if (scrobble_cache.length > 0) {
+					lastfm.send_scrobble();
+				}
+			}
+		}, function(message){
+			send_scrobble_working = false;
+			send_scrobble_next = next_timestamp;
+			fb.trace(sprintf(__("向 Last.fm 发送 Scrobble 时遇到网络问题，%1$s 秒后将重试。\n返回信息：%2$s"), retry_delay, message));
+		});
+	}
+	
+	this.update_scrobble_queue = function(obj) {
+		obj.timestamp = get_timestamp();
+		scrobble_cache.push(obj);
+		lastfm.save_scrobble_queue_cache();
+	}
+	
+	this.save_scrobble_queue_cache = function() {
+		save_text_file(JSON.stringify(scrobble_cache), scrobble_cache_file);
+	}
+
+	this.send_love_track = function(artist, track, loved, metadb, now_playing_loved) {
+		now_playing_loved = (typeof now_playing_loved == "undefined" || typeof now_playing_loved == false) ? false : true;
+		if (now_playing_loved) {
+			Buttons.lastfm = _Buttons_.lastfm_loading;
+		}
+		if (loved == 1) {
+			api_method           = "track.love";
+			command              = __("设为喜爱曲目"); 
+			rollback_command     = __("从喜爱曲目中删除"); 
+			console_text_ready   = sprintf(__("正在连接 Last.fm，准备将「%1$s」的「%2$s」设为喜爱曲目..."), artist, track);
+			console_text_success = sprintf(__("从 Last.fm 上将「%1$s」的「%2$s」成功设为喜爱曲目。"), artist, track);
+			console_text_error   = sprintf(__("从 Last.fm 上将「%1$s」的「%2$s」设为喜爱曲目失败。"), artist, track);
+		} else {
+			api_method           = "track.unlove";
+			command              = __("从喜爱曲目中删除"); 
+			rollback_command     = __("设为喜爱曲目"); 
+			console_text_ready   = sprintf(__("正在连接 Last.fm，准备将「%1$s」的「%2$s」从喜爱曲目中删除..."), artist, track);
+			console_text_success = sprintf(__("从 Last.fm 上将「%1$s」的「%2$s」成功从喜爱曲目中删除。"), artist, track);
+			console_text_error   = sprintf(__("从 Last.fm 上将「%1$s」的「%2$s」从喜爱曲目中删除失败。"), artist, track);
+		}
+		fb.trace(console_text_ready);
+		var params = {
+				"method" : api_method,
+				"artist" : encodeURIComponent(artist),
+				"track"  : encodeURIComponent(track)
+			},
+			result = false;
+		connect(params, function(data) {
+			if (typeof data.error == "undefined" && typeof data.status != "undefined" && data.status == "ok") {
+				result = true;
+				fb.trace(console_text_success);
+				if (now_playing_loved) {
+					lastfm.now_playing_loved_working = true;
+				}
+				fb.RunContextCommandWithMetadb(command, metadb);
+				if (now_playing_loved) {
+					on_metadb_changed();
+				}
+			} else {
+				fb.RunContextCommandWithMetadb(rollback_command, metadb);
+				message = console_text_error + "\n" + __("返回信息：") + data.message;
+				fb.trace(message);
+				fb_wnd.MsgBox("", message, 0);
+			}
+			set_lastfm_button();
+			return result;
+		}, function(message){
+			fb.RunContextCommandWithMetadb(rollback_command, metadb);
+			message = console_text_error + "\n" + __("返回信息：") + message;
+			fb.trace(message);
+			set_lastfm_button();
+			fb_wnd.MsgBox("", message, 0);
+			return result;
+		});
+	}
+
+	this.sync_library = function() {
+		var msgbox_title = __("从 Last.fm 下载数据并导入");
+		if (fb_wnd.MsgBox(msgbox_title,  __("下载数据可能会花费一些时间，并且不会提示进度，请耐心等候。\n确定要继续吗？"), true) != 1) {
+			return;
+		}
+		var page                  = 1,
+			pages                 = 0,
+			r                     = 1,
+			errors                = 0,
+			loved_page_errors     = 0,
+			playcount_page_errors = 0,
+			sql                   = "BEGIN TRANSACTION;\n";
+	
+		function sync_library_loved() {
+			if (!lastfm.sync_loved_working) {
+				return fb.trace(__("导入已终止。"));
+			}
+			
+			var params = {
+					"method" : "user.getlovedtracks",
+					"limit"  : "200",
+					"page"   : page
+				}
+	
+			connect(params, function(data, xmlhttp) {
+				if (data.error > 0) {
+					lastfm.sync_loved_working = false;
+					fb_wnd.MsgBox(msgbox_title, sprintf(__("此问题与 Last.fm 服务器有关，请稍后重试。\n\n%s"), data.message), false);
+					return;
+				}
+				if (page == 1) {
+					try {
+						pages = data.lovedtracks["@attr"].totalPages;
+					} catch(e) {
+					}
+				}
+				if (pages > 0 && xmlhttp.responsetext.indexOf('{"lovedtracks":') == 0) {
+					for (i = 0; i < data.lovedtracks.track.length; i++) {
+						try {
+							var arr = [];
+							arr[0] = data.lovedtracks.track[i].artist.name;
+							arr[1] = data.lovedtracks.track[i].name;
+							arr[2] = 1;
+							if (arr.length == 3) {
+								fb.trace(r + ": " + arr[0] + " - " + arr[1]);
+								url = fb.TitleFormat("$crc32($lower(" + tf(arr[0]) + "	" + tf(arr[1]) + "))").Eval(true);
+								sql += 'INSERT OR REPLACE INTO quicktag(url,subsong,fieldname,value) VALUES("' + url + '","-1","LASTFM_LOVED","' + arr[2] + '");' + "\n";
+								r++;
+							}
+						} catch(e) {
+							errors++;
+						}
+					}
+					fb.trace(sprintf(__("已完成 %1$s/%2$s 页（喜爱曲目）"), page, pages));
+				} else {
+					loved_page_errors++;
+				}
+				if (page < pages) {
+					page++;
+					sync_library_loved();
+				} else {
+					lastfm.sync_loved_working     = false;
+					lastfm.sync_playcount_working = true;
+					page  = 1;
+					pages = 0;
+					r     = 1;
+					sync_library_playcount();
+				}
+			}, function(message) {
+				lastfm.sync_loved_working = false;
+				fb_wnd.MsgBox(msgbox_title, sprintf(__("网络错误，请稍后重试。\n\n%s"), message), false);
+			});
+		}
+	
+		function sync_library_playcount() {
+			if (!lastfm.sync_playcount_working) {
+				return fb.trace(__("导入已终止。"));
+			}
+	
+			var params = {
+					"method" : "library.gettracks",
+					"limit"  : "100",
+					"page"   : page
+				}
+	
+			connect(params, function(data, xmlhttp) {
+				if (data.error > 0) {
+					lastfm.sync_playcount_working = false;
+					fb_wnd.MsgBox(msgbox_title, sprintf(__("此问题与 Last.fm 服务器有关，请稍后重试。\n\n%s"), data.message), false);
+					return;
+				}
+				if (page == 1) {
+					try {
+						pages = data.tracks["@attr"].totalPages;
+					} catch(e) {
+					}
+				}
+				if (pages > 0 && xmlhttp.responsetext.indexOf('{"tracks":') == 0) {
+					for (i = 0; i < data.tracks.track.length; i++) {
+						try {
+							var arr = [];
+							arr[0] = data.tracks.track[i].artist.name;
+							arr[1] = data.tracks.track[i].name;
+							arr[2] = data.tracks.track[i].playcount;
+							if (arr[2] == 0) {
+								page = pages;
+								break;
+							}
+							if (arr.length == 3) {
+								fb.trace(r + ": " + arr[0] + " - " + arr[1] + " " + arr[2]);
+								url = fb.TitleFormat("$crc32($lower(" + tf(arr[0]) + "	" + tf(arr[1]) + "))").Eval(true);
+								sql += 'INSERT OR REPLACE INTO quicktag(url,subsong,fieldname,value) VALUES("' + url + '","-1","LASTFM_PLAYCOUNT","' + arr[2] + '");' + "\n";
+								r++;
+							}
+						} catch(e) {
+							errors++;
+						}
+					}
+					fb.trace(sprintf(__("已完成 %1$s/%2$s 页（播放次数）"), page, pages));
+				} else {
+					playcount_page_errors++;
+				}
+				if (page < pages) {
+					page++;
+					sync_library_playcount();
+				} else {
+					try {
+						sql += "COMMIT;"
+						ts = fso.OpenTextFile(lastfm.sql_file, 2, true, 0);
+						ts.WriteLine(sql);
+						ts.close();
+						var msgbox_message = __("数据下载完成，要导入吗？\n此操作将重启 foobar2000。");
+						if (loved_page_errors > 0 || playcount_page_errors > 0 || errors > 0) {
+							msgbox_message += "\n";
+							if (loved_page_errors > 0) {
+								msgbox_message += "\n- " + sprintf(__("喜爱曲目下载失败页数：%s（每页包含 200 个曲目）"), loved_page_errors);
+							}
+							if (playcount_page_errors > 0) {
+								msgbox_message += "\n- " + sprintf(__("播放次数下载失败页数：%s（每页包含 100 曲目）"), playcount_page_errors);
+							}
+							if (errors > 0) {
+								msgbox_message += "\n- " + sprintf(__("单个曲目处理失败数：%s"), errors);
+							}
+							msgbox_message += "\n";
+						}
+						if (fb_wnd.MsgBox(msgbox_title, msgbox_message, true) == 1) {
+							try {
+								WshShell.Run(fso.GetFile(lastfm.import_cmd).ShortPath + " " +
+								fso.GetFile(lastfm.sqlite_exe).ShortPath + " " +
+								fso.GetFile(lastfm.database_file).ShortPath + " " +
+								fso.GetFile(lastfm.sql_file).ShortPath + " " +
+								fso.GetFile(fb.FoobarPath + "foobar2000.exe").ShortPath + " " +
+								"/exit");
+							} catch(e) {
+								fb_wnd.MsgBox(msgbox_title, __("未知错误。"), false);
+							}
+						}
+					} catch(e) {
+						fb_wnd.MsgBox(msgbox_title, __("未知错误。"), false);
+					}
+					lastfm.sync_playcount_working = false;
+					fb.trace(sprintf(__("下载喜爱曲目错误页数：%s（每页包含 200 个曲目）"), loved_page_errors));
+					fb.trace(sprintf(__("下载播放次数错误页数：%s（每页包含 100 曲目）"), playcount_page_errors));
+					fb.trace(sprintf(__("单个曲目错误数：%s"), errors));
+				}
+			}, function(message) {
+				lastfm.sync_playcount_working = false;
+				fb_wnd.MsgBox(msgbox_title, sprintf(__("网络错误，请稍后重试。\n\n%s"), message), false);
+			});
+		}
+	
+		lastfm.sync_loved_working = true;
+		sync_library_loved();
+	}
+
+	this.import_sql = function() {
+		var msgbox_title = __("导入已下载的数据");
+		if (fb_wnd.MsgBox(msgbox_title, __("导入操作将重启 foobar2000，确定要继续吗？"), true) != 1) {
+			return;
+		}
+		try {
+			WshShell.Run(fso.GetFile(lastfm.import_cmd).ShortPath + " " +
+			fso.GetFile(lastfm.sqlite_exe).ShortPath + " " +
+			fso.GetFile(lastfm.database_file).ShortPath + " " +
+			fso.GetFile(lastfm.sql_file).ShortPath + " " +
+			fso.GetFile(fb.FoobarPath + "foobar2000.exe").ShortPath + " " +
+			"/exit");
+		} catch(e) {
+			fb_wnd.MsgBox(msgbox_title, __("未知错误。"), false);
+		}
+	}
+
+	this.get_artist_pic = function(artist, metadb) {
+		var limit = 10;
+		var params = {
+				"method"      : "artist.getImages",
+				"artist"      : encodeURIComponent(artist),
+				"limit"       : limit,
+				"autocorrect" : lastfm.auto_correct ? 1 : 0
+			},
+			msgbox_title = "下载艺术家图片";
+
+		connect(params, function(data) {
+			if (typeof data.error != "undefined") {
+				fb_wnd.MsgBox(msgbox_title, sprintf(__("下载失败。\n返回信息：%s"), data.message), false);
+			} else {
+				var images = data["images"]["image"],
+					urls = [];
+				for (var i = 0; i < images.length; i++) {
+					var sizes = images[i]["sizes"]["size"];
+					for (var j = 0; j < sizes.length; j++) {
+						if (sizes[j]["name"] == "original" && sizes[j]["#text"].length > 0) {
+							urls.push(sizes[j]["#text"]);
+						}
+					}
+				}
+				if (urls.length > 0) {
+					var filename = metadb.RawPath.replace("file://", "").replace(metadb.RawPath.slice(metadb.RawPath.lastIndexOf("\\")), "") + "\\" + sf(artist);
+					if (urls.length == 1) {
+						lastfm.download_pic(urls[0], filename + urls[0].slice(urls[0].lastIndexOf(".")), msgbox_title);
+					} else {
+						var num = 1;
+						for (var i in urls) {
+							lastfm.download_pic(urls[i], filename + " " + num + urls[i].slice(urls[i].lastIndexOf(".")), msgbox_title);
+							num++;
+						}
+					}
+				} else {
+					MsgBox(__("没有图片可供下载。"), false, msgbox_title);
+				}
+			}
+		}, function(message){
+			MsgBox(sprintf(__("下载失败。\n返回信息：%s"), message), false, msgbox_title);
+		});
+		return;
+
+		try {
+			if (artist.length > 0) {
+				var xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+				xmlhttp.open("GET", "http://ws.audioscrobbler.com/2.0?method=artist.getImages&artist=" + encodeURIComponent(artist) + "&limit=" + limit + "&s=" + Math.random() + "&api_key=" + LastFMAPI, true);
+				xmlhttp.onreadystatechange = function() {
+					try {
+						if (xmlhttp.readystate == 4) {
+							if (xmlhttp.status == 200) {
+								var xmldom = new ActiveXObject("Microsoft.XMLDOM");
+								xmldom.async = "false";
+								xmldom.loadXML(xmlhttp.responsetext);
+								var urls = [];
+								try {
+									var images = xmldom.getElementsByTagName("image");
+									for (var i = 0; i < images.length; i++) {
+										var sizes = images[i].getElementsByTagName("size");
+										for (var j = 0; j < sizes.length; j++) {
+											if (sizes[j].attributes.getNamedItem("name").value == "original") 
+												if (sizes[j].childNodes.length > 0) 
+													urls.push(sizes[j].childNodes[0].nodeValue);
+												else 
+													urls.push("");
+										}
+									}
+								} 
+								catch (e) {
+									fb.trace("ERROR GetArtistPics 1: " + e.message + " | " + e.number + " | " + e.name);
+								}
+								for (var i in urls) {
+									LastFM.downloadpic(urls[i], artist)
+								}
+							}
+							else {
+								var xmldom = new ActiveXObject("Microsoft.XMLDOM");
+								xmldom.async = "false";
+								xmldom.loadXML(xmlhttp.responsetext);
+								throw new Error(0, "Last.fm: " + xmldom.getElementsByTagName("error")[0].childNodes[0].nodeValue)
+							}
+						}
+					} catch(e) {
+						fb.trace("ERROR GetArtistPics 2: " + e.message + " | " + e.number + " | " + e.name);
+					}
+				}
+				xmlhttp.send();
+			}
+		} catch(e) {
+			fb.trace("ERROR GetArtistPics 3: " + e.message + " | " + e.number + " | " + e.name);
+		}
+	}
+
+	this.get_album_pic = function (artist, album, metadb) {
+		var params = {
+				"method"      : "album.getInfo",
+				"artist"      : encodeURIComponent(artist),
+				"album"       : encodeURIComponent(album),
+				"autocorrect" : lastfm.auto_correct ? 1 : 0
+			},
+			msgbox_title = "下载封面图片";
+			
+		connect(params, function(data) {
+			if (typeof data.error != "undefined") {
+				MsgBox(sprintf(__("下载失败。\n返回信息：%s"), data.message), false, msgbox_title);
+			} else {
+				var images = data.album.image,
+					url = "";
+				for (var i = 0; i < images.length; i++) {
+					if (images[i]["size"] == "mega") {
+						url = images[i]["#text"];
+					}
+				}
+				if (url) {
+					var filename = metadb.RawPath.replace("file://", "").replace(metadb.RawPath.slice(metadb.RawPath.lastIndexOf("\\")), "") + "\\" + sf(artist + " - " + album) + url.slice(url.lastIndexOf("."));
+					lastfm.download_pic(url, filename, msgbox_title);
+				} else {
+					MsgBox(__("没有图片可供下载。"), false, msgbox_title);
+				}
+			}
+		}, function(message){
+			MsgBox(sprintf(__("下载失败。\n返回信息：%s"), message), false, msgbox_title);
+		});
+	}
+
+	this.download_pic = function(url, filename, msgbox_title) {
+		try {
+			if (utils.FileTest(filename, "e")) {
+				if (MsgBox(__("文件已存在，是否继续下载并覆盖？"), true, msgbox_title) != 1) {
+					return false;
+				}
+			}
+			var xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			xmlhttp.open("GET", url, false);
+			xmlhttp.send();
+			if (xmlhttp.status == 200) {
+				var name = filename.slice(filename.lastIndexOf("\\")).replace("\\", "")
+					path = filename.replace(name, "")
+				save_binary_file(filename, xmlhttp.responseBody);
+				if (MsgBox(sprintf(__("图片 %s 下载完成，文件保存在曲目所在文件夹。\n是否打开文件夹？"), name), true, msgbox_title) == 1) {
+					WshShell.run(path);
+				}
+				return true;
+			} else {
+				message = __("与 Last.fm 服务器连接时发生错误。") + "\n" + (xmlhttp.responsetext || __("HTTP 错误: ") + xmlhttp.status);
+				MsgBox(message, false, msgbox_title);
+			}
+		} catch(e) {
+			MsgBox(sprintf(__("下载失败。\n返回信息：%s"), e.message + " | " + e.number + " | " + e.name), false, msgbox_title);
+			return false;
+		}
+	}
+
+	this.set_account = function() {
+		function set_username() {
+			username_temp = InputBox(__("用户名"), __("设置 Last.fm 账户"), username);
+			if (username_temp != "") {
+				set_password(username_temp);
+			}
+		}
+		function set_password(username_temp) {
+			password_temp = InputBox(__("密码（不保存）"), __("设置 Last.fm 账户"), "");
+			if (password_temp != '') {
+				lastfm.auth(username_temp, password_temp);
+			}
+		}
+		set_username();
+	}
+
+	this.open_profile_page = function() {
+			try {
+				WshShell.run("http://www.last.fm/user/" + encodeURIComponent(username));
+			} catch(e) {
+				fb_wnd.MsgBox("", __("无法打开你的默认浏览器。"), 0);
+			}
+		}
+}
+
+function __(str) {
+    return str;
+}
+
+var lastfm = new lastfm({
+	"api_key"             : lastfm_api_key,
+	"api_secret"          : lastfm_api_secret,
+	"username"            : read(lastfm_username_file),
+	"sk"                  : read(lastfm_sk_file),
+	"auto_correct"        : window.GetProperty("auto_correct", false),
+	"username_file"       : lastfm_username_file,
+	"sk_file"             : lastfm_sk_file,
+	"sqlite_exe"          : lastfm_sqlite_exe,
+	"database_file"       : lastfm_database_file,
+	"scrobble_cache_file" : lastfm_scrobble_cache_file,
+	"scrobble_cache"      : read(lastfm_scrobble_cache_file),
+	"import_cmd"          : lastfm_import_cmd,
+	"sql_file"            : lastfm_sql_file,
+	"retry_delay"         : lastfm_retry_delay
+});
+
+if (lastfm.check_env()) {
+}
+
+
+function on_mouse_rbtn_up(x, y, mask) {
+    if (mask == MK_SHIFT) {
+        return true;
+    } else {
+        var _basemenu = window.CreatePopupMenu(),
+            _context = fb.CreateContextMenuManager();
+        _context.InitNowPlaying();
+
+        var _child_file        = window.CreatePopupMenu(),
+            _child_edit        = window.CreatePopupMenu(),
+            _child_view        = window.CreatePopupMenu(),
+            _child_playback    = window.CreatePopupMenu(),
+            _child_library     = window.CreatePopupMenu(),
+            _child_help        = window.CreatePopupMenu(),
+            _child_now_playing = window.CreatePopupMenu(),
+            _child_lastfm      = window.CreatePopupMenu(),
+            _child_download_artwork = window.CreatePopupMenu(),
+
+            _lastfm_child_id   = window.CreatePopupMenu(),
+            _lastfm_child_al   = window.CreatePopupMenu(),
+
+            menuman_file       = fb.CreateMainMenuManager(),
+            menuman_edit       = fb.CreateMainMenuManager(),
+            menuman_view       = fb.CreateMainMenuManager(),
+            menuman_playback   = fb.CreateMainMenuManager(),
+            menuman_library    = fb.CreateMainMenuManager(),
+            menuman_help       = fb.CreateMainMenuManager();
+
+        _child_file.AppendTo(_basemenu, MF_STRING, "文件");
+        _child_edit.AppendTo(_basemenu, MF_STRING, "编辑");
+        _child_view.AppendTo(_basemenu, MF_STRING, "视图");
+        _child_playback.AppendTo(_basemenu, MF_STRING, "播放");
+        _child_library.AppendTo(_basemenu, MF_STRING, "媒体库");
+        _child_help.AppendTo(_basemenu, MF_STRING, "帮助");
+		_basemenu.AppendMenuSeparator();
+        _child_now_playing.AppendTo(_basemenu, fb.IsPlaying | fb.IsPaused ? MF_STRING : MF_GRAYED, "正在播放");
+		_basemenu.AppendMenuSeparator();
+        _child_lastfm.AppendTo(_basemenu, MF_STRING, "Last.fm");
+		//_basemenu.AppendMenuItem((lastfm.check_env() && (fb.IsPlaying | fb.IsPaused) ? MF_STRING : MF_GRAYED) | MF_POPUP, _child_download_artwork.ID, "从 Last.fm 下载插图");
+		_basemenu.AppendMenuItem(lastfm.check_env() ? MF_STRING : MF_GRAYED, 3000, "打开你的 Last.fm 个人专页");
+
+
+		_lastfm_child_id.AppendTo(_child_lastfm, MF_STRING, "数据导入");
+		//_child_lastfm.AppendMenuItem(MF_SEPARATOR, 0, 0);
+        _child_lastfm.AppendMenuSeparator();
+		_child_lastfm.AppendMenuItem(MF_STRING, 1200, "自动更新时使用 Last.fm 拼写更正");
+		_child_lastfm.CheckMenuItem(1200, lastfm.auto_correct);
+		_child_lastfm.AppendMenuItem(MF_STRING , _lastfm_child_al.ID, "自动设为喜爱曲目");
+		//_child_lastfm.AppendMenuItem(MF_SEPARATOR, 0, 0);
+        _child_lastfm.AppendMenuSeparator();
+		_child_lastfm.AppendMenuItem(!lastfm.sync_loved_working && !lastfm.sync_playcount_working ? MF_STRING : MF_GRAYED, 1400, lastfm.check_env() ? "重新设置 Last.fm 账户" : "设置 Last.fm 账户");
+
+		_lastfm_child_id.AppendMenuItem(utils.CheckComponent("foo_customdb", true) && !lastfm.sync_loved_working && !lastfm.sync_playcount_working && fi_metadb && lastfm.check_env() ? MF_STRING : MF_GRAYED, 1101, "从 Last.fm 下载数据并导入");
+		_lastfm_child_id.AppendMenuItem(utils.CheckComponent("foo_customdb", true) && fso.FileExists(lastfm.sql_file) ? MF_STRING : MF_GRAYED, 1102, "导入已下载的数据");
+
+		_lastfm_child_al.AppendMenuItem(MF_STRING, 1301, "关闭");
+		//_lastfm_child_al.AppendMenuItem(MF_SEPARATOR, 0, 0);
+        _lastfm_child_al.AppendMenuSeparator();
+		_lastfm_child_al.AppendMenuItem(MF_STRING, 1302, "开启");
+		_lastfm_child_al.CheckMenuRadioItem(1301, 1302, auto_love ? 1302 : 1301);
+		_lastfm_child_al.AppendMenuItem(auto_love ? MF_STRING : MF_GRAYED, 1303, "设置规则...");
+
+		_child_download_artwork.AppendMenuItem(MF_STRING, 2100, "下载艺术家图片");
+		_child_download_artwork.AppendMenuItem(MF_STRING, 2200, "下载封面图片");
+
+
+		menuman_file.Init("file");
+		menuman_edit.Init("edit");
+		menuman_view.Init("View");
+		menuman_playback.Init("playback");
+		menuman_library.Init("library");
+		menuman_help.Init("help");
+
+		menuman_file.BuildMenu(_child_file, 1, 100);
+		menuman_edit.BuildMenu(_child_edit, 100, 150);
+		menuman_view.BuildMenu(_child_view, 200, 200);
+		menuman_playback.BuildMenu(_child_playback, 300, 250);
+		menuman_library.BuildMenu(_child_library, 400, 300);
+		menuman_help.BuildMenu(_child_help, 500, 350);
+	   
+		_context.InitNowPlaying();
+		_context.BuildMenu(_child_now_playing, 600, -1);
+
+        var ret = 0;
+        ret = _basemenu.TrackPopupMenu(x, y, 0);
+
+		if (ret >= 1 && ret<100) {
+			menuman_file.ExecuteByID(ret - 1);
+		}
+		if (ret >= 100 && ret<200) {
+			menuman_edit.ExecuteByID(ret - 100);
+		}
+		if (ret >= 200 && ret<300) {
+			menuman_view.ExecuteByID(ret - 200);
+		}
+		if (ret >= 300 && ret<400) {
+			menuman_playback.ExecuteByID(ret - 300);
+		}
+		if (ret >= 400 && ret<500) {
+			menuman_library.ExecuteByID(ret - 400);
+		}
+		if (ret >= 500 && ret<600)	{
+			menuman_help.ExecuteByID(ret - 500);
+		}
+		if (ret >= 600) {
+			_context.ExecuteByID(ret - 600);
+		}
+        switch (ret) {
+            case 1200:
+                lastfm.auto_correct = !lastfm.auto_correct;
+                window.SetProperty("auto_correct", lastfm.auto_correct);
+                break;
+            case 1301:
+            case 1302:
+                auto_love = ret == 1301 ? false : true;
+                window.SetProperty("auto_love", auto_love);
+                break;
+            case 1400:
+                lastfm.set_account();
+                break;
+        }
+        _basemenu.Dispose();
+    }
+    return true;
+
+}

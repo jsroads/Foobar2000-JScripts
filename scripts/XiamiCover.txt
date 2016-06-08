@@ -1,4 +1,103 @@
-﻿XiamiCover = new function() {
+﻿// @author "Elia"
+// @update "2016-06-08"
+
+
+var script_name = "foobar2000 Xiami Cover Downloader";
+
+var themes_path = fb.ProfilePath + "themes\\",
+    skin_path = themes_path + "Elia\\";
+
+////////////////////////////////////////////////////////////////////////
+var WshShell = new ActiveXObject("WScript.Shell");
+var fso      = new ActiveXObject("Scripting.FileSystemObject");
+var doc      = new ActiveXObject("htmlfile");
+if (!fso.FolderExists(themes_path)) {
+    fso.CreateFolder(themes_path);
+}
+if (!fso.FolderExists(skin_path)) {
+    fso.CreateFolder(skin_path);
+}
+
+function read(fn) {
+	try {
+		var f = fso.OpenTextFile(fn, 1, false, -1);
+		var s = f.Readline();
+		f.Close();
+		return s;
+	} catch(e) {
+		return '';
+	}
+}
+
+function save_text_file(t, f) {
+	try {
+		var ts = fso.OpenTextFile(f, 2, true, -1);
+		ts.WriteLine(t);
+		ts.close();
+	} catch(e) {
+		//fb.trace(sprintf(__("保存文本文件失败：\n%s"), e.message + " | " + e.number + " | " + e.name));
+	}
+}
+
+function save_binary_file(filename, content) {
+	try {   
+		var ostream = new ActiveXObject("adodb.stream");
+		ostream.Type = 1 //binary 
+		ostream.Open(); 
+		ostream.Write(content);
+		ostream.SaveToFile(filename,  2); 
+	} catch(e) {
+		//fb.trace(sprintf(__("保存二进制文件失败：\n%s"), e.message + " | " + e.number + " | " + e.name));
+	}
+}
+
+
+var fb_wnd = GetFBWnd();
+var MsgBox = fb_wnd.MsgBox;
+
+
+function xiami(params) {
+
+    var connect = function (params, on_sucess, on_error) {
+        },
+        
+        on_ready_state_change = function(xmlhttp, on_sucess, on_error) {
+        };
+
+
+    this.download_pic = function(url, filename, msgbox_title) {
+        try {
+            if (utils.FileTest(filename, "e")) {
+                if (MsgBox(msgbox_title, "文件已存在，是否继续下载并覆盖？", true) != 1) {
+                    return false;
+                }
+            }
+			var xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			xmlhttp.open("GET", url, false);
+			xmlhttp.send();
+
+
+    }
+
+
+
+        
+        
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+XiamiCover = new function() {
 	this.metadb = null;
 	this.results = [];
 
