@@ -34,7 +34,7 @@ var time_h = fb.CreateProfiler(),
     time200 = fb.CreateProfiler("aaaa"),
     time_s = fb.CreateProfiler();
 
-var window_visible = false,
+var window_visible = false, repaint_forced = false,
     hold_shift = false, hold_ctrl = false,
     hold_scroll = false, mouse_in = false,
     mouse_hold = false,
@@ -251,8 +251,10 @@ function on_paint(gr) {
             cursor_y = margin_top + Math.round((list_h - cursor_h) * scroll_ / (total_h - list_h));
             gr.FillSolidRect(ww - 10, cursor_y, 10, cursor_h, color_txt & 0x33ffffff);
         }
+        //fb.trace("hello")
     }
     if (repaint_f) {
+        //fb.trace("world");
         repaint_f = false;
         gr.GdiDrawText(plman.GetPlaylistName(active_list), g_font4, color_txt, 40, 20, ww - 60, 65, DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
         list_dr.length &&
