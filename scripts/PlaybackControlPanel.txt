@@ -410,6 +410,7 @@ function on_playback_stop(reason) {
     if (reason != 2) {
         pb_time = "-:--";
         pb_length = "-:--";
+        alb_old = "#@!";
         sk.update();
         on_metadb_changed();
         on_get_album_art_done();
