@@ -40,6 +40,7 @@ var window_visible = false,
     mouse_hold = false,
     repaint_f1 = false, repaint_f2 = false, repaint_f = false,
     repaint_main1 = false, repaint_main2 = false, repaint_main = false;
+var fb_wnd = GetFBWnd();
 
 // Properties
 
@@ -161,8 +162,10 @@ function on_paint(gr) {
 
     gr.FillSolidRect(0, 0, ww, wh, color_bg);
 
-    if (!repaint_main && !repaint_f)
+    if (!repaint_main && !repaint_f || repaint_forced) {
+        repaint_forced = false;
         repaint_main = repaint_f = true;
+    }
     if (repaint_main) {
         repaint_main = false;
 
@@ -284,6 +287,8 @@ function on_timer_(timer233) {
     else
         time222 = d.getTime();
 
+    if (!window.IsVisible || fb_wnd.IsMinimized())
+        repaint_forced = true;
 
     var repaint_1 = false,
         repaint_2 = false;
@@ -571,7 +576,7 @@ function on_playback_time() {
     if (!is_playing || !fb.IsPlaying || fb.IsPaused) 
         return;
     repaint_main1 = repaint_main2;
-    repaint_f1 = repaint_f2;
+    //repaint_f1 = repaint_f2;
 }
 
 function on_playlists_changed() {
