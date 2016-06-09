@@ -73,6 +73,8 @@ var research = false,
     research_k = 0,
     research_count = 0;
 
+var show_now_playing = false;
+
 setfont();
 
 function setfont() {
@@ -92,7 +94,7 @@ function get_list(start, string_comp, force) {
     var Time = fb.CreateProfiler();
 
     if (start == null) {
-        scroll = 0;
+        //scroll = 0;
         start = 0;
         list_dr = [];
     }
@@ -292,6 +294,7 @@ function on_timer_(timer233) {
     if (!window.IsVisible || fb_wnd.IsMinimized())
         repaint_forced = true;
 
+    // COMMON
     var repaint_1 = false,
         repaint_2 = false;
     if (repaint_f1 == repaint_f2) {
@@ -301,6 +304,18 @@ function on_timer_(timer233) {
     if (repaint_main1 == repaint_main2) {
         repaint_main2 = !repaint_main1;
         repaint_2 = true;
+    }
+
+    // SHOW NOW PLAYING
+    if (show_now_playing) {
+        if (plman.PlayingPlaylist == plman.ActivePlaylist) {
+            var playingIdx = plman.GetPlayingItemLocation().PlaylistItemIndex;
+            if (playingIdx >= 0) {
+                scroll = playingIdx * row_height - (wh-margin_top)/2   + row_height;
+                scroll = check_scroll(scroll);
+            }
+        }
+        show_now_playing = false;
     }
 
     scroll = check_scroll(scroll);
@@ -315,6 +330,7 @@ function on_timer_(timer233) {
         }
         repaint_2 = true;
     }
+
 
     if (repaint_1 && repaint_2) {
         time_s.Reset();
@@ -546,21 +562,21 @@ function on_playback_edited(metadb) {
     repaint();
 }
 
+/*
 function show_now_playing() {
+    if (plman.PlayingPlaylist == plman.ActivePlaylist) {
+        var playingIdx = plman.GetPlayingItemLocation().PlaylistItemIndex;
+        if (playingIdx >= 0) {
+            scroll = playingIdx * row_height - (wh-margin_top)/2   + row_height;
+            scroll = check_scroll(scroll);
+        }
+    }
 }
+*/
 
 function on_playback_new_track(metadb) {
-    //if (fb.GetMainMenuCommandStatus("Playback/Cursor follows playback") == 2) {
-        // show now playing
-        // ...
-        if (plman.PlayingPlaylist == plman.ActivePlaylist) {
-            var playingIdx = plman.GetPlayingItemLocation().PlaylistItemIndex;
-            if (playingIdx >= 0) {
-                scroll = playingIdx * row_height - (wh-margin_top)/2+row_height;
-                scroll = check_scroll(scroll);
-            }
-        }
-    //}
+    //show_now_playing();
+    show_now_playing = true;
     repaint();
 }
 
@@ -593,6 +609,7 @@ function on_playlists_changed() {
 function on_playlist_switch() {
     active_list = plman.ActivePlaylist;
     list = plman.GetPlaylistItems(active_list);
+    scroll = 0;
     get_list();
     repaint_f1 = repaint_f2;
     utils.PlaySound(fb.ProfilePath + "se_plst00.wav", 0);
@@ -636,6 +653,7 @@ function on_item_focus_change(playlist, from, to) {
 
 window.SetTimeout(function () {
     list = plman.GetPlaylistItems(active_list);
+    scroll = 0;
     get_list();
     if (fb.IsPlaying) {
         on_playback_new_track(fb.GetNowPlaying());
