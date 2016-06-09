@@ -1,0 +1,270 @@
+﻿// vim: ft=javascript fileencoding=utf-8 bomb et:
+
+
+function XiaMi() {
+
+    var domain = "http://www.xiami.com";
+    var album_search_url = domain + "/search/album/?key=";
+    var artist_search_url = domain + "/search/artist/?key=";
+    var album_url = "";
+    var artist_url = "";
+
+    this.data = {};
+    this.data.list = [];
+
+
+
+    this.download_pic = function (url, filename, msgbox_title) {
+        try {
+            if (utils.FileTest(filename, "e")) {
+                if (MsgBox(msgbox_title, "文件已存在，是否继续下载？", true) != 1) {
+                    return false;
+                }
+            }
+			var xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			xmlhttp.open("GET", url, false);
+            xmlhttp.send();
+        } catch (e){
+
+        }
+    }
+
+    this.get_album_pic = function (artist, album, metadb) {
+        var msgbox_title = "下载封面图片";
+    }
+
+
+    this.get_albums = function (artist, album, callback) {
+
+        if (!(callback instanceof Function)) {
+            callback = function() {};
+        }
+        artist = encodeURIComponent(artist.replace(/\s+/g, "+"));
+        album = encodeURIComponent(album.replace(/\s+/g, "+"));
+
+        var url = album_search_url + album + "+" + artist;
+        fb.trace(url);
+
+		var alb_reg = new RegExp("<a href=\".*?/album/(\\d+)\".*?title=\"(.*?)\".*?>", "g");
+        var img_reg = new RegExp("<img src=\"(.+?)_1(.+?)\"", "g");
+        var art_reg = new RegExp("<a class=\"singer\".*?href=\".*?/artist/(\\d+)\".*?title=\"(.*?)\".*?>", "g");
+        var data = {};
+        data.list = [];
+        var xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        xmlhttp.open("GET", url, true);
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4) {
+                if (xmlhttp.status == 200) {
+                    try {
+                        //save_text_file(xmlhttp.responseText, logfile);
+                        // GET ALBUM IDS
+                        var alb_elem, img_elem, art_elem;
+                        for (var i = 0; ; i++) {
+                            alb_elem = alb_reg.exec(xmlhttp.responseText);
+                            img_elem = img_reg.exec(xmlhttp.responseText);
+                            art_elem = art_reg.exec(xmlhttp.responseText);
+                            if (art_elem == null)
+                                break;
+                            if (img_elem == null)
+                                break;
+                            if (alb_elem == null)
+                                break;
+                            data.list[i] = {
+                                img: img_elem[1]+img_elem[2],
+                                album: alb_elem[2],
+                                album_id: alb_elem[1],
+                                artist: art_elem[2],
+                                artist_id: art_elem[1]
+                            };
+                            //fb.trace(alb_elem);
+                        }
+                        data.list = data.list.unique();
+                    } catch (e) {
+                        data = {
+                            "error": -100,
+                            "message": "未知错误"
+                        };
+                    }
+                    callback(data);
+                } else {
+                    fb.trace("与虾米连接错误");
+                }
+            }
+        }
+        xmlhttp.send();
+    }
+
+}
+
+// REQUIRED FOR TEST
+
+var WshShell = new ActiveXObject("WScript.Shell");
+var fso      = new ActiveXObject("Scripting.FileSystemObject");
+var doc      = new ActiveXObject("htmlfile");
+
+
+function read(fn) {
+	try {
+		var f = fso.OpenTextFile(fn, 1, false, -1);
+		var s = f.Readline();
+		f.Close();
+		return s;
+	} catch(e) {
+		return '';
+	}
+}
+
+function save_text_file(t, f) {
+	try {
+		var ts = fso.OpenTextFile(f, 2, true, -1);
+		ts.WriteLine(t);
+		ts.close();
+	} catch(e) {
+		//fb.trace(sprintf(__("保存文本文件失败：\n%s"), e.message + " | " + e.number + " | " + e.name));
+	}
+}
+
+function save_binary_file(filename, content) {
+	try {   
+		var ostream = new ActiveXObject("adodb.stream");
+		ostream.Type = 1 //binary 
+		ostream.Open(); 
+		ostream.Write(content);
+		ostream.SaveToFile(filename,  2); 
+	} catch(e) {
+		//fb.trace(sprintf(__("保存二进制文件失败：\n%s"), e.message + " | " + e.number + " | " + e.name));
+	}
+}
+
+
+// TEST
+
+var logfile = "D:\\logfile.txt";
+var xiami = new XiaMi();
+
+
+var g_list = [];
+var g_font = gdi.Font("segoe ui", 14);
+var g_color = 0xff000000;
+var DT = DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
+var margin_top = 100;
+
+var scroll = scroll_ = scroll__ = scroll___ = 0;
+
+var g_metadb;
+var g_search = function () {
+}
+
+var g_inputbox = new oInputbox(100, 20, "", "搜索专辑封面", RGB(255, 255, 255), RGB(101, 101, 101), 0, 0xffffffff, g_search, "window");
+
+var bt_loupe, bt_cancel, bt_reset;
+
+
+function on_paint(gr) {
+
+    // LIST AREA
+    gr.SetSmoothingMode(4);
+    for (var i = 0; i < g_list.length; i++) {
+        var _y = scroll_ + margin_top + i * 45;
+        //gr.GdiDrawText(i+1, g_font, g_color, 20, _y, 30, 35,  DT);
+        gr.FillSolidRect(0, _y, ww - 0, 45, i % 2 ? 0x10000000 : 0);
+        gr.GdiDrawText(g_list[i].album + " - " + g_list[i].artist, g_font, g_color, 20, _y, ww - 30 - 100, 45, DT);
+
+        var offset = (45 - g_font.Height) / 2 | 0;
+        var rc = g_font.Height / 2 | 0;
+        gr.FillRoundRect(ww - 100, _y+offset-1, 80, 45-(offset-1)*2, rc, rc, 0xffc04060);
+        gr.GdiDrawText("download", g_font, 0xffffffff,  ww-100, _y+offset, 80, g_font.Height, DT | DT_CENTER);
+
+    }
+    gr.SetSmoothingMode(0);
+
+
+    // MARGIN TOP
+    gr.FillSolidRect(0, 0, ww, margin_top, RGB(242, 242, 242));
+
+    // search box
+    gr.SetSmoothingMode(4);
+    var pos_x = 20, pos_y = 20, pos_w = ww - 100, pos_h = 28;
+    gr.FillRoundRect(pos_x, pos_y, pos_w, pos_h, 3, 3, RGB(220, 220, 220));
+    gr.SetSmoothingMode(0);
+
+    g_inputbox.w = pos_w - 34;
+    g_inputbox.h = 20;
+    g_inputbox.font = g_font;
+    g_inputbox.font_italic = g_font;
+    g_inputbox.draw(gr, pos_x + 30, pos_y+4, 0, 0);
+
+}
+
+
+function on_size() {
+    ww = window.Width;
+    wh = window.Height;
+}
+
+
+var alb_old = "!@#";
+var tf_art_alb = fb.TitleFormat("%album artist%^^%album%");
+
+function on_metadb_changed (handlelist, fromhook) {
+    var metadb = fb.IsPlaying ? fb.GetNowPlaying() : null;
+    if (metadb) {
+        var alb = tf_art_alb.EvalWithMetadb(metadb);
+        if (alb != alb_old) {
+            utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
+            alb_old = alb;
+        }
+    }
+    g_list = [];
+    window.Repaint();
+}
+        
+
+function on_playback_new_track(metadb) {
+    on_metadb_changed();
+}
+
+function on_playback_stop(reason) {
+    if (reason != 2) {
+        on_metadb_changed();
+    }
+}
+
+
+var tf_artist = fb.TitleFormat("[%album artist%]");
+var tf_album = fb.TitleFormat("[%album%]");
+
+function on_get_album_art_done(metadb, art_id, image, image_path) {
+    if (art_id != AlbumArtId.front)
+        return;
+    if (!metadb)
+        return;
+    if (!image) {
+        var alb = tf_album.EvalWithMetadb(metadb);
+        var art = tf_artist.EvalWithMetadb(metadb);
+
+        if (alb.length < 1)
+            return;
+
+        fb.trace("helo");
+
+        xiami.get_albums(art, alb, function (data) {
+            g_list = [];
+            window.Repaint();
+            if (data.error) {
+                console(data.message);
+                return;
+            }
+            fb.trace(g_list.length);
+            if (data.list.length > 0) {
+                g_list = data.list;
+                fb.trace(g_list.length);
+                window.Repaint();
+            }
+        });
+
+    }
+}
+
+on_metadb_changed();
+
