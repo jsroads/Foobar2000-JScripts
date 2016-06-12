@@ -203,7 +203,7 @@ function on_paint(gr) {
             var is_selected = plman.IsPlaylistItemSelected(active_list, i);
             var is_focused = plman.GetPlaylistFocusItemIndex(active_list) == i;
             // Odd/Even
-            gr.FillSolidRect(10, y_, ww - 20 - (scrb_vis ? 10 : 0), row_height, i%2 ? (isDark ? 0x09ffffff : 0x09000000) : 0);
+            gr.FillSolidRect(10, y_, ww - 20 - (scrb_vis ? 10 : 0), row_height, i%2 == 0 ? (isDark ? 0x09ffffff : 0x09000000) : 0);
             // Sel
             if (is_selected) {
                 gr.FillSolidRect(10, y_, ww-20-(scrb_vis?10:0), row_height, color_bg_sel);
@@ -395,7 +395,7 @@ function on_timer_(timer233) {
 function on_mouse_wheel(step) {
     repaint_main1 = repaint_main2;
     scroll -= step * row_height * scroll_step;
-    scroll = check_scroll(scroll);
+    //scroll = check_scroll(scroll);
 }
 
 
@@ -628,7 +628,10 @@ function on_mouse_rbtn_up(x, y, mask) {
 
         switch (ret) {
             case 1:
-                show_now_playing = true;
+                if (fb.IsPlaying) {
+                    plman.ActivePlaylist = plman.PlayingPlaylist;
+                    show_now_playing = true;
+                }
                 break;
             case 2:
                 break;
