@@ -11,31 +11,31 @@ var VERSION = "0.2.1"
 // ======================================================================
 
 String.prototype.trim = function(s) {
-	return this.replace(/^[\s　]*|[\s　]*$/g, "");
+    return this.replace(/^[\s　]*|[\s　]*$/g, "");
 };
 
 String.prototype.validate = function() {
-	return this.replace(/[\/\\|:\*"<>\?]/g, "_");
+    return this.replace(/[\/\\|:\*"<>\?]/g, "_");
 };
 
 String.prototype.ucfirst = function() {
-	return this.charAt(0).toUpperCase() + this.substr(1);
+    return this.charAt(0).toUpperCase() + this.substr(1);
 };
 
 if (!Array.prototype.unique) {
-	Array.prototype.unique = function() {
-		var arr = this;
-		if (arr.length <= 0) return [];
-		for (var i = 0; i < arr.length; i++) {
-			for (var j = i + 1; j < arr.length; j++) {
-				if (arr[i] === arr[j]) {
-					arr.splice(j, 1);
-					j -= 1;
-				}
-			}
-		}
-		return arr;
-	};
+    Array.prototype.unique = function() {
+        var arr = this;
+        if (arr.length <= 0) return [];
+        for (var i = 0; i < arr.length; i++) {
+            for (var j = i + 1; j < arr.length; j++) {
+                if (arr[i] === arr[j]) {
+                    arr.splice(j, 1);
+                    j -= 1;
+                }
+            }
+        }
+        return arr;
+    };
 }
 
 
@@ -125,35 +125,36 @@ if (!Array.prototype.forEach) {
 }
 
 if (!Array.prototype.find) {
-  Array.prototype.find = function(predicate) {
-    if (this === null) {
-      throw new TypeError('Array.prototype.find called on null or undefined');
-    }
-    if (typeof predicate !== 'function') {
-      throw new TypeError('predicate must be a function');
-    }
-    var list = Object(this);
-    var length = list.length >>> 0;
-    var thisArg = arguments[1];
-    var value;
+    Array.prototype.find = function(predicate) {
+        if (this === null) {
+            throw new TypeError('Array.prototype.find called on null or undefined');
+        }
+        if (typeof predicate !== 'function') {
+            throw new TypeError('predicate must be a function');
+        }
+        var list = Object(this);
+        var length = list.length >>> 0;
+        var thisArg = arguments[1];
+        var value;
 
-    for (var i = 0; i < length; i++) {
-      value = list[i];
-      if (predicate.call(thisArg, value, i, list)) {
-        return value;
-      }
-    }
-    return undefined;
-  };
+        for (var i = 0; i < length; i++) {
+            value = list[i];
+            if (predicate.call(thisArg, value, i, list)) {
+                return value;
+            }
+        }
+        return undefined;
+    };
 }
 
 // Refer: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
 if (!Array.isArray) {
-	Array.isArray = function(arg) {
-		return Object.prototype.toString.call(arg) === '[object Array]';
-	};
+    Array.isArray = function(arg) {
+        return Object.prototype.toString.call(arg) === '[object Array]';
+    };
 }
 
+// jQuery.isNumeric()
 function isNumeric (obj) {
     return !Array.isArray(obj) && (obj - parseFloat(obj) + 1) >= 0;
 }
@@ -167,38 +168,32 @@ function isNumeric (obj) {
 function Slider (nob_img, func_get, func_set) {
     this.nob_img = nob_img ? nob_img : null;
 
-	this.get = func_get instanceof Function ? func_get : function() {};
-	this.set = func_set instanceof Function ? func_set : function() {};
-		//return func_get instanceof Function ? func_get : function() {};
-	//})();
+    this.get = func_get instanceof Function ? func_get : function() {};
+    this.set = func_set instanceof Function ? func_set : function() {};
 
-	//this.set = (function () {
-		//return func_set instanceof Function ? func_set : function() {};
-	//})();
-
-	this.pos = this.get();
+    this.pos = this.get();
 }
 
 Slider.prototype.draw = function(gr, x, y, w, h, y_offset, active_color, inactive_color) {
-	if (h <= y_offset * 2) {
-		y_offset = 0;
-	}
+    if (h <= y_offset * 2) {
+        y_offset = 0;
+    }
 
-	// 进度条背景
-	gr.FillSolidRect(x, y+y_offset, w, h - y_offset * 2, inactive_color);
-	if (this.pos > 0 && this.pos <= 1) {
-		gr.FillSolidRect(x, y+y_offset, w * this.pos, h-y_offset*2, active_color);
-	}
-	// nob 图片
-	if (this.nob_img && isNumeric(this.pos) && this.pos >= 0) {
-		var img_w = this.nob_img.Width;
+    // 进度条背景
+    gr.FillSolidRect(x, y+y_offset, w, h - y_offset * 2, inactive_color);
+    if (this.pos > 0 && this.pos <= 1) {
+        gr.FillSolidRect(x, y+y_offset, w * this.pos, h-y_offset*2, active_color);
+    }
+    // nob 图片
+    if (this.nob_img && isNumeric(this.pos) && this.pos >= 0) {
+        var img_w = this.nob_img.Width;
         gr.DrawImage(this.nob_img, x+w*this.pos - img_w/2, (h - img_w)/2+y, img_w, img_w, 0, 0, img_w, img_w, 0, 255);
-	};
+    };
 
-	this.x = x;
-	this.y = y;
-	this.w = w;
-	this.h = h;
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
 }
 
 Slider.prototype.is_mouse_over = function(x, y) {
@@ -206,103 +201,103 @@ Slider.prototype.is_mouse_over = function(x, y) {
     if (this.nob_img) {
         l = this.nob_img.Width/2;
     }
-	return (x > this.x - l && x < this.x + this.w + l && y > this.y && y < this.y + this.h);
+    return (x > this.x - l && x < this.x + this.w + l && y > this.y && y < this.y + this.h);
 }
 
 Slider.prototype.down = function(x, y) {
-	if (this.is_mouse_over(x, y)) {
-		this.is_drag = true;
-		this.move(x, y);
-	}
+    if (this.is_mouse_over(x, y)) {
+        this.is_drag = true;
+        this.move(x, y);
+    }
 }
 
 Slider.prototype.up = function(x, y) {
-	this.is_drag = false;
+    this.is_drag = false;
 }
 
 Slider.prototype.move = function(x, y) {
-	if (this.is_drag) {
-		x -= this.x ;
-		this.pos = x < 0 ? 0 : x > this.w ? 1 : x / this.w;
-		this.set(this.pos);
-		window.Repaint();
-	}
+    if (this.is_drag) {
+        x -= this.x ;
+        this.pos = x < 0 ? 0 : x > this.w ? 1 : x / this.w;
+        this.set(this.pos);
+        window.Repaint();
+    }
 }
 
 Slider.prototype.update = function() {
-	this.pos = this.get();
-	window.Repaint();
+    this.pos = this.get();
+    window.Repaint();
 }
 
 
 // Button class
 var Button = function(func) {
-	this.func = func;
-	this.state = 0;
+    this.func = func;
+    this.state = 0;
     this.is_down;
 }
 
 Button.prototype.draw = function(gr, img, x, y) {
-	this.x = x;
-	this.y = y;
-	this.w = img.Width;
-	this.h = img.Height;
-	var alpha = 0;
+    this.x = x;
+    this.y = y;
+    this.w = img.Width;
+    this.h = img.Height;
+    var alpha = 0;
     alpha = (this.state == 2 ? 100 : (this.state == 1 ? 200 : 255));
-	gr.DrawImage(img, x, y, this.w, this.h, 0, 0, this.w, this.h, 0, alpha);
+    gr.DrawImage(img, x, y, this.w, this.h, 0, 0, this.w, this.h, 0, alpha);
 }
 
 Button.prototype.is_mouse_over = function(x, y) {
-	return (x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h);
+    return (x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h);
 }
 
 Button.prototype.change_state = function(s) {
-	if (s == this.state) {
-		return;
-	}
-	this.state = s;
-	window.Repaint();
+    if (s == this.state) {
+        return;
+    }
+    this.state = s;
+    window.Repaint();
 }
 Button.prototype.down = function (x, y) {
-	if (this.is_mouse_over(x, y)) {
-		this.change_state(2);
+    if (this.is_mouse_over(x, y)) {
+        this.change_state(2);
         return true;
-	} else {
+    } else {
         return false;
     }
 }
 
 Button.prototype.up = function(x, y) {
-	if (this.is_mouse_over(x, y)) {
-		this.change_state(1);
-		return true;
-	} else {
-		this.change_state(0);
-		return false;
-	}
+    if (this.is_mouse_over(x, y)) {
+        this.change_state(1);
+        return true;
+    } else {
+        this.change_state(0);
+        return false;
+    }
 }
 
 Button.prototype.move = function(x, y) {
-	if (this.state == 2) {
-		return;
-	} else {
-		if (this.is_mouse_over(x, y)) {
-			this.change_state(1);
-		} else {
-			this.change_state(0);
-		}
-	}
+    if (this.state == 2) {
+        return;
+    } else {
+        if (this.is_mouse_over(x, y)) {
+            this.change_state(1);
+        } else {
+            this.change_state(0);
+        }
+    }
 }
 
 Button.prototype.leave = function() {
-	this.change_state(0);
+    this.change_state(0);
 }
 
 Button.prototype.on_click = function(x, y) {
-	if (!this.func || typeof this.func != "function") {
-		return ;
-	}
-	this.func(x, y);
+    if (!this.func || typeof this.func != "function") {
+        return ;
+    }
+    this.func(x, y);
 }
 
 // ======================================================================
@@ -310,157 +305,150 @@ Button.prototype.on_click = function(x, y) {
 // ======================================================================
 
 function console(s) {
-	fb.trace(s);
+    fb.trace(s);
 };
 
 function alert(msg) {
-	fb.ShowPopupMessage(msg, "WSH Panel Mod", 0);
+    fb.ShowPopupMessage(msg, "WSH Panel Mod", 0);
 };
 
-/*
-function caller() {
-	var caller = /^function\s+([^(]+)/.exec(arguments.callee.caller.caller);
-	if (caller) return caller[1];
-	else return 0;
-};
-*/
-
-// Note: Not recommented to use this in `on_paint';
+// Note: Not recommented to use this in `on_paint', use `gr.CalcTextWidth' or 
+// `gr.MeasureString' directly.
 function GetTextWidth(str, font, type) {
-	var temp_gr = gdi.CreateImage(1, 1);
-	var g = temp_gr.GetGraphics();
-	var ret;
-	switch (type) {
-		case 1:
-			ret = Math.ceil(g.MeasureString(str, font, 0, 0, 0, 0).Width);
-			break;
-		case 0:
-		default:
-			ret = Math.ceil(g.CalcTextWidth(str, font));
-			break;
-	};
-	temp_gr.ReleaseGraphics(g);
-	temp_gr.Dispose();
-	return ret;
+    var temp_gr = gdi.CreateImage(1, 1);
+    var g = temp_gr.GetGraphics();
+    var ret;
+    switch (type) {
+        case 1:
+            ret = Math.ceil(g.MeasureString(str, font, 0, 0, 0, 0).Width);
+            break;
+        case 0:
+        default:
+            ret = Math.ceil(g.CalcTextWidth(str, font));
+            break;
+    };
+    temp_gr.ReleaseGraphics(g);
+    temp_gr.Dispose();
+    return ret;
 }
 
 function GetFBWnd() {
-	return utils.CreateWND(window.ID).GetAncestor(2);
+    return utils.CreateWND(window.ID).GetAncestor(2);
 }
 
 function InputBox(caption, promp, defval, num_only) {
-	return GetFBWnd().InputBox(caption, promp, defval, num_only);
+    return GetFBWnd().InputBox(caption, promp, defval, num_only);
 }
 
 function MsgBox(caption, promp, type) {
-	return GetFBWnd().MsgBox(caption, promp, type);
+    return GetFBWnd().MsgBox(caption, promp, type);
 }
 
 function FileDialog(mode, title, filetype, deftext) {
-	return GetFBWnd().FileDialog(mode, title, filetype, deftext);
+    return GetFBWnd().FileDialog(mode, title, filetype, deftext);
 }
 
 function $(field, metadb) {
-	return metadb ? fb.TitleFormat(field).EvalWithMetadb(metadb) : fb.TitleFormat(field).Eval();
+    return metadb ? fb.TitleFormat(field).EvalWithMetadb(metadb) : fb.TitleFormat(field).Eval();
 }
 
 function StringFormat() {
-	var h_align = 0,
-		v_align = 0,
-		trimming = 0,
-		flags = 0;
-	switch (arguments.length) {
-		case 4:
-			flags = arguments[3];
-		case 3:
-			trimming = arguments[2];
-		case 2:
-			v_align = arguments[1];
-		case 1:
-			h_align = arguments[0];
-			break;
-		default:
-			return 0;
-	};
-	return ((h_align << 28) | (v_align << 24) | (trimming << 20) | flags);
+    var h_align = 0,
+        v_align = 0,
+        trimming = 0,
+        flags = 0;
+    switch (arguments.length) {
+        case 4:
+            flags = arguments[3];
+        case 3:
+            trimming = arguments[2];
+        case 2:
+            v_align = arguments[1];
+        case 1:
+            h_align = arguments[0];
+            break;
+        default:
+            return 0;
+    };
+    return ((h_align << 28) | (v_align << 24) | (trimming << 20) | flags);
 }
 
 function RGBA(r, g, b, a) {
-	return ((a << 24) | (r << 16) | (g << 8) | (b));
+    return ((a << 24) | (r << 16) | (g << 8) | (b));
 }
 
 function RGB(r, g, b) {
-	return (0xff000000 | (r << 16) | (g << 8) | (b));
+    return (0xff000000 | (r << 16) | (g << 8) | (b));
 }
 
 function toRGB(d) {
-	var d = d - 0xff000000;
-	var r = d >> 16;
-	var g = d >> 8 & 0xFF;
-	var b = d & 0xFF;
-	return [r, g, b];
+    var d = d - 0xff000000;
+    var r = d >> 16;
+    var g = d >> 8 & 0xFF;
+    var b = d & 0xFF;
+    return [r, g, b];
 };
 
 
 function negativeColor(colour) {
-	var R = getRed(colour);
-	var G = getGreen(colour);	
-	var B = getBlue(colour);
-	return RGB(Math.abs(R-255), Math.abs(G-255), Math.abs(B-255));
+    var R = getRed(colour);
+    var G = getGreen(colour);    
+    var B = getBlue(colour);
+    return RGB(Math.abs(R-255), Math.abs(G-255), Math.abs(B-255));
 };
 
 function blendColors(c1, c2, factor) {
-	var c1 = toRGB(c1);
-	var c2 = toRGB(c2);
-	var r = Math.round(c1[0] + factor * (c2[0] - c1[0]));
-	var g = Math.round(c1[1] + factor * (c2[1] - c1[1]));
-	var b = Math.round(c1[2] + factor * (c2[2] - c1[2]));
-	return (0xff000000 | (r << 16) | (g << 8) | (b));
+    var c1 = toRGB(c1);
+    var c2 = toRGB(c2);
+    var r = Math.round(c1[0] + factor * (c2[0] - c1[0]));
+    var g = Math.round(c1[1] + factor * (c2[1] - c1[1]));
+    var b = Math.round(c1[2] + factor * (c2[2] - c1[2]));
+    return (0xff000000 | (r << 16) | (g << 8) | (b));
 };
 
 function combineColors(bg, color) {
-	var b = toRGB(bg);
-	var c = [getRed(color), getGreen(color), getBlue(color), getAlpha(color) / 255];
-	return RGB(
-			(1 - c[3]) * b[0] + c[3] * c[0],
-			(1 - c[3]) * b[1] + c[3] * c[1],
-			(1 - c[3]) * b[2] + c[3] * c[2]
-		  );
+    var b = toRGB(bg);
+    var c = [getRed(color), getGreen(color), getBlue(color), getAlpha(color) / 255];
+    return RGB(
+            (1 - c[3]) * b[0] + c[3] * c[0],
+            (1 - c[3]) * b[1] + c[3] * c[1],
+            (1 - c[3]) * b[2] + c[3] * c[2]
+          );
 }
 
 function getAlpha(color) {
-	return ((color >> 24) & 0xff);
+    return ((color >> 24) & 0xff);
 }
 
 function getRed(color) {
-	return ((color >> 16) & 0xff);
+    return ((color >> 16) & 0xff);
 }
 
 function getGreen(color) {
-	return ((color >> 8) & 0xff);
+    return ((color >> 8) & 0xff);
 }
 
 function getBlue(color) {
-	return (color & 0xff);
+    return (color & 0xff);
 }
 
 function setAlpha(color, a) {
-	return ((color & 0x00ffffff) | (a << 24));
+    return ((color & 0x00ffffff) | (a << 24));
 }
 
 function sqrt(a) {
-	return Math.sqrt(a);
+    return Math.sqrt(a);
 }
 
 function pow(a, b) {
-	var c = b ? b : 2;
-	return Math.pow(a, c);
+    var c = b ? b : 2;
+    return Math.pow(a, c);
 }
 
 // if Luminance(c) > 0.6, c is light; else c is dark.
 function Luminance(color) {
-	color = toRGB(color);
-	return (0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]) / 255.0;
+    color = toRGB(color);
+    return (0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]) / 255.0;
 };
 
 function GetKeyboardMask() {
@@ -603,68 +591,68 @@ var VK_RCONTROL = 0xA3; // Right CONTROL key
 var VK_LMENU = 0xA4; // Left MENU key
 var VK_RMENU = 0xA5; // Right MENU key
  
-var VK_KEY_0 = 0x30 //	0
-var VK_KEY_1 = 0x31 //	1
-var VK_KEY_2 = 0x32 //	2
-var VK_KEY_3 = 0x33 //	3
-var VK_KEY_4 = 0x34 //	4
-var VK_KEY_5 = 0x35 //	5
-var VK_KEY_6 = 0x36 //	6
-var VK_KEY_7 = 0x37 //	7
-var VK_KEY_8 = 0x38 //	8
-var VK_KEY_9 = 0x39 //	9
-var VK_KEY_A = 0x41 //	A
-var VK_KEY_B = 0x42 //	B
-var VK_KEY_C = 0x43 //	C
-var VK_KEY_D = 0x44 //	D
-var VK_KEY_E = 0x45 //	E
-var VK_KEY_F = 0x46 //	F
-var VK_KEY_G = 0x47 //	G
-var VK_KEY_H = 0x48 //	H
-var VK_KEY_I = 0x49 //	I
-var VK_KEY_J = 0x4A //	J
-var VK_KEY_K = 0x4B //	K
-var VK_KEY_L = 0x4C //	L
-var VK_KEY_M = 0x4D //	M
-var VK_KEY_N = 0x4E //	N
-var VK_KEY_O = 0x4F //	O
-var VK_KEY_P = 0x50 //	P
-var VK_KEY_Q = 0x51 //	Q
-var VK_KEY_R = 0x52 //	R
-var VK_KEY_S = 0x53 //	S
-var VK_KEY_T = 0x54 //	T
-var VK_KEY_U = 0x55 //	U
-var VK_KEY_V = 0x56 //	V
-var VK_KEY_W = 0x57 //	W
-var VK_KEY_X = 0x58 //	X
-var VK_KEY_Y = 0x59 //	Y
-var VK_KEY_Z = 0x5A //	Z
+var VK_KEY_0 = 0x30 //    0
+var VK_KEY_1 = 0x31 //    1
+var VK_KEY_2 = 0x32 //    2
+var VK_KEY_3 = 0x33 //    3
+var VK_KEY_4 = 0x34 //    4
+var VK_KEY_5 = 0x35 //    5
+var VK_KEY_6 = 0x36 //    6
+var VK_KEY_7 = 0x37 //    7
+var VK_KEY_8 = 0x38 //    8
+var VK_KEY_9 = 0x39 //    9
+var VK_KEY_A = 0x41 //    A
+var VK_KEY_B = 0x42 //    B
+var VK_KEY_C = 0x43 //    C
+var VK_KEY_D = 0x44 //    D
+var VK_KEY_E = 0x45 //    E
+var VK_KEY_F = 0x46 //    F
+var VK_KEY_G = 0x47 //    G
+var VK_KEY_H = 0x48 //    H
+var VK_KEY_I = 0x49 //    I
+var VK_KEY_J = 0x4A //    J
+var VK_KEY_K = 0x4B //    K
+var VK_KEY_L = 0x4C //    L
+var VK_KEY_M = 0x4D //    M
+var VK_KEY_N = 0x4E //    N
+var VK_KEY_O = 0x4F //    O
+var VK_KEY_P = 0x50 //    P
+var VK_KEY_Q = 0x51 //    Q
+var VK_KEY_R = 0x52 //    R
+var VK_KEY_S = 0x53 //    S
+var VK_KEY_T = 0x54 //    T
+var VK_KEY_U = 0x55 //    U
+var VK_KEY_V = 0x56 //    V
+var VK_KEY_W = 0x57 //    W
+var VK_KEY_X = 0x58 //    X
+var VK_KEY_Y = 0x59 //    Y
+var VK_KEY_Z = 0x5A //    Z
  
-var VK_F1	= 0x70 //	F1
-var VK_F2	= 0x71 //	F2
-var VK_F3	= 0x72 //	F3
-var VK_F4	= 0x73 //	F4
-var VK_F5	= 0x74 // F5
-var VK_F6	= 0x75 // F6
-var VK_F7	= 0x76 // F7
-var VK_F8	= 0x77 // F8
-var VK_F9	= 0x78 // F9
-var VK_F10	= 0x79 //	F10
-var VK_F11	= 0x7A //	F11
-var VK_F12	= 0x7B //	F12
+var VK_F1    = 0x70 //    F1
+var VK_F2    = 0x71 //    F2
+var VK_F3    = 0x72 //    F3
+var VK_F4    = 0x73 //    F4
+var VK_F5    = 0x74 // F5
+var VK_F6    = 0x75 // F6
+var VK_F7    = 0x76 // F7
+var VK_F8    = 0x77 // F8
+var VK_F9    = 0x78 // F9
+var VK_F10    = 0x79 //    F10
+var VK_F11    = 0x7A //    F11
+var VK_F12    = 0x7B //    F12
 /*
-var VK_F13	= 0x7C //	F13
-var VK_F14	= 0x7D //	F14
-var VK_F15	= 0x7E //	F15
-var VK_F16	= 0x7F //	F16
-var VK_F17	= 0x80 //	F17
-var VK_F18	= 0x81 //	F18
-var VK_F19	= 0x82 //	F19
-var VK_F20	= 0x83 //	F20
-var VK_F21	= 0x84 //	F21
-var VK_F22	= 0x85 //	F22
-var VK_F23	= 0x86 //	F23
-var VK_F24	= 0x87 // F24
+var VK_F13    = 0x7C //    F13
+var VK_F14    = 0x7D //    F14
+var VK_F15    = 0x7E //    F15
+var VK_F16    = 0x7F //    F16
+var VK_F17    = 0x80 //    F17
+var VK_F18    = 0x81 //    F18
+var VK_F19    = 0x82 //    F19
+var VK_F20    = 0x83 //    F20
+var VK_F21    = 0x84 //    F21
+var VK_F22    = 0x85 //    F22
+var VK_F23    = 0x86 //    F23
+var VK_F24    = 0x87 // F24
 */
 
 
