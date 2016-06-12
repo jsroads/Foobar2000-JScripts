@@ -2,14 +2,13 @@
 
 // ==PREPROCESSOR==
 // @author "Elia >>> http://elia-is-me.github.io"
-// @version "0.0.1"
 // @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
 // @import "E:\GitHub\Foobar2000-JScripts\common\inputbox.js"
-// @import "E:\GitHub\Foobar2000-JScripts\scripts\LibraryBrowser.txt"
 // ==/PREPROCESSOR==
 
 // please change files' path by yourselves.
 
+// @import "E:\GitHub\Foobar2000-JScripts\scripts\LibraryBrowser.txt"
 
 var list_dr = [],
     list = null,
@@ -146,13 +145,14 @@ var color_txt = eval(window.GetProperty("Color text", "RGB(225, 225, 225)")),
     color_bg = eval(window.GetProperty("Color bg", "RGB(34, 34, 34)")),
     color_bg_sel = eval(window.GetProperty("Color bg_sel", "RGB(130, 90, 44)"));
 
-var margin_top = 35;
+var margin_top = 110;
 var total_columns, total_rows;
 var row_height, cover_width, thumb_width, thumb_width_;
 var scrb_ = false;
 
 var g_font = gdi.Font(font_name, font_size),
     g_font2 = gdi.Font(font_name, font_size, 1);
+var g_font4 = gdi.Font(font_name, 32);
 var font_height = g_font.Height;
 
 function on_paint(gr) {
@@ -206,7 +206,7 @@ function on_paint(gr) {
 
                 if (ay >= (0 - row_height) && ay < wh) {
                     //gr.FillSolidRect(ax, ay, thumb_width_, row_height-margin_tb*2, 0x10ffffff);
-                    gr.FillSolidRect(ax+margin_cover, ay+margin_cover, cover_width, cover_width, 0xa0ffffff);
+                    gr.FillSolidRect(ax+margin_cover, ay+margin_cover, cover_width, cover_width, 0x10ffffff & color_txt);
                     gr.GdiDrawText(i + "", g_font2, color_txt, ax+margin_cover, ay+margin_cover, cover_width, cover_width, DT_CENTER | DT_VCENTER | DT_CALCRECT);
                     var arr = gr.EstimateLineWrap(list_dr[i].string[1], g_font2, cover_width).toArray();
                     if (arr.length > 4) {
@@ -247,8 +247,8 @@ function on_paint(gr) {
     if (repaint_f) {
         repaint_f = false;
 
-        //
-        gr.FillSolidRect(20, 0, ww-40, margin_top, blendColors(0xff000000, color_bg, 0.5));
+        gr.FillSolidRect(20, 0, ww-40, margin_top, color_bg | 0xff000000);
+        gr.GdiDrawText("媒体库", g_font4, color_txt, 20, 20, ww - 60, 65, DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
     }
 
 }
