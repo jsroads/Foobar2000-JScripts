@@ -154,6 +154,10 @@ if (!Array.isArray) {
 	};
 }
 
+function isNumeric (obj) {
+    return !Array.isArray(obj) && (obj - parseFloat(obj) + 1) >= 0;
+}
+
 // ======================================================================
 // Constructors
 // ======================================================================
@@ -186,8 +190,7 @@ Slider.prototype.draw = function(gr, x, y, w, h, y_offset, active_color, inactiv
 		gr.FillSolidRect(x, y+y_offset, w * this.pos, h-y_offset*2, active_color);
 	}
 	// nob 图片
-	if (this.nob_img && typeof this.pos == "number" && this.pos >= 0) {
-        //fb.trace(this.pos instanceof Number);
+	if (this.nob_img && isNumeric(this.pos) && this.pos >= 0) {
 		var img_w = this.nob_img.Width;
         gr.DrawImage(this.nob_img, x+w*this.pos - img_w/2, (h - img_w)/2+y, img_w, img_w, 0, 0, img_w, img_w, 0, 255);
 	};
