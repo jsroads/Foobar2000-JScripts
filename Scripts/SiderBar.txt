@@ -1,0 +1,13 @@
+﻿// vim: set ft=javascript fileencoding=utf-8 bomb et:
+
+// ==PREPROCESSOR==
+// @author "Elia >>> http://elia-is-me.github.io"
+// @version "0.0.1"
+// @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
+// @import "E:\GitHub\Foobar2000-JScripts\common4\inputbox.js"
+// ==/PREPROCESSOR==
+//
+// foobar2000 v1.3.3+ and WSH Panel Mod Plus 1.5.7+ required.
+
+
+var font_ico = gdi.Font("segoe mdl2 assets", 14);
