@@ -1,0 +1,203 @@
+﻿// vim: set ft=javascript fileencoding=utf-8 bomb et:
+
+// ==PREPROCESSOR==
+// @author "Elia >>> http://elia-is-me.github.io"
+// @version "0.0.1"
+// @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
+// ==/PREPROCESSOR==
+//
+// foobar2000 v1.3.3+ and WSH Panel Mod Plus 1.5.7+ required.
+// @import "E:\GitHub\Foobar2000-JScripts\common4\inputbox.js"
+
+
+
+var color_bg = 0xffe6e6e6,
+    color_txt = 0xff000000;
+
+var caption_txt_def = "foobar2000",
+    caption_txt = "";
+
+var tf_caption = fb.TitleFormat("[%artist% - ][%tracknumber%. ]%title%");
+var font_caption = gdi.Font("segoe ui", 14);
+
+
+var ww = 0,
+    wh = 0;
+var caption_height = 30;
+var fb_wnd = GetFBWnd();
+var drag_wnd = false;
+
+var sf_cc = StringFormat(1, 1);
+
+var images = {}, 
+    buttons = {};
+    
+
+function get_images() {
+    var g, w, img = null;
+    var font_i2 = gdi.Font("segoe mdl2 assets", 10),
+        font_i = gdi.Font("segoe mdl2 assets",  14);
+    var create_icons = function(obj, font, w, h) {
+        for (var i in obj) {
+            img = gdi.CreateImage(w, h);
+            g = img.GetGraphics();
+            g.SetTextRenderingHint(3);
+            g.DrawString(obj[i], font, color_txt, 0, 0, w, h, sf_cc);
+            g.SetTextRenderingHint(0);
+            img.ReleaseGraphics(g);
+            images[i] && images[i].Dispose();
+            images[i] = img;
+        }
+    };
+    var icons = {
+        "back": "\ue0c4",
+    },
+    icons2 = {
+        "minimize": "\ue921",
+        "maximize": "\ue922",
+        "close": "\ue8bb"
+    };
+    create_icons(icons, font_i, 50, 30);
+    create_icons(icons2, font_i2, 50, 30);
+    font_i.Dispose();
+    font_i2.Dispose();
+}
+
+
+function get_objects() {
+    buttons = {
+        back: new Button(),
+        minimize: new Button(function () {
+            fb_wnd.Show(6);
+        }),
+        maximize: new Button(function () {
+            fb_wnd.Show(fb_wnd.IsMaximized() ? 9 : 3);
+        }),
+        close: new Button(function () {
+            fb_wnd.SendMsg(0x0112, 0xf060, 0);
+        })
+    }
+}
+
+
+// on load
+get_images();
+get_objects();
+on_metadb_changed();
+
+if (window.InstanceType == 1) {
+    window.MaxHeight = window.MinHeight = caption_height;
+    window.MinWidth = 50 * 4;
+}
+
+function on_size() {
+    ww = window.Width;
+    wh = window.Height;
+    if (!ww || !wh) 
+        return;
+}
+
+function on_paint(gr) {
+    // bg
+    gr.FillSolidRect(0, 0, ww, wh, color_bg);
+
+    // buttons
+    for (var i in buttons) {
+        // buttons bg
+        if (buttons[i].state > 0) {
+            gr.FillSolidRect(buttons[i].x, buttons[i].y, buttons[i].w, buttons[i].h, buttons[i].state == 1 ? 0x10000000 : 0x40000000);
+        }
+        switch (i) {
+            case "back":
+                buttons[i].draw(gr, images[i], 0, 0, 50, 30);
+                break;
+            case "minimize":
+                buttons[i].draw(gr, images[i], ww - 50*3, 0, 50, 30);
+                break;
+            case "maximize":
+                buttons[i].draw(gr, images[i], ww - 50*2, 0, 50, 30);
+                break;
+            case "close":
+                buttons[i].draw(gr, images[i], ww - 50, 0, 50, 30);
+                break;
+            default:
+                break;
+        }
+    }
+
+    // caption text
+    gr.GdiDrawText(caption_txt, font_caption, 0xff000000, 55, 0, ww - 50*4 - 20, 30, DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
+    
+
+}
+
+
+function on_metadb_changed() {
+    var metadb = fb.IsPlaying ? fb.GetNowPlaying() : null;
+    if (metadb) {
+        caption_txt = fb.IsPaused ? tf_caption.EvalWithMetadb(metadb) + " [paused]" : tf_caption.EvalWithMetadb(metadb);
+    } else {
+        caption_txt = caption_txt_def;
+    }
+    window.Repaint();
+}
+
+function on_playback_new_track(metadb) {
+    on_metadb_changed();
+}
+
+function on_playback_stop(reason) {
+    if (reason != 2) {
+        on_metadb_changed();
+    }
+}
+
+function on_playback_pause() {
+    on_metadb_changed();
+}
+
+
+function on_mouse_move(x, y) {
+    for (var i in buttons) {
+        buttons[i].move(x, y);
+    }
+    // ...
+}
+
+function on_mouse_lbtn_down(x, y, mask) {
+    drag_wnd = true;
+
+    for (var i in buttons) {
+        if (buttons[i].down(x, y))
+            drag_wnd = false;
+    }
+
+    if (drag_wnd) {
+        utils.ReleaseCapture();
+        fb_wnd.SendMsg(0xA1, 2, 0);
+    }
+}
+
+function on_mouse_lbtn_dblclk(x, y, mask) {
+    if (x > 50 && x < ww - 50 * 3)
+        fb_wnd.Show(fb_wnd.IsMaximized() ? 9 : 3);
+}
+
+
+function on_mouse_lbtn_up(x, y, mask) {
+    drag_wnd = false;
+    for (var i in buttons) {
+        if (buttons[i].up(x, y))
+            buttons[i].on_click(x, y);
+    }
+}
+
+function on_mouse_rbtn_up(x, y, mask) {
+    return (mask !== MK_SHIFT);
+}
+
+function on_mouse_leave() {
+    for (var i in buttons) {
+        buttons[i].leave();
+    }
+}
