@@ -133,9 +133,11 @@ function get_images() {
         sf = StringFormat(1, 1);
     var font_ico = gdi.Font("Segoe MDL2 Assets", 15);
 
-	var ico_name = ["prev", "pause", "play", "next", "volume", "shuffle", "repeat", "repeat1", "normal",
-    "volume0", "volume1", "volume2", "volume3", "volume_mute"],
-        ico_code = ["\uE100", "\uE103", "\uE102", "\uE101", "\uE15D" , "\uE14B", "\uE149", "\uE1CC", "\uE13C"];
+	var ico_name = ["prev", "pause", "play", "next", "volume", "shuffle", 
+        "repeat", "repeat1", "normal", "volume0", "volume1", "volume2", 
+        "volume3", "volume_mute"],
+        ico_code = ["\uE100", "\uE103", "\uE102", "\uE101", "\uE15D" , 
+        "\uE14B", "\uE149", "\uE1CC", "\uE13C"];
 
     w = 40;
     for (var i = 0; i < ico_name.length; i++) {
@@ -204,13 +206,18 @@ function check_mode() {
 }
 
 var tmp_out;
+var ww_mode_;
 
 function on_size() {
     ww = Math.max(320, window.Width);
     wh = window.Height;
     if (auto_mode) 
         check_mode();
-    window.MaxHeight = window.MinHeight = get_panel_height();
+    if (ww_mode_ != ww_mode) {
+        window.MaxHeight = window.MinHeight = get_panel_height();
+        window.NotifyOthers("ww_mode", ww_mode);
+        ww_mode_ = ww_mode;
+    }
 
     tmp_out && window.ClearInterval(tmp_out);
     tmp_out = window.SetInterval(function () {
