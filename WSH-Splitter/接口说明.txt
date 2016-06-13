@@ -34,18 +34,21 @@ var ThisPanelsName = "myPanel";
 //面板类名，用于创建面板，常用的都在此，自行选用即可。
 var PanelClassNames = {
     PSS: "PSSWindowContainer",
-    WSH:"uie_wsh_panel_sp_class"
-        //WSHM: "uie_wsh_panel_mod_class",
-        //WSHSP:"uie_wsh_panel_sp_class",
-        //ELPL: "ELPlaylistWindowContainer",
-        //PLS: "NGLV",
-        //AL: "SysTreeView32",
-        //CSP: "#32770",
-        //BIO: "BioWindowContainer",
-        //LIB: "LibraryTreeWindowContainer",
-        //ESP: "ELPlaylist2WindowContainer",
-        //ALT:"{606E9CDD-45EE-4c3b-9FD5-49381CEBE8AE}"
+    WSHMP:"uie_wsh_panel_mod_plus_class",
+    WSHM: "uie_wsh_panel_mod_class",
+    WSHSP:"uie_wsh_panel_sp_class",
+    ELPL: "ELPlaylistWindowContainer",
+    PLS: "NGLV",
+    AL: "SysTreeView32",
+    CSP: "#32770",
+    BIO: "BioWindowContainer",
+    ESL: "uie_eslyric_wnd_class",
+    LYR3: "FOO_UIE_LYRICS3" //ended here!!!
+        LIB: "LibraryTreeWindowContainer",
+        ESP: "ELPlaylist2WindowContainer",
+        ALT:"{606E9CDD-45EE-4c3b-9FD5-49381CEBE8AE}"
 };
+
 
 //载入脚本后，所有的功能接口都挂在$Splitter下
 var $Splitter;
@@ -84,59 +87,64 @@ Hide()
 Refresh()
     //锁定，参数为boolean
 Lock(lock)
-    //---------------------------------------------------------
+//---------------------------------------------------------
 
-    //显隐面板。show赋boolean
+//显隐面板。show赋boolean
 ShowPanel(index, show)
 
-    //移动面板
+//移动面板
 MovePanel(index, x, y, w, h)
 
-    //锁定面板。lock赋boolean
+//锁定面板。lock赋boolean
 LockPanel(index, lock)
 
-    //设定面板高宽限制
+//设定面板高宽限制
 SetPanelSizeLimit(index, min, max)
 
-    //设定面板布局。水平或垂直，mode合法值为"horizontal"和"vertical"。
+//设定面板布局。水平或垂直，mode合法值为"horizontal"和"vertical"。
 SetPanelsPalcementMode(mode)
 
-    //设置分隔条属性。设置面板之间的分隔线的宽度和绘制方法，drawFunc为绘制函数，通过它来绘制分隔条样式，自己定义该函数并赋予此参数。
+//设置分隔条属性。设置面板之间的分隔线的宽度和绘制方法，drawFunc为绘制函数，通过它来绘制分隔条样式，自己定义该函数并赋予此参数。
 SetSeparaterProperties(width, drawFunc)
-    //drawFunc的参数。xywh分别为分隔条左上角点的xy和它的宽高wh，placement为面板的布局模式，"horizontal"或"vertical"。
+//drawFunc的参数。xywh分别为分隔条左上角点的xy和它的宽高wh，placement为面板的布局模式，"horizontal"或"vertical"。
 drawFunc(g, x, y, w, h, placement)
 
-    //设置面板边距。此为设置整个父级面板的边缘留空距离。
+//设置面板边距。此为设置整个父级面板的边缘留空距离。
+// 已知存在 bug, 当多块面板水平或垂直布局时会有显示位置错误
 SetPanelsMargin(left, top, right, bottom)
 
-    //是否可以开aero，返回boolean。
+//是否可以开aero，返回boolean。
+// 不推荐使用，WSHMP 自带 utils.IsAeroEnabled() 接口
 IsAeroEnabled() 
 
-    //给整个窗口创建aero，四个参数均为边距，分别为左右上下。
+//给整个窗口创建aero，四个参数均为边距，分别为左右上下。
+// 不再推荐使用，WSHMP 自带 IWindow.CreateGlass(l, r, t, b) 接口
 CreateGlass(l, r, t, b)
 
-    //发送消息。不是在面板间发送消息。此为高级函数，使用方法参见wsh sp自己的说明。此函数可以实现窗口拖动。
+//发送消息。不是在面板间发送消息。此为高级函数，使用方法参见wsh sp自己的说明。此函数可以实现窗口拖动。
+// 不再推荐使用，WSHMP 自带 IWindow.SendMsg(msg, wp, lp) 接口
 SendAMessage(msg, wp, lp)
 
-    //在进行一些鼠标动作时，有时需要先执行这个函数以防止bug，例如拖动窗口时。
+//在进行一些鼠标动作时，有时需要先执行这个函数以防止bug，例如拖动窗口时。
+// 不再推荐使用，WSHMP 自带 IWindow.ReleaseCapture() 接口
 ReleaseCapture()
 
-    //===============================================
+//===============================================
 
-    //其他接口
+//其他接口
 
-    //侦听器。此函数用于替代默认的事件回调方法。name为侦听器名，合法的名字均为原回调函数名，如"on_paint"，"on_mouse_move"等，func为事件函数，相当于原来的回调函数，可以对一个事件添加多个事件函数，事件发生时函数将依次顺序执行，boolean值标记将该函数添加到函数队列的第一个还是最后一个，默认为最后一个，true为第一个。
-    addEventListener(name, func, boolean);
+//侦听器。此函数用于替代默认的事件回调方法。name为侦听器名，合法的名字均为原回调函数名，如"on_paint"，"on_mouse_move"等，func为事件函数，相当于原来的回调函数，可以对一个事件添加多个事件函数，事件发生时函数将依次顺序执行，boolean值标记将该函数添加到函数队列的第一个还是最后一个，默认为最后一个，true为第一个。
+addEventListener(name, func, boolean);
 
-    //面板通信。通过这个函数可以向特定面板传递信息，并返回变量。panelName为目标面板的ThisPanelsName值，action为请求动作，arguments为动作参数。
-    window.NotifyOthers(panelName, [action, arguments...]);
-    //以上参数只是约定写法，你可以自己定义其他规则。在通过自定义函数再添加侦听器"on_notify_data"来实现。
-    //在同是wsh splitter的面板内，默认支持如下的功能
-    //action: 'ShowPanel'; arguments1: index; arguments2: show (boolean)
-    //action: 'MovePanel'; arguments1-5: index, x, y, w, h
-    //action: 'LockPanel'; arguments1: index; arguments2: lock (boolean)
-    //action: 'RequestPanelStatus'; arguments1: index, arguments2: tray. 此时tray为一个空数组，命令执行完后，空数组内会被放入一个元素，内容为{x, y, w, h, visible, locked}。
+//面板通信。通过这个函数可以向特定面板传递信息，并返回变量。panelName为目标面板的ThisPanelsName值，action为请求动作，arguments为动作参数。
+window.NotifyOthers(panelName, [action, arguments...]);
+//以上参数只是约定写法，你可以自己定义其他规则。在通过自定义函数再添加侦听器"on_notify_data"来实现。
+//在同是wsh splitter的面板内，默认支持如下的功能
+//action: 'ShowPanel'; arguments1: index; arguments2: show (boolean)
+//action: 'MovePanel'; arguments1-5: index, x, y, w, h
+//action: 'LockPanel'; arguments1: index; arguments2: lock (boolean)
+//action: 'RequestPanelStatus'; arguments1: index, arguments2: tray. 此时tray为一个空数组，命令执行完后，空数组内会被放入一个元素，内容为{x, y, w, h, visible, locked}。
 
-    //例如，下面的代码将得到splitterPanel中index为1的面板的状态
-    window.NotifyOthers("splitterPanel", ["RequestPanelStatus", 1, tray]);
+//例如，下面的代码将得到splitterPanel中index为1的面板的状态
+window.NotifyOthers("splitterPanel", ["RequestPanelStatus", 1, tray]);
 
