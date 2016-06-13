@@ -1,0 +1,142 @@
+// vim: set ft=javascript et:
+
+//使用方法
+//先在CUI布局树里做设置。
+//1、在同一PSS下，加入所有内容面板，再额外加入一个将用作分离器的wsh面板，wsh分离器面板置于最后一位。
+//2、在PSS设置中，所有面板都勾上强制布局，除wsh分离器外所有面板的左右宽高值都留空。
+//3、将wsh分离器的左右设置为0，宽设置为%ps_width%，高设置为%ps_height%。
+//CUI布局设置结束，一个WSH分离器的架子就搭好了。
+
+//在wsh分离器面板中，先用这样一段代码载入脚本
+
+// Load script =======================
+var script = utils.ReadTextFile("E:\\Common.js");
+eval(script);
+script = utils.ReadTextFile("E:\\WSH Splitter.js");
+eval(script);
+script = undefined;
+//===============================
+
+//如果你总是固定路径，那你可以用process，process的路径中不能使用变量。
+
+//载入脚本后，严格来说是载入Common.js后，面板中所有默认的事件回调方式都要用新的规则来写，原本的直接的定义函数的方法
+function on_paint(gr){}
+//要被弃用，改用添加侦听器的方法来实现
+function OnPaint(gr){}
+addEventListener("on_paint", OnPaint);
+//注意不要再使用任何原来的on_***的函数名，否则将导致代码错误。
+
+// 一些全局变量
+
+//面板名。此为名字很关键，在面板间传递消息时，此名字为面板的标识
+var ThisPanelsName = "myPanel";
+
+//面板类名，用于创建面板，常用的都在此，自行选用即可。
+var PanelClassNames = {
+    PSS: "PSSWindowContainer",
+    WSH:"uie_wsh_panel_sp_class"
+        //WSHM: "uie_wsh_panel_mod_class",
+        //WSHSP:"uie_wsh_panel_sp_class",
+        //ELPL: "ELPlaylistWindowContainer",
+        //PLS: "NGLV",
+        //AL: "SysTreeView32",
+        //CSP: "#32770",
+        //BIO: "BioWindowContainer",
+        //LIB: "LibraryTreeWindowContainer",
+        //ESP: "ELPlaylist2WindowContainer",
+        //ALT:"{606E9CDD-45EE-4c3b-9FD5-49381CEBE8AE}"
+};
+
+//载入脚本后，所有的功能接口都挂在$Splitter下
+var $Splitter;
+//例如
+$Splitter.CreatePanel(...);
+
+// $Splitter的属性和方法 ===========================
+
+//创建面板。通过此函数可以立即创建出一个新面板，但必须之前先把该面板加入CUI布局树中，建议放在PSS面板下，并将宽高都设为0或留空。此函数返回一个Panel对象，面板创建后将可以通过该对象控制，多个面板自动按水平或垂直模式排列，并可以拖动，鼠标指针自动变化。classname参数为面板的类名，具体值参考上面的PanelClassNames对象，position为面板在CUI布局树中的位置序号（从上至下，只数同类面板，从1开始，只能使用同一PSS下的其他面板，通常情况下不建议使用其他路径下的面板），absolutePosition为boolean值，表示是否绝对定位，true则只位置设置，不会被鼠标拖移（使用绝对定位时要注意避免面板重叠），xywh为面板位置和宽高。
+var panel = CreatePanel(classname, position, absolutePosition, x, y, w, h);
+
+// Panel对象的属性和方法 -----------------------------
+//属性--------
+//左右宽高
+x, y, w, h
+//边距
+padding = {left, top, right, bottom}
+//是否为相对定位
+relative
+//编号。第一个创建的为0，第二个为1，以此类推。不要乱改此数值。
+index
+//是否可见。读就是了，不要乱改此数值，想改显隐用Show函数。
+visible
+//是否锁定。
+locked
+//最大最小尺寸。宽高不定，当面板水平布局时，是最大最小宽度（此时高度都为面板总高），当垂直布局时，为最大最小高度。
+minSize, maxSize
+//方法--------
+//移动到新位置，新大小
+Move(x2, y2, w2, h2)
+    //显示
+Show()
+    //隐藏
+Hide()
+    //刷新，通常用不到
+Refresh()
+    //锁定，参数为boolean
+Lock(lock)
+    //---------------------------------------------------------
+
+    //显隐面板。show赋boolean
+ShowPanel(index, show)
+
+    //移动面板
+MovePanel(index, x, y, w, h)
+
+    //锁定面板。lock赋boolean
+LockPanel(index, lock)
+
+    //设定面板高宽限制
+SetPanelSizeLimit(index, min, max)
+
+    //设定面板布局。水平或垂直，mode合法值为"horizontal"和"vertical"。
+SetPanelsPalcementMode(mode)
+
+    //设置分隔条属性。设置面板之间的分隔线的宽度和绘制方法，drawFunc为绘制函数，通过它来绘制分隔条样式，自己定义该函数并赋予此参数。
+SetSeparaterProperties(width, drawFunc)
+    //drawFunc的参数。xywh分别为分隔条左上角点的xy和它的宽高wh，placement为面板的布局模式，"horizontal"或"vertical"。
+drawFunc(g, x, y, w, h, placement)
+
+    //设置面板边距。此为设置整个父级面板的边缘留空距离。
+SetPanelsMargin(left, top, right, bottom)
+
+    //是否可以开aero，返回boolean。
+IsAeroEnabled() 
+
+    //给整个窗口创建aero，四个参数均为边距，分别为左右上下。
+CreateGlass(l, r, t, b)
+
+    //发送消息。不是在面板间发送消息。此为高级函数，使用方法参见wsh sp自己的说明。此函数可以实现窗口拖动。
+SendAMessage(msg, wp, lp)
+
+    //在进行一些鼠标动作时，有时需要先执行这个函数以防止bug，例如拖动窗口时。
+ReleaseCapture()
+
+    //===============================================
+
+    //其他接口
+
+    //侦听器。此函数用于替代默认的事件回调方法。name为侦听器名，合法的名字均为原回调函数名，如"on_paint"，"on_mouse_move"等，func为事件函数，相当于原来的回调函数，可以对一个事件添加多个事件函数，事件发生时函数将依次顺序执行，boolean值标记将该函数添加到函数队列的第一个还是最后一个，默认为最后一个，true为第一个。
+    addEventListener(name, func, boolean);
+
+    //面板通信。通过这个函数可以向特定面板传递信息，并返回变量。panelName为目标面板的ThisPanelsName值，action为请求动作，arguments为动作参数。
+    window.NotifyOthers(panelName, [action, arguments...]);
+    //以上参数只是约定写法，你可以自己定义其他规则。在通过自定义函数再添加侦听器"on_notify_data"来实现。
+    //在同是wsh splitter的面板内，默认支持如下的功能
+    //action: 'ShowPanel'; arguments1: index; arguments2: show (boolean)
+    //action: 'MovePanel'; arguments1-5: index, x, y, w, h
+    //action: 'LockPanel'; arguments1: index; arguments2: lock (boolean)
+    //action: 'RequestPanelStatus'; arguments1: index, arguments2: tray. 此时tray为一个空数组，命令执行完后，空数组内会被放入一个元素，内容为{x, y, w, h, visible, locked}。
+
+    //例如，下面的代码将得到splitterPanel中index为1的面板的状态
+    window.NotifyOthers("splitterPanel", ["RequestPanelStatus", 1, tray]);
+
