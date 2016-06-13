@@ -9,5 +9,175 @@
 //
 // foobar2000 v1.3.3+ and WSH Panel Mod Plus 1.5.7+ required.
 
+var font_name = "segoe ui",
+    font_name_b = "segoe ui",
+    font_size = 14,
+    font_ico, font_list;
 
-var font_ico = gdi.Font("segoe mdl2 assets", 14);
+var color_bg = eval(window.GetProperty("Sider color bg", "RGB(255, 255, 255)")),
+    color_bg2,
+    color_txt = eval(window.GetProperty("Sider color txt", "RGB(0, 0, 0)"));
+color_bg2 = RGB(242, 242, 242);
+
+var ww = 0, 
+    wh = 0,
+    repaint_b = repaint_b1 = repaint_b2 = false,
+    repaint_main1 = repaint_main2 = repaint_main = false;
+
+var images = {}, 
+    buttons = {}, 
+    __buttons__ = {},
+    inputbox = null;
+
+var button_width = 48;
+var content_width = 300;
+
+var DT_CC = DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
+var DT_LC = DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
+var sf_cc = StringFormat(1, 1);
+
+
+
+function get_images () {
+    var g, w, img = null,
+        font_i = gdi.Font("segoe mdl2 assets", 20),
+        font_i2 = gdi.Font("segoe mdl2 assets", 16);
+
+    var create_icons = function(obj, font, w, h) {
+        for (var i in obj) {
+            img = gdi.CreateImage(w, h);
+            g = img.GetGraphics();
+            g.SetTextRenderingHint(3);
+            g.DrawString(obj[i], font, color_txt, 0, 0, w, h, sf_cc);
+            g.SetTextRenderingHint(0);
+            img.ReleaseGraphics(g);
+            images[i] && images[i].Dispose();
+            images[i] = img;
+        }
+    };
+
+    var icos = {
+        "hamburg": "\ue700",
+        "loupe": "\ue094",
+    },
+    icos2 = {
+        "artist": "\ue13d",
+        "album": "\ue958",
+        "playlist": "\ue1a2",
+        "cog": "\ue115",
+    };
+
+    create_icons(icos, font_i, button_width, button_width);
+    create_icons(icos2, font_i2, button_width, button_width);
+
+    font_i.Dispose();
+}
+
+function get_fonts() {
+    font_ico = gdi.Font("segoe mdl2 assets", font_size);
+    font_list = gdi.Font(font_name, font_size);
+}
+
+function get_objects() {
+    buttons = {
+        hamburg: new Button(function () {
+            window.NotifyOthers("Panel_active", 0);
+            window.SetProperty("Panel.Active", 0);
+            window.Repaint();
+        }),
+        loupe: new Button(function () {
+            window.NotifyOthers("Panel_active", 4);
+            window.SetProperty("Panel.Active", 4);
+            window.Repaint();
+
+        }),
+        artist: new Button(),
+        album: new Button(),
+        playlist: new Button(function () {
+            window.NotifyOthers("Panel_active", 2);
+            window.SetProperty("Panel.Active", 2);
+            window.Repaint();
+        }),
+        cog: new Button(function () {
+            fb.ShowPreferences();
+        })
+    };
+
+}
+
+
+
+
+get_fonts();
+get_images();
+get_objects();
+
+
+
+var tmp_out;
+
+
+window.MaxWidth = window.MinWidth = button_width;
+
+function on_size () {
+    ww = window.Width;
+    wh = window.Height;
+    if (!ww || !wh)
+        return;
+
+    tmp_out && window.ClearInterval(function () {
+        // ...
+        tmp_out && window.ClearInterval(tmp_out);
+    }, 500);
+}
+
+
+function on_paint(gr) {
+
+    gr.FillSolidRect(0, 0, ww, wh, color_bg);
+    gr.FillSolidRect(0, 0, button_width, wh, color_bg2);
+
+    var y = 20;
+
+    for (var i in buttons) {
+        buttons[i].draw(gr, images[i], 0, y, button_width, button_width);
+        y+= button_width;
+    }
+
+}
+
+
+function on_notify_data(info, data) {
+
+}
+
+
+function on_mouse_move(x, y) {
+    for (var i in buttons) {
+        buttons[i].move(x, y);
+    }
+}
+
+function on_mouse_lbtn_down(x, y, mask) {
+    for (var i in buttons) {
+        buttons[i].down(x, y);
+    }
+}
+
+
+function on_mouse_lbtn_up(x, y, mask) {
+    for (var i in buttons) {
+        if (buttons[i].up(x, y))
+            buttons[i].on_click(x, y);
+    }
+}
+
+function on_mouse_rbtn_up(x, y, mask) {
+    return (mask !== MK_SHIFT);
+}
+
+function on_mouse_leave() {
+    for (var i in buttons) {
+        buttons[i].leave();
+    }
+}
