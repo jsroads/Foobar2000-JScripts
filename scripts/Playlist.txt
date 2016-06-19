@@ -235,7 +235,7 @@ function on_paint(gr) {
                 gr.GdiDrawText("\uE006", g_font_mdl2, is_selected ? colorT : color_t2, ww - right_pad - mood_w, y_, mood_w, row_height, DT_CENTER | DT_VCENTER | DT_CALCRECT);
                 //gr.DrawString("\ue006", g_font_mdl2, colorT, ww-right_pad-mood_w, y_, mood_w, row_height, StringFormat(1, 1));
                 test_mode && gr.DrawRect(ww - right_pad - mood_w, y_+2, mood_w, row_height - 4, 1, 0x55000000);
-                right_pad = mood_w + right_pad+10;
+                right_pad = mood_w + right_pad+15;
             }
 
             // Duration
@@ -243,12 +243,10 @@ function on_paint(gr) {
             test_mode && gr.DrawRect(ww - right_pad - 50, y_ + 2, 50, row_height - 4, 1, 0x55000000);
             right_pad = right_pad + 50;
 
-            var left_w = ww - 10 - 50 - (scrb_vis ? 10 : 0) - 20 - 50;
             if (ww >= 625 && ww < 1000) {
                 // artist
                 gr.GdiDrawText(list_dr[i].string[5], g_font3, is_selected ? colorT : color_t2, left_pad + (ww - left_pad - right_pad) * 0.6, y_, (ww - left_pad - right_pad)*0.4, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
                 test_mode && gr.DrawRect(left_pad + (ww - left_pad - right_pad) * 0.6, y_ + 2, (ww - left_pad - right_pad) *0.4, row_height - 4, 1, 0x55000000);
-                left_w = left_w * 0.51;
                 right_pad += (ww - left_pad - right_pad) * 0.4 + 10;
             } else if (ww >= 1000) {
                 // album
@@ -261,26 +259,12 @@ function on_paint(gr) {
                 gr.GdiDrawText(list_dr[i].string[5], g_font3, is_selected ? colorT : color_t2, ww - right_pad - art_w, y_, art_w, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
                 test_mode && gr.DrawRect(ww - right_pad - art_w, y_ + 2, art_w, row_height - 4, 1, 0x55000000);
 
-                left_w = left_w * 0.31;
                 right_pad += art_w + 10;
             }
             
             gr.GdiDrawText(list_dr[i].string[4], g_font, colorT, left_pad, y_, ww - left_pad - right_pad, row_height, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
             test_mode && gr.DrawRect(left_pad, y_ + 2, ww - left_pad - right_pad, row_height - 4, 1, 0x55000000);
         }
-
-        /*
-        var color2 = blendColors(color_txt, color_bg, 0.5);
-        var left_w = ww - 10 - 50 - (scrb_vis ? 10 : 0) - 20 - 50;
-        gr.GdiDrawText("#", g_font2, color2, 20, 0, 50, margin_top, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-        gr.GdiDrawText("Length", g_font2, color2, ww-60-(scrb_vis?10:0), 0, 50, margin_top, DT_CENTER | DT_VCENTER | DT_CALCRECT);
-        if (ww >= 600) {
-            gr.GdiDrawText("Artist", g_font2, blendColors(color_txt, color_bg, 0.5), 20+50+left_w*0.5+5, 0, left_w*0.2-5, margin_top, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
-            gr.GdiDrawText("Album", g_font2, blendColors(color_txt, color_bg, 0.5), 20+50+left_w*0.7+5, 0, left_w*0.3-5, margin_top, DT_VCENTER | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS);
-            left_w = left_w * 0.5;
-        }
-        gr.GdiDrawText("Ttile", g_font2, color2, 20+50, 0, ww-10-50-(scrb_vis?10:0)-20-50, margin_top, DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS);
-        */
 
         // Scroll Bar
         var list_h = wh - margin_top,
@@ -315,11 +299,6 @@ function check_scroll(scroll___) {
 function on_timer_(timer233) {
     time_dl = time_s.Time;
     time_s.Reset();
-    if (research) {
-        research = false;
-        get_list(research_k, "");
-        return;
-    }
 
     var d = new Date();
     if (d.getTime() - time222 < refresh_rate -1)
@@ -340,6 +319,13 @@ function on_timer_(timer233) {
     if (repaint_main1 == repaint_main2) {
         repaint_main2 = !repaint_main1;
         repaint_2 = true;
+    }
+
+    // PLST
+    if (research) {
+        research = false;
+        get_list(research_k, "");
+        return;
     }
 
     // SHOW NOW PLAYING
@@ -395,7 +381,6 @@ function on_timer_(timer233) {
 function on_mouse_wheel(step) {
     repaint_main1 = repaint_main2;
     scroll -= step * row_height * scroll_step;
-    //scroll = check_scroll(scroll);
 }
 
 
@@ -403,6 +388,30 @@ var select_start = -1, selecting;
 var row_drag = false, row_clicked = false;
 var drag_idx = -1, clicked_idx = -1;
 
+
+function on_mouse_lbtn_down(x, y, mask) {
+    // scrollbar
+    var has_scrollbar = (list_dr.length * row_height > wh - margin_top);
+    if (has_scrollbar && x > ww - 11 && x < ww - 1 && y > margin_top && y < wh) {
+        hold_scroll = true;
+        scroll = Math.round((((y - margin_top) * (list_dr.length * row_height) / (wh - margin_top)) - (wh - margin_top) / 2) / row_height - 0.5) * row_height;
+    } else {
+
+
+
+
+    }
+
+
+
+
+}
+
+
+
+
+
+/*
 function on_mouse_lbtn_down(x, y, mask) {
     var scrb_vis = (list_dr.length * row_height > wh - margin_top);
     mouse_l_hold = true;
@@ -462,6 +471,7 @@ function on_mouse_lbtn_down(x, y, mask) {
     }
 
 }
+*/
 
 function select_range(from, to) {
     var indexes = [];
@@ -480,6 +490,8 @@ function select_range(from, to) {
 }
 
 
+
+/*
 function on_mouse_lbtn_dblclk(x, y, mask) {
     var scrb_vis = (list_dr.length * row_height > wh - margin_top);
     var active_idx = Math.round((y + scroll - margin_top) / row_height - 0.5);
@@ -491,9 +503,11 @@ function on_mouse_lbtn_dblclk(x, y, mask) {
         plman.ExecutePlaylistDefaultAction(active_list, active_idx);
     }
 }
+*/
 
 
 
+/*
 function on_mouse_lbtn_up(x, y, mask) {
     mouse_drag = mouse_hold = mouse_l_hold = hold_scroll = false;
     var scrb_vis = (list_dr.length * row_height > wh - margin_top);
@@ -561,9 +575,11 @@ function on_mouse_lbtn_up(x, y, mask) {
     dragOverIdx = -1;
     repaint();
 }
+*/
 
 var dragOverIdx = -1;
 
+/*
 function on_mouse_move(x, y, mask) {
     if (m_x == x && m_y == y)
         return; // ...
@@ -590,6 +606,7 @@ function on_mouse_move(x, y, mask) {
 
 }
 
+*/
 
 
 
@@ -753,7 +770,6 @@ function on_notify_data(name, info) {
     // ...
 
 }
-
 
 
 window.SetTimeout(function () {

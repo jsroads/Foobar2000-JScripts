@@ -20,7 +20,9 @@ function addEventListener(event, func, unshift){
 			funcArr2.push(func);
 	}
 	if(eval("typeof("+event+")")=='undefined'){
-		var script = event + " = function(a1, a2, a3, a4){ var funcArr = $sys_callBackFuncs['" + event + "']; for(var i=0; i<funcArr.length; i++) funcArr[i](a1, a2, a3, a4); }";
+		var script = event + " = function(a1, a2, a3, a4){ var funcArr = $sys_callBackFuncs['" 
+            + event 
+            + "']; for(var i=0; i<funcArr.length; i++) funcArr[i](a1, a2, a3, a4); }";
 		eval(script);
 	}
 }

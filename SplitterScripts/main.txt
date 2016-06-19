@@ -1,0 +1,101 @@
+﻿// vim: ft=javascript fileencoding=utf-8 bomb et:
+
+// ==PREPROCESSOR==
+// @author "Elia >>> http://elia-is-me.github.io"
+// @version "0.0.2"
+// @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
+// @import "E:\GitHub\Foobar2000-JScripts\splitterScripts\main.txt"
+// ==/PREPROCESSOR==
+
+// @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
+// @import "E:\GitHub\Foobar2000-JScripts\scripts\Playlist.txt"
+
+//////////////////////////////////////////////////////////////////////////////
+// 载入 WSH Splitter 文件
+// 可以根据实际修改文件路径
+var wsh_splitter_folder = "E:\\GitHub\\Foobar2000-JScripts\\WSH-Splitter\\";
+var splitter_common_path = wsh_splitter_folder + "Common.js";
+var splitter_js_path = wsh_splitter_folder + "WSH Splitter.js";
+
+eval(utils.ReadTextFile(splitter_common_path));
+eval(utils.ReadTextFile(splitter_js_path));
+
+/////////////////////////////////////////////////////////////////////////////
+
+var panels = [
+    $Splitter.CreatePanel(PanelClassNames.WSHMP, 1, true), // caption - 0
+    $Splitter.CreatePanel(PanelClassNames.WSHMP, 2, true), // sidebar - 1
+    $Splitter.CreatePanel(PanelClassNames.WSHMP, 3, true), // playlist - 2
+    $Splitter.CreatePanel(PanelClassNames.WSHMP, 4, true), // library - 3
+    $Splitter.CreatePanel(PanelClassNames.WSHMP, 5, true), // library - 3
+    $Splitter.CreatePanel(PanelClassNames.WSHMP, 6, true), // library - 3
+];
+
+for (var i = 0; i < panels.length; i++) {
+    //$Splitter.ShowPanel(i, 0);
+}
+$Splitter.ShowPanel(0, 0);
+$Splitter.ShowPanel(1, 1);
+$Splitter.ShowPanel(2, 1);
+
+var margin_top = 0,
+    margin_left = 50;
+var expanded_left = 250;
+var expanded = false;
+
+function show_panel(id) {
+    for (var i = 0; i < panels.length; i++) {
+        if (i == id) {
+            $Splitter.ShowPanel(i, 1);
+        } else {
+            $Splitter.ShowPanel(i, 0)
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+var pid = window.GetProperty("PID", 2);
+
+addEventListener("on_size", function () {
+    if (ww < 320)
+        ww = 320;
+    //show_panel(pid);
+    //$Splitter.MovePanel(0, 0, 0, ww, 30);
+    if (expanded) {
+        $Splitter.MovePanel(1, 0, margin_top, 250, wh - margin_top);
+    } else {
+        $Splitter.MovePanel(1, 0, margin_top, 50, wh - margin_top);
+    }
+    if (expanded && ww > 700) {
+        $Splitter.MovePanel(2, 250, margin_top, ww - 250, wh - margin_top);
+    } else {
+        $Splitter.MovePanel(2, 50, margin_top, ww - 50, wh - margin_top);
+    }
+}, true);
+
+
+
+
+
+addEventListener("on_paint", function (gr) {
+    gr.FillSolidRect(0, 0, ww, wh, 0xffea4335);
+});
+
+function onNotifyData(name, info) {
+    name = name.toLowerCase();
+    switch (name) {
+        case "expand_sidebar":
+            expanded = info;
+            if (typeof expanded != "boolean")
+                expanded = false;
+            on_size();
+            break;
+        default:
+            fb.trace("ON_NOTIFY_DATA: " + name);
+            break;
+    }
+}
+
+addEventListener("on_notify_data", onNotifyData);
+

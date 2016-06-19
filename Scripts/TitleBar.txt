@@ -80,21 +80,27 @@ function get_objects() {
 }
 
 
+var WS_CAPTION = 0x00C00000;
+var WS_BORDER = 0x00800000;
+fb_wnd.Style &=  ~WS_CAPTION;
+
 // on load
 get_images();
 get_objects();
 on_metadb_changed();
 
-if (window.InstanceType == 1) {
+// if (window.InstanceType == 1) {
     window.MaxHeight = window.MinHeight = caption_height;
     window.MinWidth = 50 * 4;
-}
+// }
 
 function on_size() {
     ww = window.Width;
     wh = window.Height;
     if (!ww || !wh) 
         return;
+    if (ww < 320)
+        ww = 320;
 }
 
 function on_paint(gr) {
@@ -179,8 +185,8 @@ function on_mouse_lbtn_down(x, y, mask) {
 }
 
 function on_mouse_lbtn_dblclk(x, y, mask) {
-    if (x > 50 && x < ww - 50 * 3)
-        fb_wnd.Show(fb_wnd.IsMaximized() ? 9 : 3);
+    //if (x > 50 && x < ww - 50 * 3)
+        //fb_wnd.Show(fb_wnd.IsMaximized() ? 9 : 3);
 }
 
 
@@ -201,3 +207,4 @@ function on_mouse_leave() {
         buttons[i].leave();
     }
 }
+

@@ -4,18 +4,30 @@
 // @author "Elia >>> http://elia-is-me.github.io"
 // @version "0.0.1"
 // @import "E:\GitHub\Foobar2000-JScripts\common\common4.js"
-// @import "E:\GitHub\Foobar2000-JScripts\common4\inputbox.js"
+// @import "E:\GitHub\Foobar2000-JScripts\common\inputbox.js"
 // ==/PREPROCESSOR==
 //
 // foobar2000 v1.3.3+ and WSH Panel Mod Plus 1.5.7+ required.
+
+/*
+// Use the following codes to import script files if you do not wnat to import 
+// them in PREPROCESSOR.
+// NOT RECOMMENTED, because it will be difficult to track where Error happens.
+var skin_path = "E:\\GitHub\\Foobar2000-JScripts\\";
+eval(utils.ReadTextFile(skin_path + "common\\common4.js"));
+eval(utils.ReadTextFile(skin_path + "common\\inputbox.js"));
+*/
 
 var font_name = "segoe ui",
     font_name_b = "segoe ui",
     font_size = 14,
     font_ico, font_list;
+var font_title;
 
-var color_bg = eval(window.GetProperty("Sider color bg", "RGB(255, 255, 255)")),
+//var color_bg = eval(window.GetProperty("Sider color bg", "RGB(255, 255, 255)")),
+var color_bg = RGB(242, 242, 242),
     color_bg2,
+    color_high = RGB(66, 133, 244),
     color_txt = eval(window.GetProperty("Sider color txt", "RGB(0, 0, 0)"));
 color_bg2 = RGB(242, 242, 242);
 
@@ -29,18 +41,104 @@ var images = {},
     __buttons__ = {},
     inputbox = null;
 
-var button_width = 48;
-var content_width = 300;
+var button_width = 50;
+var expand_width = 250;
+var expanded = window.Width > 50 ? true : false;
+
+// playlist manager
+var playlists_dr = [];
+var scroll = [0, 0, 0, 0];
 
 var DT_CC = DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
 var DT_LC = DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
 var sf_cc = StringFormat(1, 1);
 
+//////////////////////////////////////////////////////////////////////////////
 
+var playlists;
+
+function Playlists(params) {
+
+    var params = typeof params == "object" ? params : {};
+    var row_height = 35;
+    var padding_top = row_height;
+
+    var list_dr = [], count = 0;
+
+    this.scroll = 0;
+    this.scroll_ = 0;
+
+    this.setSize = function(x, y, w, h) {
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
+    }
+
+    this.draw = function (gr, x, y, w, h) {
+        fb.trace(arguments.length);
+        this.setSize(x, y, w, h);
+        fb.trace(this.h);
+        if (this.h < row_height) {
+            return;
+        }
+        ///////////////////////////////////////
+        var start_ = 0, end_ = 0;
+        var ry = 0;
+
+        // draw `Add new playlist`
+        gr.DrawImage(images.playlist, this.x, this.y + (row_height - 50) / 2 | 0, 50, 50, 0, 0, 50, 50, 0, 255);
+        gr.GdiDrawText("新建播放列表", font_list, color_txt, this.x + 50, this.y, this.w - 100, row_height, DT_LC);
+
+        start_ = Math.round(this.scroll_ / row_height + 0.4);
+        end_ = Math.ceil((this.scroll_ + this.h - padding_top) / row_height);
+        end_ = (list_dr.length < end_) ? list_dr.length : end_;
+
+        for (var i = start_; i < end_; i++) {
+            ry = this.y + padding_top + row_height * i - this.scroll_;
+            //gr.FillSolidRect(this.x, ry, this.w, row_height, 0xff000000);
+            gr.DrawImage(images.playlist, this.x, ry+(row_height-50)/2|0, 50, 50, 0, 0, 50, 50, 0, 255);
+            gr.GdiDrawText(list_dr[i].name, font_list, color_txt, this.x+50, ry, this.w - 70, row_height, DT_LC);
+            if (i == plman.ActivePlaylist)
+                gr.FillSolidRect(this.x, ry, 4, row_height, color_high);
+        }
+
+
+
+
+    }
+
+    this.get_list = function () {
+
+        count = plman.PlaylistCount;
+        list_dr = [];
+
+        var k = 0;
+
+        while (k < count) {
+            list_dr.push({
+                index: k,
+                name: plman.GetPlaylistName(k),
+                trackCount: plman.PlaylistItemCount(k),
+            });
+            k++;
+        }
+    }
+
+    this.get_list();
+
+    this.check_scroll = function (scroll) {
+    }
+
+
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
 
 function get_images () {
     var g, w, img = null,
-        font_i = gdi.Font("segoe mdl2 assets", 20),
+        font_i = gdi.Font("segoe mdl2 assets", 18),
         font_i2 = gdi.Font("segoe mdl2 assets", 16);
 
     var create_icons = function(obj, font, w, h) {
@@ -58,9 +156,9 @@ function get_images () {
 
     var icos = {
         "hamburg": "\ue700",
-        "loupe": "\ue094",
     },
     icos2 = {
+        "loupe": "\ue094",
         "artist": "\ue13d",
         "album": "\ue958",
         "playlist": "\ue1a2",
@@ -76,14 +174,14 @@ function get_images () {
 function get_fonts() {
     font_ico = gdi.Font("segoe mdl2 assets", font_size);
     font_list = gdi.Font(font_name, font_size);
+    font_title = gdi.Font(font_name, 24);
 }
 
 function get_objects() {
-    buttons = {
+    __buttons__ = {
         hamburg: new Button(function () {
-            window.NotifyOthers("Panel_active", 0);
-            window.SetProperty("Panel.Active", 0);
-            window.Repaint();
+            expanded = !expanded;
+            window.NotifyOthers("expand_sidebar", expanded)
         }),
         loupe: new Button(function () {
             window.NotifyOthers("Panel_active", 4);
@@ -103,9 +201,14 @@ function get_objects() {
         })
     };
 
+
+    playlists = new Playlists();
+
 }
 
 
+
+//////////////////////////////////////////////////////////////////////////////
 
 
 get_fonts();
@@ -117,7 +220,10 @@ get_objects();
 var tmp_out;
 
 
-window.MaxWidth = window.MinWidth = button_width;
+//window.MaxWidth = window.MinWidth = button_width;
+
+
+//////////////////////////////////////////////////////////////////////////////
 
 function on_size () {
     ww = window.Width;
@@ -137,11 +243,49 @@ function on_paint(gr) {
     gr.FillSolidRect(0, 0, ww, wh, color_bg);
     gr.FillSolidRect(0, 0, button_width, wh, color_bg2);
 
-    var y = 20;
 
-    for (var i in buttons) {
-        buttons[i].draw(gr, images[i], 0, y, button_width, button_width);
-        y+= button_width;
+    if (expanded) {
+        buttons = {
+            hamburg: __buttons__.hamburg,
+        };
+        var bt = buttons.hamburg;
+        // hamburg button
+        bt.draw(gr, images.hamburg, 0, 20, button_width, button_width);
+        // logo
+        // search rect
+        gr.FillSolidRect(10, bt.y+bt.h + 8, ww - 20, 35, 0xffffffff);
+        
+        // list
+        var list = ["Library", "Favorites", "Now Playing"];
+        var list_ = {
+            "专辑": images.album,
+            "歌手": images.artist,
+            "歌曲": images.playlist,
+            "正在播放": images.playlist,
+        }
+        var ly = 50*2 + 20;
+        //for (var i = 0; i < list.length; i++) {
+        for (var i in list_) {
+            //gr.GdiDrawText(list[i], font_list, color_txt, 50, ly, ww - 50 - 20, 35, DT_LC);
+            gr.DrawImage(list_[i], 0, ly, 50, 50, 0, 0, 50, 50, 0, 255);
+            gr.GdiDrawText(i, font_list, color_txt, 50, ly, ww -50-20, 50, DT_LC);
+            ly += 45;
+        }
+
+        gr.DrawLine(10, ly+5, ww-10, ly+5, 1, 0x40000000);
+
+        ly += 10;
+
+        // draw playlists
+        playlists.draw(gr, 0, ly, ww, wh - ly);
+
+    } else {
+        buttons = __buttons__;
+        var y = 20;
+        for (var i in buttons) {
+            buttons[i].draw(gr, images[i], 0, y, button_width, button_width);
+            y+= button_width;
+        }
     }
 
 }
