@@ -45,7 +45,17 @@ var window_visble = false,
 
 var images = {}, 
     buttons = {}, buttons_ = {}, sk, vol,
-    volpanel = { vis: false, x: 0, y: 0, w: 180, h: 30 },
+    volpanel = { 
+        vis: false, 
+        x: 0, 
+        y: 0, 
+        w: 180, 
+        h: 30,
+        isMouseOver: function(x, y) {
+            var isOver = (x > this.x && x < this.x+this.w && y > this.y && y < this.y+this.h);
+            return isOver && this.vis;
+        },
+    },
     cover = { vis: false, x: 0, y: 0, w: 0, h: 0 };
 
 var DT_CC = DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
@@ -607,7 +617,85 @@ function on_mouse_lbtn_up(x, y, mask) {
 }
 
 function on_mouse_rbtn_up(x, y, mask) {
-    return (mask != MK_SHIFT);
+    if (mask != MK_SHIFT) {
+        var menu = window.CreatePopupMenu(); // main
+        var st = window.CreatePopupMenu(); // shuffle type
+        var pref = window.CreatePopupMenu(); // preferences
+        var ret;
+
+        // base
+        pref.AppendTo(menu, MF_STRING, "Preferences");
+        st.AppendTo(menu, MF_STRING, "Shuffle");
+        menu.AppendMenuSeparator();
+        menu.AppendMenuItem(fb.IsPlaying ? MF_STRING : MF_DISABLED, 1, "Stop");
+        // preferences
+        if (!auto_mode) {
+            pref.AppendMenuItem(MF_STRING, 10, "Layout 1");
+            pref.AppendMenuItem(MF_STRING, 11, "Layout 2");
+            pref.AppendMenuItem(MF_STRING, 12, "Layout 3");
+            pref.CheckMenuRadioItem(10, 12, ww_mode+10);
+        }
+        pref.AppendMenuItem(MF_STRING, 13, "Layout auto-adjust");
+        pref.CheckMenuItem(13, auto_mode);
+        pref.AppendMenuSeparator();
+        pref.AppendMenuItem(MF_STRING, 14, "Style 1");
+        pref.AppendMenuItem(MF_STRING, 15, "Style 2");
+        pref.AppendMenuItem(MF_STRING, 16, "Style 3");
+        pref.CheckMenuRadioItem(14, 16, background_mode+14);
+        if (background_mode == 2) {
+            pref.AppendMenuItem(MF_STRING, 17, "Wallpaper blurred");
+            pref.CheckMenuItem(17, wpp_blurred);
+        }
+        // shuffle type
+        st.AppendMenuItem(MF_STRING, 19, "Random");
+        st.AppendMenuItem(MF_STRING, 20, "Tracks");
+        st.AppendMenuItem(MF_STRING, 21, "Albums");
+        st.AppendMenuItem(MF_STRING, 22, "Folders");
+        st.CheckMenuRadioItem(19, 22, shuffle_type + 16);
+
+        ret = menu.TrackPopupMenu(x, y);
+
+        switch (true) {
+            case ret == 1:
+                fb.Stop();
+            case (ret >= 10 && ret <= 12):
+                ww_mode = ret - 10;
+                on_size();
+                window.SetProperty("ww_mode(0-2)", ww_mode);
+                break;
+            case ret == 13:
+                auto_mode = !auto_mode;
+                on_size();
+                window.SetProperty("auto_mode", auto_mode);
+                break;
+            case (ret >= 14 && ret <= 16):
+                background_mode = ret - 14;
+                on_metadb_changed();
+                window.SetProperty("bg_mode(0-2)", background_mode);
+                break;
+            case ret == 17:
+                wpp_blurred = !wpp_blurred;
+                on_metadb_changed();
+                window.SetProperty("wpp_blurred", wpp_blurred);
+                break;
+            case ret >= 19 && ret <= 22: 
+                shuffle_type = ret - 16;
+                if (fb.PlaybackOrder >= 3) {
+                    fb.PlaybackOrder = shuffle_type;
+                }
+                window.SetProperty("shuffle_type", shuffle_type);
+                break;
+            default:
+                break;
+        }
+
+        menu.Dispose();
+        st.Dispose();
+        pref.Dispose();
+        return true;
+    } else {
+        return false;
+    }
 }
 
 function on_mouse_lbtn_dblclk(x, y, mask) {
