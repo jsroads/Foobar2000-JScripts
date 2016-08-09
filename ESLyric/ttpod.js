@@ -9,7 +9,7 @@
  * - 只适用于 ESLyric version 0.3.5+, 老版本的 ESLyric 还请用老脚本
  *   (当然还是推荐升级 ESLyric 到最新版) */
 
-var debug = true; // 如果要调试的话，改为 true.
+var dbg = false; // 如果要调试的话，改为 true.
 
 function get_my_name() {
 	return "TTPod|天天动听";
@@ -33,7 +33,7 @@ function start_search(info, callback) {
     var http_client = utils.CreateHttpClient();
 
     url = generate_url(title, artist, true, -1);
-	//debug && console(url);
+	//dbg && console(url);
     var json_txt = http_client.Request(url);
     if (http_client.StatusCode != 200) {
         console("Request url[" + url + "] error : " + http_client.StatusCode);
@@ -43,9 +43,9 @@ function start_search(info, callback) {
     var _new_lyric = callback.CreateLyric();
 
     // parse json_txt
-    //debug && console(json_txt);
+    //dbg && console(json_txt);
     var data = json(json_txt)["data"];
-    debug && console("data.length == " + data.length);
+    dbg && console("data.length == " + data.length);
     // download lyric
     for (var j = 0; j < data.length; j++) {
         if (callback.IsAborting()) {
