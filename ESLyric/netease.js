@@ -153,10 +153,7 @@ function json(text)
 }
 
 function console(s) {
-    if (dbg) {
-        return;
-    }
-    fb.trace(get_my_name() + " $>  " + s);
+    dbg && fb.trace(get_my_name() + " $>  " + s);
 };
 
 
