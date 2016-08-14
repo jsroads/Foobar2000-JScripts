@@ -148,15 +148,17 @@ if (!Array.prototype.find) {
 }
 
 // Refer: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
-if (!Array.isArray) {
-    Array.isArray = function(arg) {
-        return Object.prototype.toString.call(arg) === '[object Array]';
-    };
-}
+function isArray (arg) {
+    return Object.prototype.toString.call(arg) === '[object Array]';
+};
 
 // jQuery.isNumeric()
 function isNumeric (obj) {
-    return !Array.isArray(obj) && (obj - parseFloat(obj) + 1) >= 0;
+    return !isArray(obj) && (obj - parseFloat(obj) + 1) >= 0;
+}
+
+function isFunction (obj) {
+    return Object.prototype.toString.call(obj) == "[object Function]";
 }
 
 // ======================================================================
@@ -167,10 +169,8 @@ function isNumeric (obj) {
 
 function Slider (nob_img, func_get, func_set) {
     this.nob_img = nob_img ? nob_img : null;
-
-    this.get = func_get instanceof Function ? func_get : function() {};
-    this.set = func_set instanceof Function ? func_set : function() {};
-
+    this.get = isFunction(func_get) ? func_get : function() {};
+    this.set = isFunction(func_set) ? func_set : function() {};
     this.pos = this.get();
 }
 
@@ -336,18 +336,6 @@ function GetFBWnd() {
     return utils.CreateWND(window.ID).GetAncestor(2);
 }
 
-function InputBox(caption, promp, defval, num_only) {
-    return GetFBWnd().InputBox(caption, promp, defval, num_only);
-}
-
-function MsgBox(caption, promp, type) {
-    return GetFBWnd().MsgBox(caption, promp, type);
-}
-
-function FileDialog(mode, title, filetype, deftext) {
-    return GetFBWnd().FileDialog(mode, title, filetype, deftext);
-}
-
 function $(field, metadb) {
     return metadb ? fb.TitleFormat(field).EvalWithMetadb(metadb) : fb.TitleFormat(field).Eval();
 }
@@ -451,19 +439,6 @@ function Luminance(color) {
     return (0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]) / 255.0;
 };
 
-function GetKeyboardMask() {
-    var c = utils.IsKeyPressed(VK_CONTROL) ? true : false;
-    var a = utils.IsKeyPressed(VK_ALT) ? true : false;
-    var s = utils.IsKeyPressed(VK_SHIFT) ? true : false;
-    var ret = KMask.none;
-    if (c && !a && !s) ret = KMask.ctrl;
-    if (!c && !a && s) ret = KMask.shift;
-    if (c && !a && s) ret = KMask.ctrlshift;
-    if (c && a && !s) ret = KMask.ctrlalt;
-    if (c && a && s) ret = KMask.ctrlaltshift;
-    if (!c && a && !s) ret = KMask.alt;
-    return ret;
-};
 
 function get_system_dpi_percent() {
     var objShell = new ActiveXObject("WScript.Shell");
@@ -640,20 +615,6 @@ var VK_F9    = 0x78 // F9
 var VK_F10    = 0x79 //    F10
 var VK_F11    = 0x7A //    F11
 var VK_F12    = 0x7B //    F12
-/*
-var VK_F13    = 0x7C //    F13
-var VK_F14    = 0x7D //    F14
-var VK_F15    = 0x7E //    F15
-var VK_F16    = 0x7F //    F16
-var VK_F17    = 0x80 //    F17
-var VK_F18    = 0x81 //    F18
-var VK_F19    = 0x82 //    F19
-var VK_F20    = 0x83 //    F20
-var VK_F21    = 0x84 //    F21
-var VK_F22    = 0x85 //    F22
-var VK_F23    = 0x86 //    F23
-var VK_F24    = 0x87 // F24
-*/
 
 
 var FontStyle={Regular:0,Bold:1,Italic:2,BoldItalic:3,Underline:4,Strikeout:8};
@@ -669,13 +630,3 @@ var ColorTypeCUI={text:0,selection_text:1,inactive_selection_text:2,background:3
 var FontTypeCUI={items:0,labels:1};
 var FontTypeDUI={defaults:0,tabs:1,lists:2,playlists:3,statusbar:4,console:5};
 var ButtonStates = {normal: 0, hover: 1, down: 2};
-var KMask = {
-    none: 0,
-    ctrl: 1,
-    shift: 2,
-    ctrlshift: 3,
-    ctrlalt: 4,
-    ctrlaltshift: 5,
-    alt: 6
-};
-

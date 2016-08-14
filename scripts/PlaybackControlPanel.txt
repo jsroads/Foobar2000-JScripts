@@ -10,10 +10,11 @@
 
 var font_name = "Segoe UI Semibold",
     font_name_b = "Segoe UI",
+    font_assets = "segoe mdl2 assets",
     font_time, font_cover, font_title, font_alb;
 
-var color_bg = eval(window.GetProperty("Color bg", "RGB(25, 25, 25)")),
-    color_txt = eval(window.GetProperty("Color txt", "RGB(236, 236, 236)")),
+var color_bg = eval(window.GetProperty("Color bg", "RGB(160, 160, 128)")),
+    color_txt = eval(window.GetProperty("Color txt", "RGB(10, 10, 10)")),
     color_txt2 = blendColors(color_txt, color_bg, 0.3);
 var color_bg_ = 0, 
     color_txt_ = 0;
@@ -26,7 +27,7 @@ var tf_title = fb.TitleFormat("%title%"),
 
 var shuffle_type = window.GetProperty("Shuffle type", 4),
     auto_mode = window.GetProperty("auto_mode", false),
-    ww_mode = window.GetProperty("ww_mode(0-2)", 1);
+    layout_mode = window.GetProperty("layout_mode(0-2)", 1);
 var background_mode = window.GetProperty("bg_mode(0-2)", 1); 
 var wpp_blurred = window.GetProperty("wallpaper blurred", false),
     wpp_blur_val = window.GetProperty("wallpaper blur value", 1.05);
@@ -38,36 +39,36 @@ var pb_length = "-:--",
 
 var ww = 0, wh = 0;
 var double_clicked = false;
-var window_visble = false,
-    repaint_main1 = true, repaint_main2 = true, repaint_main = true,
-    drag_window = false, 
+var drag_window = false, 
     fb_wnd = GetFBWnd();
 
 var images = {}, 
     buttons = {}, buttons_ = {}, sk, vol,
     volpanel = { 
-        vis: false, 
+        visible: false, 
         x: 0, 
         y: 0, 
         w: 180, 
         h: 30,
         isMouseOver: function(x, y) {
             var isOver = (x > this.x && x < this.x+this.w && y > this.y && y < this.y+this.h);
-            return isOver && this.vis;
+            return isOver && this.visible;
         },
     },
-    cover = { vis: false, x: 0, y: 0, w: 0, h: 0 };
+    cover = { visible: false, x: 0, y: 0, w: 0, h: 0 };
 
 var DT_CC = DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
 var DT_LC = DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX;
 
 
-function check_prop() {
+function check_properties() {
+    // check shuffle type
     shuffle_type = parseInt(shuffle_type);
     if (shuffle_type < 3 || shuffle_type > 6) {
         shuffle_type = 4;
         window.SetProperty("Shuffle type", shuffle_type);
     }
+    // check fonts
 }
 
 function get_objects() {
@@ -114,8 +115,8 @@ function get_objects() {
             }
         }),
         volume: new Button(function () {
-            volpanel.vis = !volpanel.vis;
-            if (volpanel.vis) {
+            volpanel.visible = !volpanel.visible;
+            if (volpanel.visible) {
                 buttons.mute = buttons_.mute
             } else {
                 buttons["mute"] && delete buttons["mute"];
@@ -161,7 +162,7 @@ function vol2pos(v) {
 
 function get_images() {
     var g, w, img = null;
-    var font_i = gdi.Font("segoe mdl2 assets", 15);
+    var font_i = gdi.Font(font_assets, 15);
     var sf = StringFormat(1, 1);
     var create_image = function (obj, font, color, w, h) {
         for (var i in obj) {
@@ -227,38 +228,44 @@ function get_images() {
 
 function get_fonts() {
     font_time = gdi.Font(font_name, 14);
-    font_cover = gdi.Font("segoe mdl2 assets", 32);
+    font_cover = gdi.Font(font_assets, 32);
     font_alb = gdi.Font(font_name, 12);
     font_title = gdi.Font(font_name, 14);
+}
+
+function get_colors() {
+    color_bg = eval(window.GetProperty("Color bg", "RGB(160, 160, 128)"));
+    color_txt = eval(window.GetProperty("Color txt", "RGB(10, 10, 10)"));
+    color_txt2 = blendColors(color_txt, color_bg, 0.3);
 }
 
 
 function check_mode() {
     switch (true) {
         case (ww < 510):
-            ww_mode = 0;
+            layout_mode = 0;
             break;
         case (ww < 930):
-            ww_mode = 1;
+            layout_mode = 1;
             break;
         default:
-            ww_mode = 2;
+            layout_mode = 2;
             break;
     }
 }
 
 var tmp_out;
-var ww_mode_;
+var layout_mode_;
 
 function on_size() {
     ww = Math.max(320, window.Width);
     wh = window.Height;
     if (auto_mode) 
         check_mode();
-    if (ww_mode_ != ww_mode) {
+    if (layout_mode_ != layout_mode) {
         window.MaxHeight = window.MinHeight = get_panel_height();
-        window.NotifyOthers("ww_mode", ww_mode);
-        ww_mode_ = ww_mode;
+        window.NotifyOthers("layout_mode", layout_mode);
+        layout_mode_ = layout_mode;
     }
 
     tmp_out && window.ClearInterval(tmp_out);
@@ -325,8 +332,8 @@ function on_paint(gr) {
         volume: images.volume,
         mute: get_volume_image(),
     };
-    bt_x = (ww_mode == 0) ? Math.round((ww - bt_w * 5 - pad * 4) / 2) : bt_x = ww - bt_w * 5 - pad * 5;
-    bt_y = (ww_mode < 2) ? Math.round((wh + 22 -bt_w) / 2) : Math.round((wh - bt_w) / 2);
+    bt_x = (layout_mode == 0) ? Math.round((ww - bt_w * 5 - pad * 4) / 2) : bt_x = ww - bt_w * 5 - pad * 5;
+    bt_y = (layout_mode < 2) ? Math.round((wh + 22 -bt_w) / 2) : Math.round((wh - bt_w) / 2);
     // DRAW
     for (var i in buttons) {
         if (i == "mute") continue;
@@ -341,11 +348,11 @@ function on_paint(gr) {
     }
 
     // Cover & Info
-    cover.vis = (ww_mode > 0);
-    if (cover.vis && fb.IsPlaying) {
+    cover.visible = (layout_mode > 0);
+    if (cover.visible && fb.IsPlaying) {
         cover.x = 10;
         var alb_w, alb_x, alb_y;
-        if (ww_mode < 2) {
+        if (layout_mode < 2) {
             cover.y = 35;
             cover.w = cover.h = wh - cover.y - 10;
             alb_w = buttons["prev"].x - cover.x - cover.w - 30;
@@ -376,7 +383,7 @@ function on_paint(gr) {
     if (fb.IsPlaying) {
         var time_w1 = gr.CalcTextWidth(pb_time, font_time)+1, 
             time_w2 = gr.CalcTextWidth(pb_length, font_time)+1;
-        if (ww_mode < 2) {
+        if (layout_mode < 2) {
             gr.GdiDrawText(pb_time, font_time, color_txt, 15, 7, time_w1, 20, DT_CC);
             gr.GdiDrawText(pb_length, font_time, color_txt, ww-time_w2-15, 7, time_w2, 20, DT_CC);
             sk.draw(gr, 20+time_w1+20, 7, ww-time_w2-time_w1-20*2-20*2, 20, 9, color_txt, color_txt & 0x50ffffff);
@@ -390,9 +397,9 @@ function on_paint(gr) {
     }
 
 
-    if (volpanel.vis) {
+    if (volpanel.visible) {
         var b = buttons["volume"];
-        if (ww_mode < 2) {
+        if (layout_mode < 2) {
             volpanel.h = 30;
             volpanel.w = 30 * 7;
             volpanel.x = b.x + b.w/2 - volpanel.w/2;
@@ -503,14 +510,15 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
             color_txt2 = objcolor.text2;
             color_bg = objcolor.background;
         } else {
-            color_txt = eval(window.GetProperty("Color txt", "RGB(236, 236, 236)"));
-            color_txt2 = blendColors(color_txt, color_bg, 0.3);
-            color_bg = eval(window.GetProperty("Color bg", "RGB(25, 25, 25)"));
+            get_colors();
         }
+    } else {
+        get_colors();
     }
-    if (background_mode == 2)
+
+    if (background_mode != 1)
         refresh_colors();
-    else if (background_mode == 1) {
+    else {
         var alpha1 = 255;
         color_timer && window.ClearInterval(color_timer);
         color_timer = window.SetInterval(function () {
@@ -542,7 +550,7 @@ function on_volume_change(val) {
 }
 
 function on_mouse_wheel(step) {
-    if (volpanel.vis) {
+    if (volpanel.visible) {
         fb.Volume += step * Math.exp(-fb.Volume / 33.333);
     }
 }
@@ -560,22 +568,17 @@ function on_mouse_move(x, y) {
 }
 
 
-
-function is_over_rect (x, y, x1, y1, w1, h1) {
-    return (x > x1 && x < x1 + w1 && y > y1 && y < y1 + h1);
-}
-
 function on_mouse_lbtn_down(x, y, mask) {
     drag_window = true;
-    var over_volpanel = volpanel.vis && is_over_rect(x, y, volpanel.x, volpanel.y, volpanel.w, volpanel.h);
+    var over_volpanel = volpanel.visible && volpanel.isMouseOver(x, y);
     if (over_volpanel) {
         vol.down(x, y);
         drag_window = false;
     } else {
         if (fb.IsPlaying)
             sk.down(x, y);
-        if (!buttons.volume.is_mouse_over(x, y) && volpanel.vis)
-            volpanel.vis = false;
+        if (!buttons.volume.is_mouse_over(x, y) && volpanel.visible)
+            volpanel.visible = false;
         repaint();
         if (sk.is_drag || vol.is_drag) {
             drag_window = false;
@@ -598,7 +601,7 @@ function on_mouse_lbtn_down(x, y, mask) {
 }
 
 function on_mouse_lbtn_up(x, y, mask) {
-    var over_volpanel = volpanel.vis && is_over_rect(x, y, volpanel.x, volpanel.y, volpanel.w, volpanel.h);
+    var over_volpanel = volpanel.visible && volpanel.isMouseOver(x, y);
 
     drag_window = false;
     sk.up(x, y);
@@ -634,7 +637,7 @@ function on_mouse_rbtn_up(x, y, mask) {
             pref.AppendMenuItem(MF_STRING, 10, "Layout 1");
             pref.AppendMenuItem(MF_STRING, 11, "Layout 2");
             pref.AppendMenuItem(MF_STRING, 12, "Layout 3");
-            pref.CheckMenuRadioItem(10, 12, ww_mode+10);
+            pref.CheckMenuRadioItem(10, 12, layout_mode+10);
         }
         pref.AppendMenuItem(MF_STRING, 13, "Layout auto-adjust");
         pref.CheckMenuItem(13, auto_mode);
@@ -664,9 +667,9 @@ function on_mouse_rbtn_up(x, y, mask) {
                 window.ShowProperties();
                 break;
             case (ret >= 10 && ret <= 12):
-                ww_mode = ret - 10;
+                layout_mode = ret - 10;
                 on_size();
-                window.SetProperty("ww_mode(0-2)", ww_mode);
+                window.SetProperty("layout_mode(0-2)", layout_mode);
                 break;
             case ret == 13:
                 auto_mode = !auto_mode;
@@ -675,13 +678,15 @@ function on_mouse_rbtn_up(x, y, mask) {
                 break;
             case (ret >= 14 && ret <= 16):
                 background_mode = ret - 14;
+                alb_old = "#@!";
                 on_metadb_changed();
                 window.SetProperty("bg_mode(0-2)", background_mode);
                 break;
             case ret == 17:
+                alb_old = "#@!";
                 wpp_blurred = !wpp_blurred;
                 on_metadb_changed();
-                window.SetProperty("wpp_blurred", wpp_blurred);
+                window.SetProperty("wallpaper blurred", wpp_blurred);
                 break;
             case ret >= 19 && ret <= 22: 
                 shuffle_type = ret - 16;
@@ -721,7 +726,7 @@ function on_mouse_leave() {
 on_load();
 
 function on_load() {
-    check_prop();
+    check_properties();
     get_fonts();
     get_images();
     get_objects();
@@ -738,7 +743,7 @@ function on_load() {
 
 function get_panel_height() {
     var panel_height;
-    switch (ww_mode) {
+    switch (layout_mode) {
         case 0:
             panel_height = 90;
             break;
@@ -819,11 +824,11 @@ function rgbToYuv(rgb) {
 };
 
 function colorDistance(rgb1, rgb2) {
-	var yuv1 = rgbToYuv(rgb1),
-	yuv2 = rgbToYuv(rgb2);
-	return sqrt(pow(yuv1[0] - yuv2[0])
-		 + pow(yuv1[1] - yuv2[1])
-		 + pow(yuv1[2] - yuv2[2]));
+    var yuv1 = rgbToYuv(rgb1),
+        yuv2 = rgbToYuv(rgb2);
+    return sqrt(pow(yuv1[0] - yuv2[0])
+            + pow(yuv1[1] - yuv2[1])
+            + pow(yuv1[2] - yuv2[2]));
 };
 
 function gatherSimilarElements(list, comparator) {
