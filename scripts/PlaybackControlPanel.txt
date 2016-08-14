@@ -13,11 +13,10 @@ var font_name = "Segoe UI Semibold",
     font_assets = "segoe mdl2 assets",
     font_time, font_cover, font_title, font_alb;
 
-var color_bg = eval(window.GetProperty("Color bg", "RGB(160, 160, 128)")),
-    color_txt = eval(window.GetProperty("Color txt", "RGB(10, 10, 10)")),
-    color_txt2 = blendColors(color_txt, color_bg, 0.3);
+var color_bg, color_txt, color_txt2;
 var color_bg_ = 0, 
     color_txt_ = 0;
+get_colors();
 
 
 var tf_title = fb.TitleFormat("%title%"),
@@ -29,8 +28,8 @@ var shuffle_type = window.GetProperty("Shuffle type", 4),
     auto_mode = window.GetProperty("auto_mode", false),
     layout_mode = window.GetProperty("layout_mode(0-2)", 1);
 var background_mode = window.GetProperty("bg_mode(0-2)", 1); 
-var wpp_blurred = window.GetProperty("wallpaper blurred", false),
-    wpp_blur_val = window.GetProperty("wallpaper blur value", 1.05);
+var wpp_blurred = window.GetProperty("wallpaper blurred", true),
+    wpp_blur_val = window.GetProperty("wallpaper blur value", 45);
 
 var pb_length = "-:--",
     pb_time = "-:--",
@@ -234,8 +233,8 @@ function get_fonts() {
 }
 
 function get_colors() {
-    color_bg = eval(window.GetProperty("Color bg", "RGB(160, 160, 128)"));
-    color_txt = eval(window.GetProperty("Color txt", "RGB(10, 10, 10)"));
+    color_bg = eval(window.GetProperty("Color bg", "RGB(25, 25, 25)"));
+    color_txt = eval(window.GetProperty("Color txt", "RGB(235, 235, 235)"));
     color_txt2 = blendColors(color_txt, color_bg, 0.3);
 }
 
@@ -279,7 +278,7 @@ function refreshWallpaper() {
     if (cover.img_large) {
         //var img = cover.img_large;
         //cover.img_large = cover.img_large.Clone(0, img.Height/3*2, img.Width, img.Height/3-2);
-        Wpp.image = getWallpaper(cover.img_large);
+        Wpp.image = GetWallpaper(cover.img_large);
     } else {
         Wpp.image = null;
     }
@@ -489,6 +488,21 @@ function getWallpaper(img) {
     if (!img) { return img; }
     var img = FormatWallpaper(img, ww, wh, 2, 0, 0, "", true);
     return img;
+}
+
+function GetWallpaper(img) {
+    if (!img) {
+        return null;
+    }
+    img = img.Resize(ww, img.Height / img.Width * ww, 7);
+    if (wpp_blur_val < 0 || wpp_blur_val > 255) {
+        wpp_blur_val = 0;
+    }
+    if (wpp_blur_val > 0)
+        img.StackBlur(wpp_blur_val, 2);
+
+    return img.Clone(0, img.Height - wh-5, ww, wh).CreateRawBitmap();
+
 }
 
 
@@ -976,77 +990,6 @@ function draw_blurred_image(image,ix,iy,iw,ih,bx,by,bw,bh,blur_value,overlay_col
 };
 
 
-function resizeImage(image, iw, ih, interpolationMode, displayMode, angle, rawBitmap) {
-
-    if (!image || !iw || !ih) return image;
-
-    var imgR = image.Width / image.Height;
-    var dstR = iw / ih;
-    var tmp = {x: 0, w: 0, y: 0, h: 0, cut: 0};
-
-    if (imgR > dstR) {
-        switch (displayMode) {
-            case 0:
-                tmp.w = iw * imgR / dstR;
-                tmp.h = ih;
-                tmp.cut = tmp.w - iw;
-                tmp.x = 0 - tmp.cut / 2;
-                tmp.y = 0;
-                break;
-            case 1:
-                tmp.w = iw;
-                tmp.h = ih / imgR * dstR;
-                tmp.cut = ih - tmp.h;
-                tmp.x = 0;
-                tmp.y = tmp.cut / 2;
-                break;
-            case 2:
-                tmp.w = iw;
-                tmp.h = ih;
-                tmp.cut = 0;
-                tmp.x = 0;
-                tmp.y = 0;
-                break;
-        }
-    } else {
-        switch (displayMode) {
-            case 0:
-                tmp.w = iw;
-                tmp.h = ih / imgR * dstR;
-                tmp.cut = tmp.h - ih;
-                tmp.x = 0;
-                tmp.y = 0 - tmp.cut / 4;
-                break;
-            case 1:
-                tmp.h = ih;
-                tmp.w = iw * imgR / dstR;
-                tmp.cut = iw - tmp.w;
-                tmp.y = 0;
-                tmp.x = tmp.cut / 2;
-                break;
-            case 2:
-                tmp.w = iw;
-                tmp.h = ih;
-                tmp.cut = 0;
-                tmp.x = 0;
-                tmp.y = 0;
-                break;
-        }
-    };
-
-    var tmpImg = gdi.CreateImage(iw, ih);
-    var gp = tmpImg.GetGraphics();
-    gp.SetInterpolationMode(interpolationMode);
-    gp.DrawImage(image, tmp.x, tmp.y, tmp.w, tmp.h, 0, 0, image.Width, image.Height, angle, 255);
-    tmp_img.ReleaseGraphics(gp);
-
-    CollectGarbage();
-    if (rawBitmap) {
-        return tmpImg.CreateRawBitmap();
-    } else {
-        return tmpImg;
-    }
-}
 
 function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle, txt, rawBitmap) {
 	if(!image||!iw||!ih) return image;
@@ -1128,8 +1071,7 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
     
     // blur it!
     if(wpp_blurred) {
-        var blur_factor = wpp_blur_val;
-        tmp_img = draw_blurred_image(tmp_img,0,0,tmp_img.Width,tmp_img.Height,0,0,tmp_img.Width,tmp_img.Height,blur_factor,0x00ffffff);
+        tmp_img = draw_blurred_image(tmp_img,0,0,tmp_img.Width,tmp_img.Height,0,0,tmp_img.Width,tmp_img.Height,wpp_blur_val,0x00ffffff);
     };
     
 	CollectGarbage();
