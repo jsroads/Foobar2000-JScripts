@@ -30,6 +30,7 @@ var shuffle_type = window.GetProperty("Shuffle type", 4),
 var background_mode = window.GetProperty("bg_mode(0-2)", 1); 
 var wpp_blurred = window.GetProperty("wallpaper blurred", true),
     wpp_blur_val = window.GetProperty("wallpaper blur value", 45);
+var wpp_blurred_alpha = window.GetProperty("blurred alpha", 150);
 
 var pb_length = "-:--",
     pb_time = "-:--",
@@ -305,7 +306,6 @@ function get_pbo_image(order) {
     return img;
 }
 
-var wpp_blurred_alpha = window.GetProperty("blurred alpha", 100);
 
 function on_paint(gr) {
 
@@ -501,7 +501,11 @@ function GetWallpaper(img) {
     if (wpp_blur_val > 0)
         img.StackBlur(wpp_blur_val, 2);
 
-    return img.Clone(0, img.Height - wh-5, ww, wh).CreateRawBitmap();
+    try {
+        return img.Clone(0, img.Height - wh-5, ww, wh).CreateRawBitmap();
+    } catch (e) {
+        return null;
+    }
 
 }
 
@@ -660,10 +664,10 @@ function on_mouse_rbtn_up(x, y, mask) {
         pref.AppendMenuItem(MF_STRING, 15, "Style 2");
         pref.AppendMenuItem(MF_STRING, 16, "Style 3");
         pref.CheckMenuRadioItem(14, 16, background_mode+14);
-        if (background_mode == 2) {
-            pref.AppendMenuItem(MF_STRING, 17, "Wallpaper blurred");
-            pref.CheckMenuItem(17, wpp_blurred);
-        }
+        //if (background_mode == 2) {
+            //pref.AppendMenuItem(MF_STRING, 17, "Wallpaper blurred");
+            //pref.CheckMenuItem(17, wpp_blurred);
+        //}
         // shuffle type
         st.AppendMenuItem(MF_STRING, 19, "Random");
         st.AppendMenuItem(MF_STRING, 20, "Tracks");
